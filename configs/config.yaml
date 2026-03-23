@@ -1,0 +1,106 @@
+# configs/config.yaml
+# Centralized configuration for Reasoning-Aware Adaptive Routing for Hybrid GraphRAG
+
+vector_store: "chroma"
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  kg_dir: "data/kg"
+  router_training_dir: "data/router_training"
+
+crawler:
+  sources:
+    - name: "thuvienphapluat"
+      base_url: "https://thuvienphapluat.vn"
+      category: "luat"
+    - name: "luatvietnam"
+      base_url: "https://luatvietnam.vn"
+      category: "van-ban"
+  delay_seconds: 2.0
+  timeout_seconds: 30
+  max_retries: 3
+  max_docs: 500
+
+ner:
+  model_name: "NlpHUST/ner-vietnamese-electra-base"
+  batch_size: 8
+  max_length: 256
+  device: "auto"
+
+embedding:
+  model_name: "keepitreal/vietnamese-sbert"
+  batch_size: 32
+  max_length: 256
+  device: "auto"
+
+faiss:
+  index_path: "data/processed/faiss_index.bin"
+  metadata_path: "data/processed/faiss_metadata.pkl"
+  top_k: 5
+  chunk_size: 150
+  chunk_overlap: 20
+
+chroma:
+  path: "data/vector_store/chroma"
+  collection_name: "legal_docs"
+  top_k: 5
+
+neo4j:
+  uri: "bolt://localhost:7687"
+  user: "neo4j"
+  password: "dinhhthanhh"
+  database: "neo4j"
+  batch_size: 1000
+
+ollama:
+  base_url: "http://localhost:11434"
+  model: "llama3:latest"
+  timeout_seconds: 120
+  max_retries: 2
+  temperature: 0.1
+  max_tokens: 1024
+
+router:
+  stage1:
+    model_path: "data/router_training/router_model.pkl"
+    confidence_threshold: 0.95
+    feature_version: "v1"
+  stage2:
+    enabled: true
+    max_reasoning_tokens: 512
+  classes:
+    - "vector"
+    - "graph"
+    - "clarify"
+
+ambiguity:
+  score_threshold: 0.6
+  pronoun_list:
+    - "ông ấy"
+    - "bà ấy"
+    - "họ"
+    - "nó"
+    - "người đó"
+    - "cơ quan đó"
+    - "điều đó"
+    - "luật đó"
+  vague_terms:
+    - "quy định"
+    - "luật"
+    - "điều khoản"
+    - "văn bản"
+
+graphrag:
+  repo_url: "https://github.com/microsoft/graphrag.git"
+  local_path: "graphrag_src"
+  working_dir: "data/graphrag_workspace"
+  query_type: "local"
+
+conversation:
+  max_history_turns: 5
+  session_timeout_minutes: 30
+
+logging:
+  routing_log_path: "logs/routing_log.jsonl"
+  level: "INFO"

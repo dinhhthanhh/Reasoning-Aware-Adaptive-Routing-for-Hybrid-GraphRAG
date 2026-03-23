@@ -1,0 +1,352 @@
+[
+    {
+        "query": "Người lao động có được nghỉ thai sản không?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["thai sản", "chế độ", "nghỉ"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Điều 32 Bộ luật Lao động 2019 quy định về vấn đề gì?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["Điều 32", "lao động", "hợp đồng"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Thời gian thử việc tối đa là bao lâu?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["thử việc", "thời gian", "tối đa"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Mức lương tối thiểu vùng hiện tại là bao nhiêu?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["lương", "tối thiểu", "vùng"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Điều kiện để được hưởng bảo hiểm thất nghiệp là gì?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["bảo hiểm", "thất nghiệp", "điều kiện"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quyền của người lao động khi bị sa thải trái pháp luật?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["sa thải", "quyền", "trái pháp luật"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Thủ tục đăng ký kinh doanh hộ cá thể gồm những bước nào?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["đăng ký", "kinh doanh", "hộ"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Luật Đất đai 2013 quy định thuế chuyển nhượng quyền sử dụng đất thế nào?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["đất đai", "chuyển nhượng", "thuế"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Hợp đồng lao động phải có những nội dung gì?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["hợp đồng", "lao động", "nội dung"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Người lao động được nghỉ bao nhiêu ngày lễ trong năm?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["nghỉ lễ", "ngày", "năm"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quy trình giải quyết tranh chấp lao động cá nhân?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["tranh chấp", "lao động", "giải quyết"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Điều kiện thành lập công ty TNHH một thành viên?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["công ty", "TNHH", "thành lập"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Mức phạt khi vi phạm giao thông nồng độ cồn?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["phạt", "giao thông", "nồng độ cồn"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quy định về bồi thường tai nạn lao động?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["bồi thường", "tai nạn", "lao động"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quyền và nghĩa vụ của cổ đông theo Luật Doanh nghiệp?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["cổ đông", "quyền", "nghĩa vụ"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Thời hiệu khởi kiện tranh chấp hợp đồng dân sự?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["thời hiệu", "khởi kiện", "hợp đồng"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Điều kiện được cấp giấy phép lao động cho người nước ngoài?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["giấy phép", "lao động", "nước ngoài"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quy định về thừa kế theo pháp luật?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["thừa kế", "pháp luật"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Chế độ làm việc ban đêm theo Bộ luật Lao động?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["ban đêm", "làm việc", "chế độ"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Trách nhiệm bồi thường thiệt hại ngoài hợp đồng?",
+        "expected_route": "vector",
+        "expected_answer_keywords": ["bồi thường", "thiệt hại", "ngoài hợp đồng"],
+        "is_multi_hop": false,
+        "is_ambiguous": false
+    },
+    {
+        "query": "So sánh quyền của người lao động trong Bộ luật Lao động 2019 và 2012",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["2019", "2012", "so sánh", "quyền"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Mối quan hệ giữa Điều 32 và Điều 45 Bộ luật Lao động 2019?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["Điều 32", "Điều 45", "quan hệ"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Sự khác nhau giữa Luật Doanh nghiệp 2020 và 2014 về thành lập công ty?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["doanh nghiệp", "2020", "2014", "khác nhau"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Theo Điều 128 và Điều 129 Bộ luật Lao động, quy định xử lý kỷ luật lao động như thế nào?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["Điều 128", "Điều 129", "kỷ luật"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Luật Đất đai 2013 và Luật Nhà ở 2014 quy định về quyền sở hữu nhà ở có gì khác nhau?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["đất đai", "nhà ở", "sở hữu", "khác nhau"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Căn cứ vào Luật Lao động và Luật BHXH, chế độ thai sản được quy định ra sao?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["lao động", "BHXH", "thai sản"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quy trình giải quyết tranh chấp lao động liên quan đến nhiều điều luật?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["tranh chấp", "nhiều điều luật", "giải quyết"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Đối chiếu Bộ luật Dân sự và Luật Thương mại về hợp đồng mua bán?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["dân sự", "thương mại", "hợp đồng", "mua bán"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Mối liên hệ giữa Luật Doanh nghiệp và Luật Đầu tư về thủ tục đăng ký?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["doanh nghiệp", "đầu tư", "đăng ký"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "So sánh chế độ nghỉ phép giữa công chức và người lao động hợp đồng?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["nghỉ phép", "công chức", "hợp đồng", "so sánh"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quy định về bảo hiểm bắt buộc theo Luật BHXH và Luật Lao động liên quan thế nào?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["bảo hiểm", "BHXH", "Luật Lao động"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Các điều khoản về đơn phương chấm dứt hợp đồng lao động theo Điều 35 và Điều 36?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["Điều 35", "Điều 36", "chấm dứt", "hợp đồng"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Luật Hình sự và Luật Xử lý vi phạm hành chính quy định khác nhau về phạt tiền?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["hình sự", "hành chính", "phạt tiền"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Nghĩa vụ thuế theo Luật Thuế TNCN và Luật Thuế GTGT khác nhau thế nào?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["thuế", "TNCN", "GTGT", "khác nhau"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Quyền khiếu nại theo Điều 7 Luật Khiếu nại và Điều 30 Bộ luật Tố tụng Dân sự?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["khiếu nại", "Điều 7", "Điều 30", "tố tụng"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Trách nhiệm bồi thường của doanh nghiệp theo Luật Lao động và Bộ luật Dân sự?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["bồi thường", "lao động", "dân sự"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "So sánh trình tự giải thể doanh nghiệp theo Luật DN 2020 và phá sản theo Luật Phá sản?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["giải thể", "phá sản", "doanh nghiệp"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Điều 186 và Điều 187 Bộ luật Hình sự về tội trốn thuế khác nhau thế nào?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["Điều 186", "Điều 187", "trốn thuế"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Luật Bảo vệ môi trường 2020 và Luật Đất đai 2013 quy định gì về đánh giá tác động?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["môi trường", "đất đai", "đánh giá tác động"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Chế tài xử phạt theo Luật Giao thông và Bộ luật Hình sự đối với lái xe say rượu?",
+        "expected_route": "graph",
+        "expected_answer_keywords": ["giao thông", "hình sự", "say rượu"],
+        "is_multi_hop": true,
+        "is_ambiguous": false
+    },
+    {
+        "query": "Ông ấy có quyền gì theo luật lao động?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Luật đó quy định như thế nào về vấn đề này?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Điều đó có đúng không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Người đó có bị xử phạt không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Cơ quan đó có thẩm quyền giải quyết không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Họ phải nộp giấy tờ gì?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Quy định có áp dụng cho trường hợp này không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Bên đó có trách nhiệm gì trong hợp đồng?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Việc đó có vi phạm pháp luật không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    },
+    {
+        "query": "Bà ấy có được bồi thường không?",
+        "expected_route": "clarify",
+        "expected_answer_keywords": [],
+        "is_multi_hop": false,
+        "is_ambiguous": true
+    }
+]

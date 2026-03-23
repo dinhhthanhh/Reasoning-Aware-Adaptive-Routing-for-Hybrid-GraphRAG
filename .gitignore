@@ -1,0 +1,35 @@
+# Data (too large to push)
+data/raw/
+data/processed/faiss_index.bin
+data/processed/faiss_metadata.pkl
+data/graphrag_workspace/
+
+# Models (downloaded automatically at runtime)
+graphrag_src/
+*.pkl
+*.bin
+*.pt
+*.safetensors
+
+# Logs (sensitive + large)
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Neo4j local data
+neo4j_data/
+
+# Environment
+.env
