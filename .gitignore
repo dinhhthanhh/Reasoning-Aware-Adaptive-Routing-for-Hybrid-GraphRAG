@@ -48,3 +48,9 @@ data/vector_store/
 
 # OS
 .DS_Store
+
+vbpl_crawler/output/
+data/
+frontend/node_modules/
+*.json
+*.sqlite3
