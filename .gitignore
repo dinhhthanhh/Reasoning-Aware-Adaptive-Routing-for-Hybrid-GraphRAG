@@ -33,3 +33,18 @@ neo4j_data/
 
 # Environment
 .env
+
+# node modules
+frontend/node_modules/
+
+# data
+*.json
+*.sqlite3
+data/
+vbpl_crawler/output/
+
+# chroma
+data/vector_store/
+
+# OS
+.DS_Store
