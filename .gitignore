@@ -124,3 +124,33 @@ tree_output.txt
 dirs.txt
 # Generated QA pipeline reports
 qa_pipeline/reports/
+
+# Private thesis/report drafts and project notes
+BaoCao_Reasoning_Aware_Adaptive_Routing_Hybrid_GraphRAG.md
+project_context.md
+
+# Private or non-public documentation sources
+docs/*.tex
+docs/*.pdf
+docs/*.bib
+docs/*.bst
+docs/*notes*.md
+docs/*report*.md
+docs/routing_*.md
+docs/stage2_*.md
+docs/research_*.md
+
+# Exceptions for public docs
+!docs/architecture.md
+!docs/DATA_AVAILABILITY.md
+
+# Evaluation outputs and generated experiment artifacts
+eval_results/
+artifacts/
+reports/
+
+# Deferred extended evaluation experiments
+evaluation/faithfulness_eval.py
+evaluation/legal_eval_manifest.json
+evaluation/legal_mixed_clean_fp_analysis.json
+evaluation/legal_routing_eval_unified.json
