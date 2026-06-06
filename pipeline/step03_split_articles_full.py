@@ -7,9 +7,13 @@ Output: data/processed/articles_full.jsonl
 
 import json
 import re
+import argparse
 from pathlib import Path
 from tqdm import tqdm
 from loguru import logger
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_INPUT_PATH = PROJECT_ROOT / "data" / "raw" / "full_dataset.jsonl"
 
 # --- Constants from pipeline/step2_split_articles.py ---
 ARTICLE_HEADING = re.compile(
@@ -73,7 +77,11 @@ def split_doc_to_articles(doc: dict) -> list[dict]:
     return articles
 
 def main():
-    in_path = Path("vbpl_crawler/output/full_dataset.jsonl")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input-path", type=str, default=str(DEFAULT_INPUT_PATH))
+    args = parser.parse_args()
+    
+    in_path = Path(args.input_path)
     out_path = Path("data/processed/articles_full.jsonl")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     

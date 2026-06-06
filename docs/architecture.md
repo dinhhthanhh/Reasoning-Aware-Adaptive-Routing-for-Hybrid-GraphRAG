@@ -103,7 +103,7 @@ against reasoning depth.
 | `llm_reasoning_verifier.py` | **Stage 2** — LLM chain-of-thought verifier for uncertain predictions |
 | `two_stage_router.py` | **Router orchestrator** — applies override rules, ambiguity thresholds, and manages Stage 1→2 escalation |
 | `ambiguity_detector.py` | Detects ambiguous queries (pronouns, vague terms, missing entities) |
-| `train_router.py` | Training logic for the XGBoost router model |
+| `scripts/run_router_training.py` | Training logic for the XGBoost router model |
 
 ### RAG Backends (`rag/`)
 
