@@ -1,11 +1,8 @@
-import sys
 from pathlib import Path
 from typing import List, Optional
 import time
 
-# Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +44,7 @@ class QueryResponse(BaseModel):
     confidence: float
     router_reasoning: str
     stage2_invoked: bool
+    stage2_override: bool
     sources: List[str]
     latency_ms: float
     is_ambiguous: bool
@@ -73,6 +71,7 @@ async def query_legal(request: QueryRequest):
             confidence=response.confidence,
             router_reasoning=response.router_reasoning,
             stage2_invoked=response.stage2_invoked,
+            stage2_override=response.stage2_override,
             sources=response.sources,
             latency_ms=response.latency_ms,
             is_ambiguous=response.is_ambiguous
