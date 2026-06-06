@@ -1,0 +1,174 @@
+# ==============================================================================
+# Reasoning-Aware Adaptive Routing for Hybrid GraphRAG — Example Configuration
+# ==============================================================================
+# Copy this file to configs/config.yaml and fill in your local values.
+# See docs/architecture.md for parameter documentation.
+#
+# IMPORTANT: Do not commit your local config.yaml with real credentials.
+
+language: "vi"
+task_type: "legal_citation"
+concise_answer: false
+
+vector_store: "chroma"
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  kg_dir: "data/kg"
+  kg_filename: "legal_kg.db"
+  router_training_dir: "data/router_training/legal_strict"
+
+crawler:
+  sources:
+    - name: "thuvienphapluat"
+      base_url: "https://thuvienphapluat.vn"
+      category: "luat"
+    - name: "luatvietnam"
+      base_url: "https://luatvietnam.vn"
+      category: "van-ban"
+  delay_seconds: 2.0
+  timeout_seconds: 30
+  max_retries: 3
+  max_docs: 500
+
+ner:
+  model_name: "NlpHUST/ner-vietnamese-electra-base"
+  batch_size: 16
+  max_length: 256
+  device: "auto"
+
+embedding:
+  model_name: "microsoft/Harrier-OSS-v1-0.6B"
+  batch_size: 96
+  max_length: 512
+  device: "cuda"
+
+faiss:
+  index_path: "data/processed/faiss_index.bin"
+  metadata_path: "data/processed/faiss_metadata.pkl"
+  top_k: 8
+  chunk_size: 256
+  chunk_overlap: 32
+
+chroma:
+  path: "data/vector_store/chroma_full"
+  collection_name: "legal_docs"
+  top_k: 8
+  chunk_size: 256
+  chunk_overlap: 32
+
+rag:
+  max_context_chars: 12000
+  max_chunk_chars: 1500
+  retrieval_candidate_multiplier: 3
+  graph_fallback_to_vector: true
+  vector_fallback_to_graph: true
+  hybrid_fallback_to_vector: true
+  hybrid_vector_top_k: 5
+  hybrid_vector_candidate_k: 15
+  hybrid_vector_chunk_chars: 1200
+  graph_top_k: 4
+  graph_context_chars: 12000
+  hybrid_graph_top_k: 4
+  hybrid_graph_context_chars: 3500
+
+# --- Neo4j ---
+# Replace with your local Neo4j credentials.
+neo4j:
+  uri: "neo4j://127.0.0.1:7687"
+  user: "neo4j"
+  password: "<YOUR_NEO4J_PASSWORD>"
+  database: "neo4j"
+  batch_size: 2500
+
+# --- Ollama (local LLM) ---
+ollama:
+  base_url: "http://localhost:11434"
+  model: "llama3:latest"
+  timeout_seconds: 120
+  max_retries: 2
+  temperature: 0.1
+  max_tokens: 1024
+
+# --- OpenAI-compatible API (vLLM, LM Studio, OpenAI, etc.) ---
+# Replace base_url with your inference server endpoint.
+openai:
+  base_url: "http://localhost:8080/v1"
+  model: "Qwen/Qwen3-32B-AWQ"
+  timeout_seconds: 180
+  max_retries: 2
+  temperature: 0.1
+  max_tokens: 1024
+  api_key_env: "OPENAI_API_KEY"
+
+router:
+  stage1:
+    model_path: "data/router_training/legal_strict/router_model.pkl"
+    confidence_threshold: 0.5
+    feature_version: "v1"
+    graph_priority_enabled: true
+    graph_priority_threshold: 0.16
+    graph_priority_confidence_floor: 0.55
+  stage2:
+    enabled: true
+    max_reasoning_tokens: 512
+  override_rules:
+    ambiguity_clarify_threshold: 0.8
+    ambiguity_force_stage2_threshold: 0.6
+    high_confidence_dense_skip_threshold: 0.95
+    dense_skip_max_ambiguity: 0.4
+    reasoning_force_stage2_enabled: true
+    reasoning_force_stage2_threshold: 0.45
+    reasoning_force_confidence_ceiling: 0.90
+  scoring:
+    multi_hop_norm_divisor: 3.0
+    comparison_boost: 0.7
+    cross_doc_boost: 0.9
+  classes:
+    - "dense_retrieval"
+    - "graph_traversal"
+    - "hybrid_reasoning"
+    - "clarify"
+
+ambiguity:
+  score_threshold: 0.6
+  pronoun_list:
+    - "anh ấy"
+    - "chị ấy"
+    - "ông ấy"
+    - "bà ấy"
+    - "họ"
+    - "nó"
+    - "người đó"
+    - "bên đó"
+    - "bên kia"
+    - "công ty đó"
+    - "công ty này"
+    - "doanh nghiệp đó"
+    - "doanh nghiệp này"
+    - "tổ chức đó"
+    - "tổ chức này"
+    - "cơ quan đó"
+    - "điều đó"
+    - "việc đó"
+    - "luật đó"
+    - "điều khoản đó"
+    - "quy định này"
+    - "quy định đó"
+    - "trường hợp này"
+    - "trường hợp đó"
+    - "tài sản này"
+  vague_terms:
+    - "quy định"
+    - "luật"
+    - "điều khoản"
+    - "văn bản"
+
+conversation:
+  max_history_turns: 5
+  session_timeout_minutes: 30
+
+logging:
+  routing_log_path: "logs/routing_log_legal.jsonl"
+  level: "INFO"

@@ -1,56 +1,96 @@
-# Data (too large to push)
-data/raw/
-data/processed/faiss_index.bin
-data/processed/faiss_metadata.pkl
-data/graphrag_workspace/
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+*.pyo
 
-# Models (downloaded automatically at runtime)
-graphrag_src/
+# ===========================================
+# Data (too large to push)
+# ===========================================
+data/
+vbpl_crawler/output/
+Crawl/corpus/
+*.jsonl
+*.sqlite3
+
+# Large model files
 *.pkl
 *.bin
 *.pt
 *.safetensors
+*.onnx
+*.h5
 
-# Logs (sensitive + large)
+# ===========================================
+# Logs & Temp files
+# ===========================================
 logs/
+*.log
+*.db
+*.tmp
+crawler.log
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-*.egg-info/
+# ===========================================
+# Neo4j local data
+# ===========================================
+neo4j_data/
+data/graphrag_workspace/
 
-# OS
-.DS_Store
-Thumbs.db
+# ===========================================
+# Raw crawl data (large)
+# ===========================================
+BoPhapDienDienTu/
 
-# IDE
+# ===========================================
+# Frontend
+# ===========================================
+frontend/node_modules/
+frontend/.next/
+frontend/.env*.local
+
+# ===========================================
+# IDE & OS
+# ===========================================
 .vscode/
 .idea/
-
-# Neo4j local data
-neo4j_data/
-
-# Environment
-.env
-
-# node modules
-frontend/node_modules/
-
-# data
-*.json
-*.sqlite3
-data/
-vbpl_crawler/output/
-
-# chroma
-data/vector_store/
-
-# OS
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
+desktop.ini
 
-vbpl_crawler/output/
-data/
-frontend/node_modules/
-*.json
-*.sqlite3
+# ===========================================
+# Environment
+# ===========================================
+.env
+.env.local
+.env.*.local
+
+# ===========================================
+# GraphRAG workspace
+# ===========================================
+graphrag_src/
+
+# ===========================================
+# Generated / temporary files
+# ===========================================
+*.zip
+tree_output.txt
+dirs.txt
+
+# ===========================================
+# Test caches
+# ===========================================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
