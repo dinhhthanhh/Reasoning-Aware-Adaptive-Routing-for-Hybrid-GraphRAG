@@ -94,3 +94,9 @@ dirs.txt
 .ruff_cache/
 htmlcov/
 .coverage
+
+# ===========================================
+# Local runtime config with credentials
+# ===========================================
+configs/config.yaml
+configs/config_legal.yaml
