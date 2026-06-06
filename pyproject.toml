@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hybrid-graphrag-vn"
+version = "0.1.0"
+description = "Reasoning-Aware Adaptive Routing for Hybrid GraphRAG - Vietnamese Legal QA"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Dinh Thanh", email = "thanh.nd225670@outlook.com"}
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "router*",
+    "rag*",
+    "pipeline*",
+    "evaluation*",
+    "graph*",
+    "vector_store*",
+    "llm*",
+    "ner*",
+    "qa_pipeline*",
+    "api*",
+    "graphrag_wrapper*"
+]
+exclude = ["scripts*", "tests*", "experiments*", "artifacts*", "docs*", "notebooks*", "data*", "eval_results*"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
