@@ -100,3 +100,4 @@ htmlcov/
 # ===========================================
 configs/config.yaml
 configs/config_legal.yaml
+configs/*.local.bak
