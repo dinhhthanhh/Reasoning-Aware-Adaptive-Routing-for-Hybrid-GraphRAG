@@ -101,3 +101,21 @@ htmlcov/
 configs/config.yaml
 configs/config_legal.yaml
 configs/*.local.bak
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Local analysis scratch outputs
+fp_clarify_details*.json
+fp_report.md
+artifacts_temp.md
+
+# Local tree/directory dumps
+tree_output.txt
+dirs.txt
