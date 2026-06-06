@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -27,7 +27,19 @@ include = [
     "api*",
     "graphrag_wrapper*"
 ]
-exclude = ["scripts*", "tests*", "experiments*", "artifacts*", "docs*", "notebooks*", "data*", "eval_results*"]
+exclude = [
+    "tests*",
+    "scripts*",
+    "experiments*",
+    "docs*",
+    "reports*",
+    "artifacts*",
+    "eval_results*",
+    "data*",
+    "frontend*",
+    "BoPhapDienDienTu*"
+]
+namespaces = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
