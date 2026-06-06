@@ -1,0 +1,95 @@
+# Secondary benchmark config: HotpotQA English open-domain multi-hop QA
+
+language: "en"
+task_type: "short_factoid"
+concise_answer: true
+
+vector_store: "faiss"
+
+data:
+  raw_dir: "data/en_benchmark/raw"
+  processed_dir: "data/en_benchmark/processed"
+  kg_dir: "data/en_benchmark/kg"
+  kg_filename: "legal_kg.db"
+  router_training_dir: "data/router_training/hotpot"
+
+ner:
+  model_name: "dslim/bert-base-NER"
+  batch_size: 16
+  max_length: 256
+  device: "auto"
+
+embedding:
+  model_name: "BAAI/bge-small-en-v1.5"
+  batch_size: 128
+  max_length: 512
+  device: "cuda"
+
+faiss:
+  index_path: "data/en_benchmark/processed/faiss_index.bin"
+  metadata_path: "data/en_benchmark/processed/faiss_metadata.pkl"
+  top_k: 10
+  chunk_size: 400
+  chunk_overlap: 20
+
+chroma:
+  path: "data/en_benchmark/chroma"
+  collection_name: "en_benchmark_docs"
+  top_k: 10
+  chunk_size: 400
+  chunk_overlap: 20
+
+neo4j:
+  uri: "neo4j://127.0.0.1:7687"
+  user: "neo4j"
+  password: "<YOUR_NEO4J_PASSWORD>"
+  database: "neo4j"
+  batch_size: 2500
+
+openai:
+  base_url: "http://localhost:8080/v1"
+  model: "Qwen/Qwen3-32B-AWQ"
+  timeout_seconds: 180
+  max_retries: 2
+  temperature: 0.1
+  max_tokens: 1024
+  api_key_env: "OPENAI_API_KEY"
+
+router:
+  stage1:
+    model_path: "data/router_training/hotpot/router_model.pkl"
+    confidence_threshold: 0.85
+    feature_version: "v1"
+  stage2:
+    enabled: true
+    max_reasoning_tokens: 512
+  override_rules:
+    ambiguity_clarify_threshold: 0.8
+    ambiguity_force_stage2_threshold: 0.6
+    high_confidence_dense_skip_threshold: 0.85
+    dense_skip_max_ambiguity: 0.4
+    reasoning_force_stage2_enabled: false
+    reasoning_force_stage2_threshold: 0.6
+    reasoning_force_confidence_ceiling: 0.7
+  scoring:
+    multi_hop_norm_divisor: 3.0
+    comparison_boost: 0.7
+    cross_doc_boost: 0.9
+  classes:
+    - "dense_retrieval"
+    - "graph_traversal"
+    - "hybrid_reasoning"
+    - "clarify"
+
+ambiguity:
+  score_threshold: 1.0
+  pronoun_list: ["he", "she", "they", "it", "this", "that", "who", "which"]
+  vague_terms: ["the person", "the place", "the law", "the regulation", "this document"]
+
+conversation:
+  max_history_turns: 5
+  session_timeout_minutes: 30
+
+logging:
+  routing_log_path: "logs/routing_log_hotpot.jsonl"
+  level: "INFO"

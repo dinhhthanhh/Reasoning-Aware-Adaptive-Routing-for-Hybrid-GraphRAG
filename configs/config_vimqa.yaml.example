@@ -1,0 +1,95 @@
+# Secondary benchmark config: ViMQA Vietnamese open-domain multi-hop QA
+
+language: "vi"
+task_type: "short_factoid"
+concise_answer: true
+
+vector_store: "faiss"
+
+data:
+  raw_dir: "data/vimqa/raw"
+  processed_dir: "data/vimqa"
+  kg_dir: "data/vimqa/kg"
+  kg_filename: "vimqa_kg.db"
+  router_training_dir: "data/router_training/vimqa"
+
+ner:
+  model_name: "NlpHUST/ner-vietnamese-electra-base"
+  batch_size: 16
+  max_length: 256
+  device: "auto"
+
+embedding:
+  model_name: "BAAI/bge-small-en-v1.5"
+  batch_size: 128
+  max_length: 512
+  device: "cuda"
+
+faiss:
+  index_path: "data/vimqa/faiss_index.bin"
+  metadata_path: "data/vimqa/faiss_metadata.pkl"
+  top_k: 10
+  chunk_size: 400
+  chunk_overlap: 40
+
+chroma:
+  path: "data/vimqa/chroma"
+  collection_name: "vimqa_docs"
+  top_k: 10
+  chunk_size: 400
+  chunk_overlap: 40
+
+neo4j:
+  uri: "neo4j://127.0.0.1:7687"
+  user: "neo4j"
+  password: "<YOUR_NEO4J_PASSWORD>"
+  database: "neo4j"
+  batch_size: 2500
+
+openai:
+  base_url: "http://localhost:8080/v1"
+  model: "Qwen/Qwen3-32B-AWQ"
+  timeout_seconds: 180
+  max_retries: 2
+  temperature: 0.1
+  max_tokens: 1024
+  api_key_env: "OPENAI_API_KEY"
+
+router:
+  stage1:
+    model_path: "data/router_training/vimqa/router_model.pkl"
+    confidence_threshold: 0.85
+    feature_version: "v1"
+  stage2:
+    enabled: true
+    max_reasoning_tokens: 512
+  override_rules:
+    ambiguity_clarify_threshold: 0.8
+    ambiguity_force_stage2_threshold: 0.6
+    high_confidence_dense_skip_threshold: 0.85
+    dense_skip_max_ambiguity: 0.4
+    reasoning_force_stage2_enabled: false
+    reasoning_force_stage2_threshold: 0.6
+    reasoning_force_confidence_ceiling: 0.7
+  scoring:
+    multi_hop_norm_divisor: 3.0
+    comparison_boost: 0.7
+    cross_doc_boost: 0.9
+  classes:
+    - "dense_retrieval"
+    - "graph_traversal"
+    - "hybrid_reasoning"
+    - "clarify"
+
+ambiguity:
+  score_threshold: 1.0
+  pronoun_list: ["ông ấy", "bà ấy", "họ", "nó", "người đó", "cơ quan đó", "điều đó", "luật đó"]
+  vague_terms: ["người đó", "nơi đó", "sự kiện đó", "văn bản đó"]
+
+conversation:
+  max_history_turns: 5
+  session_timeout_minutes: 30
+
+logging:
+  routing_log_path: "logs/routing_log_vimqa.jsonl"
+  level: "INFO"
