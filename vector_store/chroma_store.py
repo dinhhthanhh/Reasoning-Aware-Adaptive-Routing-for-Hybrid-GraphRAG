@@ -9,6 +9,7 @@ from typing import Any
 import chromadb
 from chromadb.utils import embedding_functions
 from loguru import logger
+from .safe_embedding import SafeEmbeddingFunction
 
 @dataclass
 class SearchResult:
@@ -30,29 +31,58 @@ class ChromaStore:
         self.path = Path(config.get("path", "data/vector_store/chroma"))
         self.collection_name = config.get("collection_name", "legal_docs")
         
-        # We need embedding function for retrieval in Chroma
-        model_name = config.get("model_name", "keepitreal/vietnamese-sbert")
-        self.ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
+        # Use SafeEmbeddingFunction to ensure consistency with build_vectordb.py
+        model_name = config.get("model_name", "microsoft/Harrier-OSS-v1-0.6B")
+        device = config.get("device", "cuda")
+        max_length = config.get("max_length", 512)
         
-        self.client = chromadb.PersistentClient(path=str(self.path))
-        self.collection = self.client.get_or_create_collection(
-            name=self.collection_name,
-            embedding_function=self.ef,
-            metadata={"hnsw:space": "cosine"}
+        self.ef = SafeEmbeddingFunction(
+            model_name=model_name,
+            device=device,
+            max_seq_length=max_length
         )
+        
+        try:
+            import chromadb.config
+            settings = chromadb.config.Settings(
+                anonymized_telemetry=False,
+                is_persistent=True,
+            )
+            self.client = chromadb.PersistentClient(path=str(self.path), settings=settings)
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                embedding_function=self.ef,
+                metadata={"hnsw:space": "cosine"}
+            )
+        except Exception as e:
+            logger.error("Failed to connect to ChromaDB or load collection: {}", e)
+            if "hnsw" in str(e).lower():
+                logger.warning("HNSW index error detected. This often happens due to memory pressure or a corrupted index.")
+            raise
         
         logger.info("ChromaStore initialized | path={} | collection={}", self.path, self.collection_name)
 
-    def search(self, query_embedding: Any, top_k: int = 5) -> list[SearchResult]:
-        """Search ChromaDB using query embedding."""
-        # Convert numpy array to list for Chroma
-        if hasattr(query_embedding, "tolist"):
-            query_embedding = query_embedding.tolist()
+    def search(self, query: Any, top_k: int = 5) -> list[SearchResult]:
+        """Search ChromaDB. Accepts string query or embedding vector."""
+        
+        if isinstance(query, str):
+            # Chroma automatically uses the collection's embedding_function for string queries
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=top_k
+            )
+        else:
+            # Handle vector input
+            if hasattr(query, "tolist"):
+                query = query.tolist()
             
-        results = self.collection.query(
-            query_embeddings=query_embedding if isinstance(query_embedding[0], list) else [query_embedding],
-            n_results=top_k
-        )
+            # Ensure query is a list of lists for Chroma
+            query_embeddings = [query] if not isinstance(query[0], list) else query
+                
+            results = self.collection.query(
+                query_embeddings=query_embeddings,
+                n_results=top_k
+            )
         
         search_results = []
         if not results or not results['documents']:
@@ -65,7 +95,7 @@ class ChromaStore:
             score = 1.0 - dist # approximate cosine similarity from distance
             
             search_results.append(SearchResult(
-                doc_id=meta.get("doc_id", meta.get("article_id", "")),
+                doc_id=meta.get("doc_id") or meta.get("article_id") or meta.get("title", ""),
                 chunk_text=doc,
                 score=float(score),
                 metadata=meta

@@ -18,7 +18,8 @@ from loguru import logger
 from tqdm import tqdm
 
 from graph.neo4j_client import Neo4jClient
-from ner.vi_ner import ViNER, Entity
+from ner.factory import get_ner_model
+from ner.vi_ner import Entity
 
 
 @dataclass
@@ -185,7 +186,7 @@ def extract_triples(
 def build_knowledge_graph(
     processed_dir: str | Path,
     neo4j_client: Neo4jClient,
-    ner_model: ViNER,
+    ner_model: Any,
     kg_export_dir: str | Path | None = None,
 ) -> KGBuildReport:
     """Build knowledge graph from processed legal documents.

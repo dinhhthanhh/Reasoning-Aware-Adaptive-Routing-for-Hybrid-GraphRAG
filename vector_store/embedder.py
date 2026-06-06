@@ -13,6 +13,7 @@ import numpy as np
 import yaml
 from loguru import logger
 from sentence_transformers import SentenceTransformer
+from vector_store.safe_embedding import load_sentence_transformer
 
 
 class Embedder:
@@ -49,8 +50,18 @@ class Embedder:
         """Lazy-load the sentence-transformer model."""
         if self._model is not None:
             return
-        logger.info("Loading embedding model: {}", self.model_name)
-        self._model = SentenceTransformer(self.model_name, device=self.device)
+        
+        cache_key = f"{self.model_name}_{self.device}"
+        from vector_store.safe_embedding import SafeEmbeddingFunction
+        
+        if cache_key in SafeEmbeddingFunction._model_cache:
+            self._model = SafeEmbeddingFunction._model_cache[cache_key]
+            logger.info("Embedder using cached model: {}", self.model_name)
+        else:
+            logger.info("Loading embedding model: {}", self.model_name)
+            self._model = load_sentence_transformer(self.model_name, self.device)
+            SafeEmbeddingFunction._model_cache[cache_key] = self._model
+            
         self._model.max_seq_length = self.max_length
         self._embedding_dim = self._model.get_sentence_embedding_dimension()
         logger.info(
