@@ -1,7 +1,11 @@
-"""Router training pipeline with weak label generation.
+"""Router training pipeline — loads real QA dataset and trains XGBoost.
 
-Auto-generates training data from processed documents using heuristics,
-augments with template paraphrasing, and trains the XGBoost classifier.
+Primary data source: qa_pipeline/data/final/train.json (940-sample QA dataset
+with verified routing_label annotations: dense_retrieval / graph_traversal /
+hybrid_reasoning).
+
+Weak-label templates are used only as supplementary augmentation for the
+'clarify' class (not present in the QA dataset).
 """
 
 from __future__ import annotations
@@ -22,27 +26,10 @@ from router.features import FeatureExtractor, QueryFeatures
 from router.router_model import RouterModel, TrainingReport
 
 
-# Query templates for data augmentation
-VECTOR_TEMPLATES: list[str] = [
-    "{entity} được quy định như thế nào?",
-    "Nội dung {entity} là gì?",
-    "{entity} quy định về vấn đề gì?",
-    "Cho tôi biết về {entity}",
-    "Quy định tại {entity} nói gì?",
-    "{entity} có hiệu lực khi nào?",
-    "Ai chịu trách nhiệm theo {entity}?",
-]
-
-GRAPH_TEMPLATES: list[str] = [
-    "So sánh {entity1} và {entity2}",
-    "Mối quan hệ giữa {entity1} với {entity2} là gì?",
-    "Sự khác nhau giữa {entity1} và {entity2}?",
-    "{entity1} tham chiếu đến {entity2} như thế nào?",
-    "Theo {entity1} và {entity2}, quy định nào áp dụng?",
-    "{entity1} liên quan đến {entity2} ra sao?",
-    "Căn cứ vào {entity1} và {entity2}, kết luận gì?",
-]
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Clarify-class templates (used only to augment the 'clarify' class)
+# These represent ambiguous queries that cannot be answered without more context.
+# ──────────────────────────────────────────────────────────────────────────────
 CLARIFY_TEMPLATES: list[str] = [
     "Ông ấy có quyền gì?",
     "Luật đó quy định như thế nào?",
@@ -53,114 +40,103 @@ CLARIFY_TEMPLATES: list[str] = [
     "Họ phải làm gì?",
     "Vấn đề đó giải quyết ra sao?",
     "Bên đó có trách nhiệm gì?",
+    "Điều khoản đó nói gì?",
+    "Luật này áp dụng cho ai?",
+    "Nó có còn hiệu lực không?",
+    "Trường hợp đó được xử lý như thế nào?",
+    "Bà ấy có được miễn không?",
+    "Quyết định đó có hợp lệ không?",
 ]
 
 
-def generate_weak_labels(
-    processed_docs_dir: str | Path,
-    config: dict[str, Any] | None = None,
-    max_queries_per_class: int = 200,
+def load_qa_dataset_for_training(
+    split_path: str | Path,
+    include_clarify_augment: bool = True,
+    clarify_samples: int = 60,
 ) -> pd.DataFrame:
-    """Generate weakly-labeled training data from processed documents.
+    """Load the verified QA dataset as training data for the router.
 
-    Uses heuristics to classify synthetic queries:
-    - Queries with comparisons / multi-entity references → 'graph'
-    - Queries with ambiguous pronouns → 'clarify'
-    - Simple single-entity queries → 'vector'
-
-    Augments data with template paraphrasing and ensures class balance.
+    Reads routing_label from each sample and converts to an integer index
+    for XGBoost training. Optionally augments with synthetic 'clarify'
+    samples (since that class is not present in the QA dataset).
 
     Args:
-        processed_docs_dir: Directory with processed JSON docs.
-        config: Full config dict.
-        max_queries_per_class: Maximum samples per class.
+        split_path: Path to a QA split JSON file (train/dev/test).
+        include_clarify_augment: Whether to add synthetic 'clarify' samples.
+        clarify_samples: Number of synthetic 'clarify' samples to add.
 
     Returns:
         DataFrame with columns: query, label, label_idx.
     """
-    docs_path = Path(processed_docs_dir)
-    if config is None:
-        config_path = Path(__file__).resolve().parent.parent / "configs" / "config.yaml"
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
+    split_path = Path(split_path)
+    logger.info("Loading QA dataset from {}", split_path)
 
-    # Collect legal entities from documents
-    entities: list[str] = []
-    json_files = sorted(docs_path.glob("*.json"))
+    with open(split_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    for json_file in json_files:
-        try:
-            with open(json_file, "r", encoding="utf-8") as f:
-                doc = json.load(f)
-            content = doc.get("content", "")
+    label_map = RouterModel.LABEL_TO_IDX
 
-            # Extract article references
-            article_refs = re.findall(r"Điều\s+\d+[a-zđ]?", content, re.IGNORECASE)
-            entities.extend(article_refs[:5])  # Limit per doc
+    rows: list[dict[str, Any]] = []
+    skipped = 0
 
-            # Extract law names
-            law_refs = re.findall(
-                r"(?:Bộ\s+luật|Luật)\s+[^\n,.]{3,40}",
-                content,
-                re.IGNORECASE,
-            )
-            entities.extend(law_refs[:3])
-        except (json.JSONDecodeError, IOError):
+    for item in data:
+        question = item.get("question", "").strip()
+        label = item.get("routing_label", "").strip()
+
+        if not question or not label:
+            skipped += 1
             continue
 
-    # Deduplicate
-    entities = list(set(entities))
-    if not entities:
-        # Fallback: generate some default legal entities
-        entities = [
-            "Điều 32",
-            "Điều 45",
-            "Điều 128",
-            "Luật Lao động 2019",
-            "Luật Doanh nghiệp 2020",
-            "Bộ luật Dân sự 2015",
-            "Luật Đất đai 2013",
-            "Nghị định 132/2020",
-        ]
+        if label not in label_map:
+            logger.warning("Unknown routing_label '{}', skipping", label)
+            skipped += 1
+            continue
 
-    logger.info("Found {} unique legal entities for training data", len(entities))
+        rows.append({
+            "query": question,
+            "label": label,
+            "label_idx": label_map[label],
+            "hop_count": item.get("hop_count", 1),
+            "is_cross_doc": item.get("is_cross_doc", False),
+            "difficulty": item.get("difficulty", 0.0),
+            "source": "qa_dataset",
+        })
 
-    queries: list[dict[str, Any]] = []
-    random.seed(42)
-
-    # Generate vector queries
-    for _ in range(max_queries_per_class):
-        entity = random.choice(entities)
-        template = random.choice(VECTOR_TEMPLATES)
-        query = template.format(entity=entity)
-        queries.append({"query": query, "label": "vector", "label_idx": 0})
-
-    # Generate graph queries
-    for _ in range(max_queries_per_class):
-        if len(entities) >= 2:
-            ent1, ent2 = random.sample(entities, 2)
-        else:
-            ent1 = entities[0]
-            ent2 = "Điều 1"
-        template = random.choice(GRAPH_TEMPLATES)
-        query = template.format(entity1=ent1, entity2=ent2)
-        queries.append({"query": query, "label": "graph", "label_idx": 1})
-
-    # Generate clarify queries
-    for _ in range(max_queries_per_class):
-        template = random.choice(CLARIFY_TEMPLATES)
-        queries.append({"query": template, "label": "clarify", "label_idx": 2})
-
-    # Shuffle
-    random.shuffle(queries)
-
-    df = pd.DataFrame(queries)
     logger.info(
-        "Generated {} training samples | vector={} | graph={} | clarify={}",
+        "Loaded {} samples from QA dataset ({} skipped)",
+        len(rows), skipped,
+    )
+
+    # Log label distribution
+    from collections import Counter
+    dist = Counter(r["label"] for r in rows)
+    logger.info("Label distribution: {}", dict(dist))
+
+    # Augment with 'clarify' samples (not in QA dataset)
+    if include_clarify_augment and clarify_samples > 0:
+        clarify_idx = label_map.get("clarify")
+        if clarify_idx is not None:
+            random.seed(42)
+            for _ in range(clarify_samples):
+                rows.append({
+                    "query": random.choice(CLARIFY_TEMPLATES),
+                    "label": "clarify",
+                    "label_idx": clarify_idx,
+                    "hop_count": 0,
+                    "is_cross_doc": False,
+                    "difficulty": 0.5,
+                    "source": "synthetic_clarify",
+                })
+            logger.info("Added {} synthetic 'clarify' samples", clarify_samples)
+
+    df = pd.DataFrame(rows)
+    random.seed(42)
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    logger.info(
+        "Final training DataFrame: {} rows | label distribution: {}",
         len(df),
-        len(df[df["label"] == "vector"]),
-        len(df[df["label"] == "graph"]),
-        len(df[df["label"] == "clarify"]),
+        dict(Counter(df["label"])),
     )
 
     return df
@@ -169,19 +145,22 @@ def generate_weak_labels(
 def train_and_evaluate(
     df: pd.DataFrame,
     config: dict[str, Any] | None = None,
+    eval_df: pd.DataFrame | None = None,
 ) -> TrainingReport:
     """Train the router model and evaluate performance.
 
     Pipeline:
-    1. Extract features for all queries
-    2. Build feature matrix X and label vector y
-    3. Train XGBoost with 5-fold cross-validation
-    4. Print accuracy, F1 per class, confusion matrix
-    5. Save model
+    1. Extract features for all queries.
+    2. Build feature matrix X and label vector y.
+    3. Train XGBoost with 5-fold cross-validation + balanced class weights.
+    4. If eval_df provided, also evaluate on that split.
+    5. Print accuracy, F1 per class, confusion matrix.
+    6. Save model.
 
     Args:
-        df: DataFrame with columns: query, label, label_idx.
+        df: Training DataFrame with columns: query, label, label_idx.
         config: Full config dict.
+        eval_df: Optional held-out evaluation DataFrame (e.g. dev split).
 
     Returns:
         TrainingReport with all metrics.
@@ -191,55 +170,102 @@ def train_and_evaluate(
         with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
-    # Initialize feature extractor (without NER to speed up training)
+    # Initialize feature extractor (NER is optional — speeds up training when disabled)
     extractor = FeatureExtractor(config=config)
 
-    # Extract features
-    logger.info("Extracting features for {} queries...", len(df))
+    # ── Extract training features ──────────────────────────────────────────
+    logger.info("Extracting features for {} training queries...", len(df))
     feature_vectors: list[list[float]] = []
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Feature extraction"):
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Train features"):
         features = extractor.extract(row["query"])
         feature_vectors.append(features.to_vector())
 
     X = np.array(feature_vectors, dtype=np.float32)
     y = np.array(df["label_idx"].values, dtype=np.int32)
 
-    logger.info("Feature matrix: {} | Labels: {}", X.shape, np.bincount(y))
+    logger.info("Feature matrix: {} | Label counts: {}", X.shape, np.bincount(y))
 
-    # Train
+    # ── Train ──────────────────────────────────────────────────────────────
     model = RouterModel(config)
     report = model.train(X, y)
 
-    # Save model
+    # ── Save model ─────────────────────────────────────────────────────────
     save_dir = Path(config["data"]["router_training_dir"])
     save_dir.mkdir(parents=True, exist_ok=True)
     model.save()
 
-    # Save training data
+    # Save training data summary
     training_data_path = save_dir / "training_data.csv"
-    df.to_csv(training_data_path, index=False, encoding="utf-8")
+    df[["query", "label", "label_idx", "source"]].to_csv(
+        training_data_path, index=False, encoding="utf-8"
+    )
     logger.info("Training data saved to {}", training_data_path)
 
-    # Print results
-    print("\n" + "=" * 60)
+    # ── Evaluate on held-out split if provided ─────────────────────────────
+    if eval_df is not None and not eval_df.empty:
+        logger.info("Evaluating on held-out split ({} samples)...", len(eval_df))
+        eval_features: list[list[float]] = []
+        for _, row in tqdm(eval_df.iterrows(), total=len(eval_df), desc="Eval features"):
+            feat = extractor.extract(row["query"])
+            eval_features.append(feat.to_vector())
+
+        X_eval = np.array(eval_features, dtype=np.float32)
+        y_eval = np.array(eval_df["label_idx"].values, dtype=np.int32)
+
+        eval_preds = [model.predict(
+            # re-create QueryFeatures from vector — simpler: use direct predict
+            type("F", (), {"to_vector": lambda self: eval_features[i]})()
+        ).route for i in range(len(eval_features))]
+
+        # Convert route strings → idx for comparison
+        from router.router_model import RouterModel as RM
+        pred_idx = [RM.LABEL_TO_IDX.get(r, 0) for r in eval_preds]
+        from sklearn.metrics import accuracy_score, classification_report as cr
+        eval_acc = accuracy_score(y_eval, pred_idx)
+        logger.info("Held-out eval accuracy: {:.4f}", eval_acc)
+
+    # ── Print results ──────────────────────────────────────────────────────
+    _print_training_report(report, RouterModel.CLASS_LABELS)
+
+    return report
+
+
+def _print_training_report(report: TrainingReport, class_labels: list[str]) -> None:
+    """Print a rich training report to stdout.
+
+    Args:
+        report: TrainingReport from RouterModel.train().
+        class_labels: List of class label strings.
+    """
+    print("\n" + "=" * 70)
     print("ROUTER TRAINING RESULTS")
-    print("=" * 60)
-    print(f"Validation Accuracy: {report.accuracy:.4f}")
+    print("=" * 70)
+    print(f"Validation Accuracy : {report.accuracy:.4f}")
+
     if report.cv_scores:
-        print(f"CV Accuracy (5-fold): {np.mean(report.cv_scores):.4f} ± {np.std(report.cv_scores):.4f}")
-    if report.f1_per_class:
-        print("\nF1 per class:")
+        arr = np.array(report.cv_scores)
+        print(f"CV Accuracy (5-fold): {arr.mean():.4f} ± {arr.std():.4f}")
+
+    print("\n--- Classification Report (val split) ---")
+    if report.classification_report_str:
+        print(report.classification_report_str)
+    elif report.f1_per_class:
+        print("F1 per class:")
         for cls, f1 in report.f1_per_class.items():
-            print(f"  {cls:10s}: {f1:.4f}")
+            print(f"  {cls:25s}: {f1:.4f}")
+
     if report.confusion_mat:
-        print("\nConfusion Matrix:")
-        labels = RouterModel.CLASS_LABELS
-        header = "          " + "  ".join(f"{l:>8s}" for l in labels)
+        present = list(range(len(report.confusion_mat)))
+        present_labels = [class_labels[i] for i in present if i < len(class_labels)]
+        print("--- Confusion Matrix ---")
+        header = "              " + "  ".join(f"{l[:12]:>12s}" for l in present_labels)
         print(header)
         for i, row in enumerate(report.confusion_mat):
-            row_str = f"  {labels[i]:8s}" + "  ".join(f"{v:>8d}" for v in row)
+            lbl = present_labels[i] if i < len(present_labels) else str(i)
+            row_str = f"  {lbl[:12]:12s}" + "  ".join(f"{v:>12d}" for v in row)
             print(row_str)
+
     if report.feature_importances:
         print("\nTop 5 Feature Importances:")
         sorted_feats = sorted(
@@ -249,6 +275,5 @@ def train_and_evaluate(
         )
         for name, imp in sorted_feats[:5]:
             print(f"  {name:30s}: {imp:.4f}")
-    print("=" * 60)
 
-    return report
+    print("=" * 70)

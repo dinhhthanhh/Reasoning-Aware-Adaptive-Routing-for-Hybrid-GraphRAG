@@ -51,11 +51,15 @@ class AmbiguityDetector:
         ("họ", re.compile(r"\bhọ\b(?!\s+(?:tên|và))", re.IGNORECASE)),
         ("nó", re.compile(r"\bnó\b", re.IGNORECASE)),
         ("người đó", re.compile(r"\bngười\s+đó\b", re.IGNORECASE)),
+        ("công ty đó", re.compile(r"\bcông\s+ty\s+(?:đó|này)\b", re.IGNORECASE)),
+        ("doanh nghiệp đó", re.compile(r"\bdoanh\s+nghiệp\s+(?:đó|này)\b", re.IGNORECASE)),
+        ("tổ chức đó", re.compile(r"\btổ\s+chức\s+(?:đó|này)\b", re.IGNORECASE)),
         ("cơ quan đó", re.compile(r"\bcơ\s+quan\s+đó\b", re.IGNORECASE)),
         ("điều đó", re.compile(r"\bđiều\s+đó\b", re.IGNORECASE)),
         ("luật đó", re.compile(r"\bluật\s+đó\b", re.IGNORECASE)),
         ("bên đó", re.compile(r"\bbên\s+đó\b", re.IGNORECASE)),
         ("việc đó", re.compile(r"\bviệc\s+đó\b", re.IGNORECASE)),
+        ("trường hợp đó", re.compile(r"\btrường\s+hợp\s+(?:đó|này)\b", re.IGNORECASE)),
     ]
 
     # Vague legal reference patterns
@@ -65,7 +69,13 @@ class AmbiguityDetector:
         ("dieu_khoan", re.compile(r"\bđiều\s+khoản\b(?!\s+\d)", re.IGNORECASE)),
         ("van_ban", re.compile(r"\bvăn\s+bản\b(?!\s+(?:số|quy))", re.IGNORECASE)),
         ("nhu_tren", re.compile(r"\bnhư\s+trên\b", re.IGNORECASE)),
+        ("nhu_vay", re.compile(r"\bnhư\s+vậy\b", re.IGNORECASE)),
         ("da_noi", re.compile(r"\bđã\s+nói\b", re.IGNORECASE)),
+        ("context_dependent_followup", re.compile(
+            r"\b(?:vậy|nếu\s+không|trường\s+hợp\s+đó|trường\s+hợp\s+này|"
+            r"có\s+hợp\s+pháp\s+không|có\s+bị\s+xử\s+phạt\s+không)\b",
+            re.IGNORECASE,
+        )),
     ]
 
     # Entity type patterns for missing entity detection
