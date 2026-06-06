@@ -119,3 +119,5 @@ artifacts_temp.md
 # Local tree/directory dumps
 tree_output.txt
 dirs.txt
+# Generated QA pipeline reports
+qa_pipeline/reports/
