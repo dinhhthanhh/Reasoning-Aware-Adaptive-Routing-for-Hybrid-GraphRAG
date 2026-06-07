@@ -7,13 +7,24 @@ and managing batch document ingestion with memory optimization.
 from __future__ import annotations
 
 import re
+import os
 from typing import Any
 
 from loguru import logger
 from neo4j import GraphDatabase, Session
+from dotenv import load_dotenv
 
 
 NO_GRAPH_CONTEXT = "No relevant information found in the knowledge graph."
+
+
+def _get_config_or_env(config_value: Any, env_name: str, default: Any = None) -> Any:
+    """Return a non-empty config value, otherwise fall back to the environment."""
+    if config_value is not None:
+        value = str(config_value).strip()
+        if value and value != f"${{{env_name}}}":
+            return config_value
+    return os.getenv(env_name, default)
 
 
 class Neo4jClient:
@@ -29,17 +40,18 @@ class Neo4jClient:
         Args:
             config: Neo4j config dict with uri, user, password, and database.
         """
-        self.uri = config.get("uri", "bolt://localhost:7687")
-        self.user = config.get("user", "neo4j")
-        self.password = config.get("password", "password")
-        self.database = config.get("database", "neo4j")
-        self.batch_size = config.get("batch_size", 500)
+        load_dotenv()
+        self.uri = _get_config_or_env(config.get("uri"), "NEO4J_URI", "bolt://localhost:7687")
+        self.user = _get_config_or_env(config.get("user"), "NEO4J_USER", "neo4j")
+        self.password = _get_config_or_env(config.get("password"), "NEO4J_PASSWORD", "password")
+        self.database = _get_config_or_env(config.get("database"), "NEO4J_DATABASE", "neo4j")
+        self.batch_size = config.get("batch_size") or 500
 
         self._driver = GraphDatabase.driver(
             self.uri,
             auth=(self.user, self.password),
         )
-        logger.info("Neo4jClient initialized | uri={} | database={}", self.uri, self.database)
+        logger.info("Neo4jClient initialized | uri_configured={} | database={}", bool(self.uri), self.database)
 
     def close(self) -> None:
         """Close the Neo4j driver connection."""

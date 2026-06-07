@@ -17,6 +17,7 @@ from typing import Any
 import requests
 import yaml
 from loguru import logger
+from dotenv import load_dotenv
 
 
 class OpenAIClient:
@@ -39,6 +40,7 @@ class OpenAIClient:
                 full_config = yaml.safe_load(f)
             config = full_config.get("openai", full_config.get("ollama", {}))
 
+        load_dotenv()
         self.base_url: str = config["base_url"].rstrip("/")
         self.model: str = config["model"]
         self.timeout: int = config.get("timeout_seconds", 120)
@@ -54,9 +56,9 @@ class OpenAIClient:
         )
 
         logger.info(
-            "OpenAIClient initialized | model={} | base_url={}",
+            "OpenAIClient initialized | model={} | base_url_configured={}",
             self.model,
-            self.base_url,
+            bool(self.base_url),
         )
 
     def generate(
@@ -105,7 +107,7 @@ class OpenAIClient:
             len(system_prompt) if system_prompt else 0,
         )
 
-        last_error: Exception | None = None
+        last_error: str | None = None
         for attempt in range(1, self.max_retries + 2):  # +2 so max_retries=2 gives 3 attempts
             try:
                 # Strip /v1 if already present to avoid redundancy
@@ -129,12 +131,12 @@ class OpenAIClient:
                 )
                 return text.strip()
             except (requests.RequestException, KeyError, json.JSONDecodeError) as exc:
-                last_error = exc
+                last_error = self._format_error(exc)
                 logger.warning(
                     "OpenAI attempt {}/{} failed: {}",
                     attempt,
                     self.max_retries + 1,
-                    exc,
+                    last_error,
                 )
                 if attempt <= self.max_retries:
                     time.sleep(2 ** attempt)
@@ -142,6 +144,17 @@ class OpenAIClient:
         raise RuntimeError(
             f"OpenAI generation failed after {self.max_retries + 1} attempts: {last_error}"
         )
+
+    @staticmethod
+    def _format_error(exc: Exception) -> str:
+        """Format API errors without leaking endpoint URLs or credentials."""
+        if isinstance(exc, requests.HTTPError) and exc.response is not None:
+            return f"HTTP {exc.response.status_code} {exc.response.reason}"
+        if isinstance(exc, requests.Timeout):
+            return "request timed out"
+        if isinstance(exc, requests.ConnectionError):
+            return "connection error"
+        return exc.__class__.__name__
 
     def generate_json(
         self,
