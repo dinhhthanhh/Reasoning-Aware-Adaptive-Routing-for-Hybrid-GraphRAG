@@ -1,0 +1,209 @@
+{
+  "model_path": "data\\router_training\\legal_strict\\router_model.pkl",
+  "importance_type": "gain",
+  "features": [
+    {
+      "rank": 1,
+      "feature": "has_pronoun",
+      "gain": 8.95844841003418,
+      "weight": 53.0,
+      "importance": 8.95844841003418
+    },
+    {
+      "rank": 2,
+      "feature": "query_length",
+      "gain": 3.587468147277832,
+      "weight": 2890.0,
+      "importance": 3.587468147277832
+    },
+    {
+      "rank": 3,
+      "feature": "conditional_depth",
+      "gain": 1.2073533535003662,
+      "weight": 429.0,
+      "importance": 1.2073533535003662
+    },
+    {
+      "rank": 4,
+      "feature": "relation_chain_length",
+      "gain": 1.097731590270996,
+      "weight": 671.0,
+      "importance": 1.097731590270996
+    },
+    {
+      "rank": 5,
+      "feature": "graph_keyword_count",
+      "gain": 0.8868224620819092,
+      "weight": 504.0,
+      "importance": 0.8868224620819092
+    },
+    {
+      "rank": 6,
+      "feature": "is_factoid",
+      "gain": 0.8165149688720703,
+      "weight": 11.0,
+      "importance": 0.8165149688720703
+    },
+    {
+      "rank": 7,
+      "feature": "sub_question_count",
+      "gain": 0.7915948033332825,
+      "weight": 230.0,
+      "importance": 0.7915948033332825
+    },
+    {
+      "rank": 8,
+      "feature": "complexity_level",
+      "gain": 0.6421277523040771,
+      "weight": 359.0,
+      "importance": 0.6421277523040771
+    },
+    {
+      "rank": 9,
+      "feature": "multi_hop_verb_count",
+      "gain": 0.624345600605011,
+      "weight": 296.0,
+      "importance": 0.624345600605011
+    },
+    {
+      "rank": 10,
+      "feature": "entity_count",
+      "gain": 0.578259289264679,
+      "weight": 487.0,
+      "importance": 0.578259289264679
+    },
+    {
+      "rank": 11,
+      "feature": "question_word_encoded",
+      "gain": 0.5735266208648682,
+      "weight": 1111.0,
+      "importance": 0.5735266208648682
+    },
+    {
+      "rank": 12,
+      "feature": "entity_type_count",
+      "gain": 0.5632923245429993,
+      "weight": 177.0,
+      "importance": 0.5632923245429993
+    },
+    {
+      "rank": 13,
+      "feature": "law_specificity",
+      "gain": 0.5001380443572998,
+      "weight": 392.0,
+      "importance": 0.5001380443572998
+    },
+    {
+      "rank": 14,
+      "feature": "multi_hop_score",
+      "gain": 0.4769369959831238,
+      "weight": 486.0,
+      "importance": 0.4769369959831238
+    },
+    {
+      "rank": 15,
+      "feature": "multi_entity_relation_count",
+      "gain": 0.47559601068496704,
+      "weight": 39.0,
+      "importance": 0.47559601068496704
+    },
+    {
+      "rank": 16,
+      "feature": "entity_density",
+      "gain": 0.4575151205062866,
+      "weight": 2097.0,
+      "importance": 0.4575151205062866
+    },
+    {
+      "rank": 17,
+      "feature": "procedural_count",
+      "gain": 0.442416250705719,
+      "weight": 476.0,
+      "importance": 0.442416250705719
+    },
+    {
+      "rank": 18,
+      "feature": "legal_effect_count",
+      "gain": 0.435953289270401,
+      "weight": 207.0,
+      "importance": 0.435953289270401
+    },
+    {
+      "rank": 19,
+      "feature": "legal_reference_count",
+      "gain": 0.389184832572937,
+      "weight": 502.0,
+      "importance": 0.389184832572937
+    },
+    {
+      "rank": 20,
+      "feature": "authority_chain_count",
+      "gain": 0.38795697689056396,
+      "weight": 244.0,
+      "importance": 0.38795697689056396
+    },
+    {
+      "rank": 21,
+      "feature": "has_temporal",
+      "gain": 0.3412497341632843,
+      "weight": 387.0,
+      "importance": 0.3412497341632843
+    },
+    {
+      "rank": 22,
+      "feature": "has_causality",
+      "gain": 0.31368187069892883,
+      "weight": 282.0,
+      "importance": 0.31368187069892883
+    },
+    {
+      "rank": 23,
+      "feature": "cross_doc_signals",
+      "gain": 0.25092098116874695,
+      "weight": 3.0,
+      "importance": 0.25092098116874695
+    },
+    {
+      "rank": 24,
+      "feature": "has_comparison",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    },
+    {
+      "rank": 25,
+      "feature": "ambiguity_score",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    },
+    {
+      "rank": 26,
+      "feature": "has_missing_entity",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    },
+    {
+      "rank": 27,
+      "feature": "history_length",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    },
+    {
+      "rank": 28,
+      "feature": "history_resolves_ambiguity",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    },
+    {
+      "rank": 29,
+      "feature": "comparative_depth",
+      "gain": 0.0,
+      "weight": 0.0,
+      "importance": 0.0
+    }
+  ]
+}
