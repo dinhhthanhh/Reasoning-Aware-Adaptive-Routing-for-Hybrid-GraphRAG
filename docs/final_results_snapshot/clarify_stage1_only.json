@@ -1,0 +1,64 @@
+{
+  "total": 234,
+  "route_accuracy": 0.2692307692307692,
+  "clarify_precision": 0.0,
+  "clarify_recall": 0.0,
+  "clarify_f1": 0.0,
+  "stage2_trigger_rate": 0.0,
+  "stage2_override_rate": 0.0,
+  "flag_accuracy_on_stage2": 0.0,
+  "route_distribution": {
+    "dense_retrieval": 188,
+    "graph_traversal": 32,
+    "hybrid_reasoning": 14
+  },
+  "clarify_false_positives": 0,
+  "clarify_false_negatives": 156,
+  "by_ambiguity_type": {
+    "incomplete_context": {
+      "total": 39,
+      "route_correct": 0,
+      "stage2": 0,
+      "flag_correct": 0,
+      "route_accuracy": 0.0,
+      "stage2_trigger_rate": 0.0,
+      "flag_accuracy": 0.0
+    },
+    "missing_entity": {
+      "total": 39,
+      "route_correct": 0,
+      "stage2": 0,
+      "flag_correct": 0,
+      "route_accuracy": 0.0,
+      "stage2_trigger_rate": 0.0,
+      "flag_accuracy": 0.0
+    },
+    "pronoun_reference": {
+      "total": 42,
+      "route_correct": 0,
+      "stage2": 0,
+      "flag_correct": 0,
+      "route_accuracy": 0.0,
+      "stage2_trigger_rate": 0.0,
+      "flag_accuracy": 0.0
+    },
+    "multi_interpretation": {
+      "total": 36,
+      "route_correct": 0,
+      "stage2": 0,
+      "flag_correct": 0,
+      "route_accuracy": 0.0,
+      "stage2_trigger_rate": 0.0,
+      "flag_accuracy": 0.0
+    },
+    "unknown": {
+      "total": 78,
+      "route_correct": 63,
+      "stage2": 0,
+      "flag_correct": 0,
+      "route_accuracy": 0.8076923076923077,
+      "stage2_trigger_rate": 0.0,
+      "flag_accuracy": 0.0
+    }
+  }
+}

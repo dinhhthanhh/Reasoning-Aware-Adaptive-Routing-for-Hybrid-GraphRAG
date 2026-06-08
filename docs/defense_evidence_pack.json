@@ -1,0 +1,360 @@
+{
+  "project": "Reasoning-aware Adaptive Routing for Hybrid GraphRAG",
+  "generated": "2026-06-08T23:47:01",
+  "branch": "cleanup/working-tree-content-review-pass-3c",
+  "commit_before_phase5_commit": "b762829",
+  "paper_tex": "docs/AI(PM)_ver 2.3.tex",
+  "paper_pdf": "docs/AI(PM)_ver 2.3.pdf",
+  "main_results": {
+    "source": "eval_results/legal_strict_full_summary.json",
+    "snapshot": "docs/final_results_snapshot/legal_strict_full_summary.json",
+    "systems": {
+      "Pure Vector": {
+        "f1": 0.3626,
+        "routing_accuracy": 0.5,
+        "latency_ms": 1270.7
+      },
+      "Pure Graph": {
+        "f1": 0.3556,
+        "routing_accuracy": 0.25,
+        "latency_ms": 2283.4
+      },
+      "Single-stage Router": {
+        "f1": 0.4231,
+        "routing_accuracy": 0.935,
+        "latency_ms": 2209.2
+      },
+      "Two-stage Hybrid": {
+        "f1": 0.4235,
+        "routing_accuracy": 0.9283,
+        "latency_ms": 3913.4
+      }
+    }
+  },
+  "clarification": {
+    "stage1_only": {
+      "route_accuracy": 0.269,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "trigger": 0.0
+    },
+    "pre_phase3_two_stage": {
+      "route_accuracy": 0.585,
+      "precision": 1.0,
+      "recall": 0.519,
+      "f1": 0.684,
+      "trigger": 0.577
+    },
+    "after_phase3": {
+      "route_accuracy": 0.7222,
+      "precision": 1.0,
+      "recall": 0.7244,
+      "f1": 0.8401,
+      "trigger": 0.812,
+      "false_positives": 0,
+      "false_negatives": 43
+    }
+  },
+  "conversation_stress": {
+    "before": {
+      "route_accuracy": 0.475,
+      "precision": 0.907,
+      "recall": 0.39,
+      "f1": 0.545,
+      "stage2_trigger": 0.713,
+      "stage2_override": 0.333,
+      "latency_ms": 2238.7
+    },
+    "after": {
+      "route_accuracy": 0.75,
+      "precision": 0.963,
+      "recall": 0.78,
+      "f1": 0.862,
+      "stage2_trigger": 0.825,
+      "stage2_override": 0.227,
+      "latency_ms": 3127.2,
+      "history_resolution_accuracy": 0.85
+    }
+  },
+  "strict_routing_sanity": {
+    "total": 600,
+    "route_accuracy": 0.8933,
+    "clarify_false_positives": 10,
+    "stage2_trigger_rate": 0.5583,
+    "stage2_override_rate": 0.3403,
+    "avg_latency_ms": 1972.4
+  },
+  "artifact_status": {
+    "eval_results/legal_strict_full_summary.json": {
+      "snapshot_filename": "legal_strict_full_summary.json",
+      "original_path": "eval_results/legal_strict_full_summary.json",
+      "status": "copied",
+      "file_size_bytes": 1984,
+      "purpose": "Main strict end-to-end QA results",
+      "used_in_paper": true,
+      "result_type": "main"
+    },
+    "eval_results/clarify_stage1_only.json": {
+      "snapshot_filename": "clarify_stage1_only.json",
+      "original_path": "eval_results/clarify_stage1_only.json",
+      "status": "copied",
+      "file_size_bytes": 1570,
+      "purpose": "Stage 1 only clarification baseline",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "eval_results/clarify_two_stage.json": {
+      "snapshot_filename": "clarify_two_stage.json",
+      "original_path": "eval_results/clarify_two_stage.json",
+      "status": "copied",
+      "file_size_bytes": 1670,
+      "purpose": "Original two-stage clarification benchmark",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "eval_results/clarify_two_stage.csv": {
+      "snapshot_filename": "clarify_two_stage.csv",
+      "original_path": "eval_results/clarify_two_stage.csv",
+      "status": "copied",
+      "file_size_bytes": 161493,
+      "purpose": "Original two-stage clarification predictions",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/clarify_eval_summary.json": {
+      "snapshot_filename": "clarify_eval_summary.json",
+      "original_path": "results_phase3/clarify_eval_summary.json",
+      "status": "copied",
+      "file_size_bytes": 1736,
+      "purpose": "Phase 3 clarification summary",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/clarify_eval_summary.md": {
+      "snapshot_filename": "clarify_eval_summary.md",
+      "original_path": "results_phase3/clarify_eval_summary.md",
+      "status": "copied",
+      "file_size_bytes": 998,
+      "purpose": "Phase 3 clarification report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/clarify_eval_results.csv": {
+      "snapshot_filename": "clarify_eval_results.csv",
+      "original_path": "results_phase3/clarify_eval_results.csv",
+      "status": "copied",
+      "file_size_bytes": 201856,
+      "purpose": "Phase 3 clarification predictions",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "evaluation/conversation_ambiguity_eval.json": {
+      "snapshot_filename": "conversation_ambiguity_eval.json",
+      "original_path": "evaluation/conversation_ambiguity_eval.json",
+      "status": "copied",
+      "file_size_bytes": 98248,
+      "purpose": "Conversation ambiguity evaluation dataset",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results/conversation_ambiguity_summary.json": {
+      "snapshot_filename": "results__conversation_ambiguity_summary.json",
+      "original_path": "results/conversation_ambiguity_summary.json",
+      "status": "copied",
+      "file_size_bytes": 12542,
+      "purpose": "Pre-Phase-3 conversation summary",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results/conversation_ambiguity_summary.md": {
+      "snapshot_filename": "results__conversation_ambiguity_summary.md",
+      "original_path": "results/conversation_ambiguity_summary.md",
+      "status": "copied",
+      "file_size_bytes": 4260,
+      "purpose": "Pre-Phase-3 conversation report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/conversation_ambiguity_summary.json": {
+      "snapshot_filename": "results_phase3__conversation_ambiguity_summary.json",
+      "original_path": "results_phase3/conversation_ambiguity_summary.json",
+      "status": "copied",
+      "file_size_bytes": 12585,
+      "purpose": "Phase 3 conversation summary",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/conversation_ambiguity_summary.md": {
+      "snapshot_filename": "results_phase3__conversation_ambiguity_summary.md",
+      "original_path": "results_phase3/conversation_ambiguity_summary.md",
+      "status": "copied",
+      "file_size_bytes": 4335,
+      "purpose": "Phase 3 conversation report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/conversation_ambiguity_predictions.jsonl": {
+      "snapshot_filename": "conversation_ambiguity_predictions.jsonl",
+      "original_path": "results_phase3/conversation_ambiguity_predictions.jsonl",
+      "status": "copied",
+      "file_size_bytes": 478531,
+      "purpose": "Phase 3 conversation predictions",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/conversation_ambiguity_failures.jsonl": {
+      "snapshot_filename": "conversation_ambiguity_failures.jsonl",
+      "original_path": "results_phase3/conversation_ambiguity_failures.jsonl",
+      "status": "copied",
+      "file_size_bytes": 118173,
+      "purpose": "Phase 3 conversation failures",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results/stage1_confusion_matrix.json": {
+      "snapshot_filename": "stage1_confusion_matrix.json",
+      "original_path": "results/stage1_confusion_matrix.json",
+      "status": "copied",
+      "file_size_bytes": 626,
+      "purpose": "Stage 1 confusion matrix",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results/stage1_classification_report.json": {
+      "snapshot_filename": "stage1_classification_report.json",
+      "original_path": "results/stage1_classification_report.json",
+      "status": "copied",
+      "file_size_bytes": 1547,
+      "purpose": "Stage 1 classification report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results/stage1_feature_importance.json": {
+      "snapshot_filename": "stage1_feature_importance.json",
+      "original_path": "results/stage1_feature_importance.json",
+      "status": "copied",
+      "file_size_bytes": 4898,
+      "purpose": "Stage 1 feature importance",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results/stage1_diagnostics_summary.md": {
+      "snapshot_filename": "results__stage1_diagnostics_summary.md",
+      "original_path": "results/stage1_diagnostics_summary.md",
+      "status": "copied",
+      "file_size_bytes": 2096,
+      "purpose": "Stage 1 diagnostic report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/stage1_diagnostics_summary.md": {
+      "snapshot_filename": "results_phase3__stage1_diagnostics_summary.md",
+      "original_path": "results_phase3/stage1_diagnostics_summary.md",
+      "status": "copied",
+      "file_size_bytes": 2096,
+      "purpose": "Phase 3 Stage 1 diagnostic report",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "eval_results/post_migration_graph_quality.json": {
+      "snapshot_filename": "post_migration_graph_quality.json",
+      "original_path": "eval_results/post_migration_graph_quality.json",
+      "status": "copied",
+      "file_size_bytes": 8317,
+      "purpose": "Post-migration graph quality",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/strict_routing_sanity_summary.json": {
+      "snapshot_filename": "strict_routing_sanity_summary.json",
+      "original_path": "results_phase3/strict_routing_sanity_summary.json",
+      "status": "copied",
+      "file_size_bytes": 1462,
+      "purpose": "Phase 3 strict routing-only sanity summary",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/strict_routing_sanity_summary.md": {
+      "snapshot_filename": "strict_routing_sanity_summary.md",
+      "original_path": "results_phase3/strict_routing_sanity_summary.md",
+      "status": "copied",
+      "file_size_bytes": 879,
+      "purpose": "Phase 3 strict routing-only sanity report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/demo_conversation_routing_output.md": {
+      "snapshot_filename": "demo_conversation_routing_output.md",
+      "original_path": "results_phase3/demo_conversation_routing_output.md",
+      "status": "copied",
+      "file_size_bytes": 8017,
+      "purpose": "Phase 3 conversation routing demo output",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/demo_conversation_routing_output.json": {
+      "snapshot_filename": "demo_conversation_routing_output.json",
+      "original_path": "results_phase3/demo_conversation_routing_output.json",
+      "status": "copied",
+      "file_size_bytes": 3722,
+      "purpose": "Phase 3 conversation routing demo output JSON",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results/phase1_audit_report.md": {
+      "snapshot_filename": "phase1_audit_report.md",
+      "original_path": "results/phase1_audit_report.md",
+      "status": "copied",
+      "file_size_bytes": 8277,
+      "purpose": "Phase 1 audit report",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results/phase2_conversation_benchmark_report.md": {
+      "snapshot_filename": "phase2_conversation_benchmark_report.md",
+      "original_path": "results/phase2_conversation_benchmark_report.md",
+      "status": "copied",
+      "file_size_bytes": 7936,
+      "purpose": "Phase 2 conversation benchmark report",
+      "used_in_paper": false,
+      "result_type": "diagnostic"
+    },
+    "results_phase3/phase3_improvement_report.md": {
+      "snapshot_filename": "phase3_improvement_report.md",
+      "original_path": "results_phase3/phase3_improvement_report.md",
+      "status": "copied",
+      "file_size_bytes": 5548,
+      "purpose": "Phase 3 improvement report",
+      "used_in_paper": true,
+      "result_type": "diagnostic"
+    },
+    "docs/AI(PM)_ver 2.3.tex": {
+      "snapshot_filename": "AI(PM)_ver 2.3.tex",
+      "original_path": "docs/AI(PM)_ver 2.3.tex",
+      "status": "copied",
+      "file_size_bytes": 87339,
+      "purpose": "Final paper LaTeX source",
+      "used_in_paper": true,
+      "result_type": "paper"
+    },
+    "docs/AI(PM)_ver 2.3.pdf": {
+      "snapshot_filename": "AI(PM)_ver 2.3.pdf",
+      "original_path": "docs/AI(PM)_ver 2.3.pdf",
+      "status": "copied",
+      "file_size_bytes": 652749,
+      "purpose": "Final paper PDF",
+      "used_in_paper": true,
+      "result_type": "paper"
+    },
+    "docs/biblio.bib": {
+      "snapshot_filename": "biblio.bib",
+      "original_path": "docs/biblio.bib",
+      "status": "copied",
+      "file_size_bytes": 10549,
+      "purpose": "Final paper bibliography",
+      "used_in_paper": true,
+      "result_type": "paper"
+    }
+  }
+}

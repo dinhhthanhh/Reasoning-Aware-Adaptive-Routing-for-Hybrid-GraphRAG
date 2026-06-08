@@ -52,7 +52,7 @@ faiss:
   chunk_overlap: 32
 
 chroma:
-  path: "data/vector_store/chroma_full"
+  path: "data/vector_store/chroma_harrier_oss_0_6b"
   collection_name: "legal_docs"
   top_k: 8
   chunk_size: 256

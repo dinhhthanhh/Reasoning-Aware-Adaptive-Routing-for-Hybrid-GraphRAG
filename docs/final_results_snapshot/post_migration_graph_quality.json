@@ -1,0 +1,184 @@
+{
+  "node_count": 419251,
+  "relationship_count": 1239542,
+  "labels": [
+    {
+      "label": "LegalDoc",
+      "count": 219439
+    },
+    {
+      "label": "VectorChunk",
+      "count": 199530
+    },
+    {
+      "label": "HF",
+      "count": 149051
+    },
+    {
+      "label": "LegalArticle",
+      "count": 70347
+    },
+    {
+      "label": "PD",
+      "count": 70075
+    },
+    {
+      "label": "LegalConcept",
+      "count": 10
+    }
+  ],
+  "relationship_types": [
+    {
+      "type": "REFERENCES",
+      "count": 769000
+    },
+    {
+      "type": "HAS_VECTOR_CHUNK",
+      "count": 199802
+    },
+    {
+      "type": "BELONGS_TO",
+      "count": 199530
+    },
+    {
+      "type": "HAS_ARTICLE",
+      "count": 70347
+    },
+    {
+      "type": "REGULATES_CONCEPT",
+      "count": 249
+    },
+    {
+      "type": "NEXT_ARTICLE",
+      "count": 239
+    },
+    {
+      "type": "CROSS_REFERENCES",
+      "count": 133
+    },
+    {
+      "type": "MENTIONS_DOC",
+      "count": 84
+    },
+    {
+      "type": "INTRA_DOC_REFERENCE",
+      "count": 83
+    },
+    {
+      "type": "AMENDS",
+      "count": 27
+    },
+    {
+      "type": "GUIDES",
+      "count": 25
+    },
+    {
+      "type": "REPEALS",
+      "count": 19
+    },
+    {
+      "type": "IMPLEMENTS",
+      "count": 3
+    },
+    {
+      "type": "TRANSITIONAL_TO",
+      "count": 1
+    }
+  ],
+  "avg_degree": 5.912586970573452,
+  "isolated_nodes": 3102,
+  "sample_nodes": [
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4260",
+      "type": "Quyết định"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4266",
+      "type": "Chỉ thị"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4262",
+      "type": "Chỉ thị"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 7654",
+      "type": "Quyết định"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4264",
+      "type": "Chỉ thị"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4281",
+      "type": "Quyết định"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4265",
+      "type": "Chỉ thị"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4299",
+      "type": "Quyết định"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 7660",
+      "type": "Thông tư"
+    },
+    {
+      "labels": [
+        "LegalDoc",
+        "HF"
+      ],
+      "name": "Document 4273",
+      "type": "Quyết định"
+    }
+  ],
+  "sample_contexts": [
+    {
+      "query": "So sánh quy định về điều kiện kết hôn và ly hôn trong pháp luật Việt Nam.",
+      "context_preview": "[Start: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn] (Điều (Pháp điển))\nTitle: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn\nArticle ID: pd_007_003_0044\nLaw ID: pd_007_003_0044\nContent: ### 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn 1. Nam, nữ kết hôn với nhau phải tuân theo các điều kiện sau đây: a) Nam từ đủ 20 tuổi trở lên, nữ từ đủ 18 tuổi trở lên; b) Việc kết hôn do nam và nữ tự nguyện quyết định; c) Không bị mất năng lực hành vi dân sự; d) Việc kết hôn không thuộc một trong các trường hợp cấm kết hôn theo quy định tại các điểm a, b, c và d khoản 2 Điều 5 của Luật này. 2. Nhà nước không thừa nhận hôn nhân giữa những người cùng giới tính.\n\nPath: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn -> Pháp Điển - pd_007_003\nRelation chain: HAS_ARTICLE\nEvidence: Title: Pháp Điển - pd_007_003\nDoc ID: pd_007_003\nType: Nhóm Pháp Điển\nAuthority: \nIssue date: \nSource: Pháp Điển Group\n\nPath: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn -> Pháp Điển - pd_007_003 -> 8.4. Điều 8.4.NĐ.1.1. Phạm vi điều chỉnh\nRelation chain: HAS_ARTICLE -> HAS_ARTICLE\nEvidence: Title: 8.4. Điều 8.4.NĐ.1.1. Phạm vi điều chỉnh\nDoc ID: pd_007_003_0001\nType: Điều (Pháp điển)\nAuthority: \nIssue date: \nSource: Pháp Điển\n\nPath: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn -> Pháp Điển - pd_007_003 -> 8.4. Điều 8.4.NĐ.1.2. Đối tượng áp dụng\nRelation chain: HAS_ARTICLE -> HAS_ARTICLE\nEvidence: Title: 8.4. Điều 8.4.NĐ.1.2. Đối tượng áp dụng\nDoc ID: pd_007_003_0002\nType: Điều (Pháp điển)\nAuthority: \nIssue date: \nSource: Pháp Điển\n\nPath: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn -> Pháp Điển - pd_007_003 -> 8.4. Điều 8.4.NĐ.2.1. Phạm vi điều chỉnh\nRelation chain: HAS_ARTICLE -> HAS_ARTICLE\nEvidence: Title: 8.4. Điều 8.4.NĐ.2.1. Phạm vi điều chỉnh\nDoc ID: pd_007_003_0003\nType: Điều (Pháp điển)\nAuthority: \nIssue date: \nSource: Pháp Điển\n\nPath: 8.4. Điều 8.4.LQ.8. Điều kiện kết hôn -> Pháp Điển - pd_007_003 -> 8.4. Điều 8.4.TT.1.1. Phạm vi điều chỉnh, đối tượng áp dụng\nRelation chain: HAS_ARTICLE -> HAS_ARTICLE\nEvidence: Title: 8.4. Điều 8.4.TT.1.1. Phạm vi ",
+      "context_length": 6106
+    },
+    {
+      "query": "Cơ quan nào có thẩm quyền xử phạt trong trường hợp vi phạm lao động?",
+      "context_preview": "[Start: 39.13. Điều 39.13.PL.2.41. Phân định thẩm quyền xử phạt] (Điều (Pháp điển))\nTitle: 39.13. Điều 39.13.PL.2.41. Phân định thẩm quyền xử phạt\nArticle ID: pd_038_012_3638\nLaw ID: pd_038_012_3638\nContent: ### 39.13. Điều 39.13.PL.2.41. Phân định thẩm quyền xử phạt 1. Người có thẩm quyền xử phạt trong Tòa án nhân dân có thẩm quyền xử phạt theo quy định tại Điều 25 và Điều 33 của Pháp lệnh này đối với hành vi cản trở hoạt động tố tụng kể từ thời điểm Tòa án nhân dân nhận, thụ lý vụ án, vụ việc. 2. Người có thẩm quyền xử phạt trong Tòa án quân sự có thẩm quyền xử phạt theo quy định tại Điều 25 và Điều 33 của Pháp lệnh này đối với: a) Hành vi cản trở hoạt động tố tụng kể từ thời điểm Tòa án quân sự nhận, thụ lý vụ án; b) Hành vi cản trở hoạt động tố tụng trong giai đoạn giải quyết nguồn tin về tội phạm, khởi tố, điều tra của cơ quan, người có thẩm quyền trong Viện kiểm sát quân sự, Cơ quan điều tra của Viện kiểm sát quân sự trung ương, Cơ quan điều tra trong Quân đội nhân dân và các cơ quan trong Quân đội nhân dân được giao nhiệm vụ tiến hành một số hoạt động điều tra, trừ Bộ đội Biên phòng và Cảnh sát biển; c) Hành vi cản trở hoạt động tố tụng trong giai đoạn truy tố của cơ quan, người có thẩm quyền trong Viện kiểm sát quân sự. 3. Người có thẩm quyền xử phạt trong Công an nhân dân có thẩm quyền xử phạt theo quy định tại Điều 26 và Điều 34 của Pháp lệnh này đối với: a) Hành vi cản trở h\n\nPath: 39.13. Điều 39.13.PL.2.41. Phân định thẩm quyền xử phạt -> Pháp Điển - pd_038_012\nRelation chain: HAS_ARTICLE\nEvidence: Title: Pháp Điển - pd_038_012\nDoc ID: pd_038_012\nType: Nhóm Pháp Điển\nAuthority: \nIssue date: \nSource: Pháp Điển Group\n\nPath: 39.13. Điều 39.13.PL.2.41. Phân định thẩm quyền xử phạt -> Pháp Điển - pd_038_012 -> 39.13. Điều 39.13.PL.2.1. Phạm vi điều chỉnh\nRelation chain: HAS_ARTICLE -> HAS_ARTICLE\nEvidence: Title: 39.13. Điều 39.13.PL.2.1. Phạm vi điều chỉnh\nDoc ID: pd_038_012_0001\nType: Điều (Pháp điển)\nAuthority: \nIssue date: \nSource: Pháp Điển\n\nPath: 39.13.",
+      "context_length": 7990
+    }
+  ]
+}

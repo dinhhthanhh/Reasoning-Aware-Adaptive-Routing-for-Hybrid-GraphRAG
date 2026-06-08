@@ -1,0 +1,1874 @@
+[
+  {
+    "id": "clarify_eval_001",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_002",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_003",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_004",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_005",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_006",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_007",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_008",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_009",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_010",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_011",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_012",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_013",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_014",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_015",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_016",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_017",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_018",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_019",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_020",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_021",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_022",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_023",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_024",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_025",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_026",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_027",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_028",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_029",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_030",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_031",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_032",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_033",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_034",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_035",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_036",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_037",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_038",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_039",
+    "query": "Quy định này áp dụng cho trường hợp nào trong lĩnh vực hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "incomplete_context",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_040",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_041",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_042",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_043",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_044",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_045",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_046",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_047",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_048",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_049",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_050",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_051",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_052",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_053",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_054",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_055",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_056",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_057",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_058",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_059",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_060",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_061",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_062",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_063",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_064",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_065",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_066",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về lao động?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_067",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về bảo hiểm xã hội?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_068",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đất đai?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_069",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giao thông đường bộ?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_070",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hàng không dân dụng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_071",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về khám bệnh, chữa bệnh?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_072",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về môi trường?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_073",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về đầu tư công?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_074",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về doanh nghiệp?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_075",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về thuế?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_076",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về xây dựng?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_077",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về giáo dục?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_078",
+    "query": "Tôi cần nộp hồ sơ đó ở đâu khi làm thủ tục về hóa chất?",
+    "expected_route": "clarify",
+    "ambiguity_type": "missing_entity",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_079",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_080",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_081",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_082",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_083",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_084",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_085",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_086",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_087",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_088",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_089",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_090",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_091",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_092",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_093",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_094",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_095",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_096",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_097",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_098",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_099",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_100",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_101",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_102",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_103",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_104",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_105",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_106",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_107",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_108",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_109",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_110",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_111",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_112",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_113",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_114",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_115",
+    "query": "Ông ấy có quyền yêu cầu bồi thường theo quy định không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_116",
+    "query": "Bà ấy có được miễn hoặc giảm nghĩa vụ đó không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_117",
+    "query": "Họ phải gửi văn bản này cho cơ quan nào?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_118",
+    "query": "Người đó có bị xử phạt trong trường hợp này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_119",
+    "query": "Bên đó có phải chịu trách nhiệm theo hợp đồng không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_120",
+    "query": "Cơ quan đó có thẩm quyền giải quyết việc này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "pronoun_reference",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_121",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_122",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_123",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_124",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_125",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_126",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_127",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_128",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_129",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_130",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_131",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_132",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_133",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_134",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_135",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_136",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_137",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_138",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_139",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_140",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_141",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_142",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_143",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_144",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_145",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_146",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_147",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_148",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_149",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_150",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_151",
+    "query": "Ngân hàng có phải báo cáo khi xử lý tài sản bảo đảm không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_152",
+    "query": "Cảng có trách nhiệm gì khi tiếp nhận hàng hóa nguy hiểm?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_153",
+    "query": "Quỹ có được cấp kinh phí cho nhiệm vụ này không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_154",
+    "query": "Ban đó có được phê chuẩn danh sách thành viên không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_155",
+    "query": "Cơ sở đó có được tiếp tục hoạt động sau thời điểm chuyển tiếp không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_156",
+    "query": "Đơn vị này có được ký thay khi cần thiết không?",
+    "expected_route": "clarify",
+    "ambiguity_type": "multi_interpretation",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_157",
+    "query": "Theo Luật Đường bộ 2024, thời điểm có hiệu lực của văn bản là khi nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_158",
+    "query": "Theo Bộ luật Lao động 2019, hồ sơ đổi thẻ Sỹ quan kiểm tra tàu biển gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_159",
+    "query": "Theo Luật Đất đai 2024, nội dung của một phép bay bao gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_160",
+    "query": "Theo Luật Khám bệnh, chữa bệnh 2023, cơ sở dữ liệu đường bộ bao gồm những nội dung nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_161",
+    "query": "Theo Nghị định 75/2026/NĐ-CP, tài khoản giao thông là gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_162",
+    "query": "Theo Thông tư 02/2026/TT-BYT, ai có trách nhiệm lập kế hoạch hoạt động bay dân dụng?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_163",
+    "query": "Theo Quyết định 447/QĐ-BCT, thời điểm có hiệu lực của văn bản là khi nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_164",
+    "query": "Theo Chỉ thị 09/CT-TTg, hồ sơ đổi thẻ Sỹ quan kiểm tra tàu biển gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_165",
+    "query": "Theo Luật Đường bộ 2024, nội dung của một phép bay bao gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_166",
+    "query": "Theo Bộ luật Lao động 2019, cơ sở dữ liệu đường bộ bao gồm những nội dung nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_167",
+    "query": "Theo Luật Đất đai 2024, tài khoản giao thông là gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_168",
+    "query": "Theo Luật Khám bệnh, chữa bệnh 2023, ai có trách nhiệm lập kế hoạch hoạt động bay dân dụng?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_169",
+    "query": "Theo Nghị định 75/2026/NĐ-CP, thời điểm có hiệu lực của văn bản là khi nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_170",
+    "query": "Theo Thông tư 02/2026/TT-BYT, hồ sơ đổi thẻ Sỹ quan kiểm tra tàu biển gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_171",
+    "query": "Theo Quyết định 447/QĐ-BCT, nội dung của một phép bay bao gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_172",
+    "query": "Theo Chỉ thị 09/CT-TTg, cơ sở dữ liệu đường bộ bao gồm những nội dung nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_173",
+    "query": "Theo Luật Đường bộ 2024, tài khoản giao thông là gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_174",
+    "query": "Theo Bộ luật Lao động 2019, ai có trách nhiệm lập kế hoạch hoạt động bay dân dụng?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_175",
+    "query": "Theo Luật Đất đai 2024, thời điểm có hiệu lực của văn bản là khi nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_176",
+    "query": "Theo Luật Khám bệnh, chữa bệnh 2023, hồ sơ đổi thẻ Sỹ quan kiểm tra tàu biển gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_177",
+    "query": "Theo Nghị định 75/2026/NĐ-CP, nội dung của một phép bay bao gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_178",
+    "query": "Theo Thông tư 02/2026/TT-BYT, cơ sở dữ liệu đường bộ bao gồm những nội dung nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_179",
+    "query": "Theo Quyết định 447/QĐ-BCT, tài khoản giao thông là gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_180",
+    "query": "Theo Chỉ thị 09/CT-TTg, ai có trách nhiệm lập kế hoạch hoạt động bay dân dụng?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_181",
+    "query": "Theo Luật Đường bộ 2024, thời điểm có hiệu lực của văn bản là khi nào?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_182",
+    "query": "Theo Bộ luật Lao động 2019, hồ sơ đổi thẻ Sỹ quan kiểm tra tàu biển gồm những gì?",
+    "expected_route": "dense_retrieval",
+    "ambiguity_type": "",
+    "expected_complexity": "low",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_183",
+    "query": "Theo Luật Đường bộ 2024 và Luật Khám bệnh, chữa bệnh 2023, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_184",
+    "query": "Mối quan hệ giữa Bộ luật Lao động 2019 và Nghị định 75/2026/NĐ-CP về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_185",
+    "query": "Căn cứ Luật Đất đai 2024 và Thông tư 02/2026/TT-BYT, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_186",
+    "query": "Đối chiếu Luật Khám bệnh, chữa bệnh 2023 với Quyết định 447/QĐ-BCT, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_187",
+    "query": "Theo Nghị định 75/2026/NĐ-CP và Chỉ thị 09/CT-TTg, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_188",
+    "query": "Mối quan hệ giữa Thông tư 02/2026/TT-BYT và Luật Đường bộ 2024 về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_189",
+    "query": "Căn cứ Quyết định 447/QĐ-BCT và Bộ luật Lao động 2019, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_190",
+    "query": "Đối chiếu Chỉ thị 09/CT-TTg với Luật Đất đai 2024, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_191",
+    "query": "Theo Luật Đường bộ 2024 và Luật Khám bệnh, chữa bệnh 2023, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_192",
+    "query": "Mối quan hệ giữa Bộ luật Lao động 2019 và Nghị định 75/2026/NĐ-CP về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_193",
+    "query": "Căn cứ Luật Đất đai 2024 và Thông tư 02/2026/TT-BYT, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_194",
+    "query": "Đối chiếu Luật Khám bệnh, chữa bệnh 2023 với Quyết định 447/QĐ-BCT, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_195",
+    "query": "Theo Nghị định 75/2026/NĐ-CP và Chỉ thị 09/CT-TTg, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_196",
+    "query": "Mối quan hệ giữa Thông tư 02/2026/TT-BYT và Luật Đường bộ 2024 về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_197",
+    "query": "Căn cứ Quyết định 447/QĐ-BCT và Bộ luật Lao động 2019, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_198",
+    "query": "Đối chiếu Chỉ thị 09/CT-TTg với Luật Đất đai 2024, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_199",
+    "query": "Theo Luật Đường bộ 2024 và Luật Khám bệnh, chữa bệnh 2023, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_200",
+    "query": "Mối quan hệ giữa Bộ luật Lao động 2019 và Nghị định 75/2026/NĐ-CP về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_201",
+    "query": "Căn cứ Luật Đất đai 2024 và Thông tư 02/2026/TT-BYT, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_202",
+    "query": "Đối chiếu Luật Khám bệnh, chữa bệnh 2023 với Quyết định 447/QĐ-BCT, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_203",
+    "query": "Theo Nghị định 75/2026/NĐ-CP và Chỉ thị 09/CT-TTg, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_204",
+    "query": "Mối quan hệ giữa Thông tư 02/2026/TT-BYT và Luật Đường bộ 2024 về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_205",
+    "query": "Căn cứ Quyết định 447/QĐ-BCT và Bộ luật Lao động 2019, quy định nào xác định trách nhiệm báo cáo của cơ quan nhà nước?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_206",
+    "query": "Đối chiếu Chỉ thị 09/CT-TTg với Luật Đất đai 2024, văn bản nào quy định việc bãi bỏ thủ tục hành chính?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_207",
+    "query": "Theo Luật Đường bộ 2024 và Luật Khám bệnh, chữa bệnh 2023, cơ quan nào có thẩm quyền xử lý hồ sơ chuyển tiếp?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_208",
+    "query": "Mối quan hệ giữa Bộ luật Lao động 2019 và Nghị định 75/2026/NĐ-CP về thẩm quyền giải quyết thủ tục là gì?",
+    "expected_route": "graph_traversal",
+    "ambiguity_type": "",
+    "expected_complexity": "medium",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_209",
+    "query": "Nếu Ủy ban nhân dân cấp tỉnh triển khai dự án trong lĩnh vực lao động, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_210",
+    "query": "Nếu Bộ Y tế vừa thực hiện thủ tục về bảo hiểm xã hội vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_211",
+    "query": "Trường hợp Bộ Công Thương sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực đất đai, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_212",
+    "query": "Nếu Cục Hàng không Việt Nam triển khai dự án trong lĩnh vực giao thông đường bộ, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_213",
+    "query": "Nếu Sở Khoa học và Công nghệ vừa thực hiện thủ tục về hàng không dân dụng vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_214",
+    "query": "Trường hợp Cục Quản lý hóa chất sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực khám bệnh, chữa bệnh, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_215",
+    "query": "Nếu Ủy ban nhân dân cấp tỉnh triển khai dự án trong lĩnh vực môi trường, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_216",
+    "query": "Nếu Bộ Y tế vừa thực hiện thủ tục về đầu tư công vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_217",
+    "query": "Trường hợp Bộ Công Thương sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực doanh nghiệp, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_218",
+    "query": "Nếu Cục Hàng không Việt Nam triển khai dự án trong lĩnh vực thuế, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_219",
+    "query": "Nếu Sở Khoa học và Công nghệ vừa thực hiện thủ tục về xây dựng vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_220",
+    "query": "Trường hợp Cục Quản lý hóa chất sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực giáo dục, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_221",
+    "query": "Nếu Ủy ban nhân dân cấp tỉnh triển khai dự án trong lĩnh vực hóa chất, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_222",
+    "query": "Nếu Bộ Y tế vừa thực hiện thủ tục về lao động vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_223",
+    "query": "Trường hợp Bộ Công Thương sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực bảo hiểm xã hội, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_224",
+    "query": "Nếu Cục Hàng không Việt Nam triển khai dự án trong lĩnh vực đất đai, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_225",
+    "query": "Nếu Sở Khoa học và Công nghệ vừa thực hiện thủ tục về giao thông đường bộ vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_226",
+    "query": "Trường hợp Cục Quản lý hóa chất sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực hàng không dân dụng, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_227",
+    "query": "Nếu Ủy ban nhân dân cấp tỉnh triển khai dự án trong lĩnh vực khám bệnh, chữa bệnh, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_228",
+    "query": "Nếu Bộ Y tế vừa thực hiện thủ tục về môi trường vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_229",
+    "query": "Trường hợp Bộ Công Thương sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực đầu tư công, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_230",
+    "query": "Nếu Cục Hàng không Việt Nam triển khai dự án trong lĩnh vực doanh nghiệp, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_231",
+    "query": "Nếu Sở Khoa học và Công nghệ vừa thực hiện thủ tục về thuế vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_232",
+    "query": "Trường hợp Cục Quản lý hóa chất sử dụng vốn vay ưu đãi cho nhiệm vụ thuộc lĩnh vực xây dựng, có được áp dụng đồng thời quy định về ngân sách và thủ tục chuyên ngành không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_233",
+    "query": "Nếu Ủy ban nhân dân cấp tỉnh triển khai dự án trong lĩnh vực giáo dục, đồng thời hồ sơ đã nộp trước ngày văn bản mới có hiệu lực, thì có được tiếp tục xử lý theo quy định cũ không?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  },
+  {
+    "id": "clarify_eval_234",
+    "query": "Nếu Bộ Y tế vừa thực hiện thủ tục về hóa chất vừa phải tuân thủ kế hoạch chuyển đổi số, thì cần căn cứ những nhóm quy định nào?",
+    "expected_route": "hybrid_reasoning",
+    "ambiguity_type": "",
+    "expected_complexity": "high",
+    "history": []
+  }
+]

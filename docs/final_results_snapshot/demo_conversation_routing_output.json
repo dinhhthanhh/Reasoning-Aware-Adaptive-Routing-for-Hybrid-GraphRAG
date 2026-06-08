@@ -12,7 +12,7 @@
     "backend": "vector",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 1712.9921999876387
+    "latency_ms": 1724.0566000109538
   },
   {
     "name": "Relation-heavy graph/hybrid",
@@ -27,7 +27,7 @@
     "backend": "graph",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 3740.6421000196133
+    "latency_ms": 3414.523100000224
   },
   {
     "name": "Pronoun with valid history",
@@ -42,7 +42,7 @@
     "backend": "graph",
     "history_resolution_status": "resolved",
     "resolved_referent": "Nghị định 100/2019/NĐ-CP",
-    "latency_ms": 4547.56050001015
+    "latency_ms": 4509.42839999334
   },
   {
     "name": "Pronoun without history",
@@ -57,7 +57,7 @@
     "backend": "none",
     "history_resolution_status": "no_history",
     "resolved_referent": null,
-    "latency_ms": 2820.4440000117756
+    "latency_ms": 2898.0259999952978
   },
   {
     "name": "Pronoun with irrelevant history",
@@ -72,7 +72,7 @@
     "backend": "none",
     "history_resolution_status": "irrelevant_history",
     "resolved_referent": null,
-    "latency_ms": 3338.2385000004433
+    "latency_ms": 3157.8795999957947
   },
   {
     "name": "Missing entity",
@@ -87,7 +87,7 @@
     "backend": "none",
     "history_resolution_status": "no_history",
     "resolved_referent": null,
-    "latency_ms": 3180.7818000088446
+    "latency_ms": 3147.844699997222
   },
   {
     "name": "Multi-interpretation",
@@ -102,6 +102,6 @@
     "backend": "none",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 2997.6208999869414
+    "latency_ms": 3008.525400000508
   }
 ]

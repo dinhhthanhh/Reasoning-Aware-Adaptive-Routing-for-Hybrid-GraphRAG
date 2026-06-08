@@ -110,6 +110,7 @@ configs/*.local.bak
 *.bbl
 *.blg
 *.out
+*.toc
 *.fls
 *.fdb_latexmk
 *.synctex.gz
@@ -143,11 +144,14 @@ docs/research_*.md
 # Exceptions for public docs
 !docs/architecture.md
 !docs/DATA_AVAILABILITY.md
+!docs/phase5_reproducibility_report.md
 
 # Evaluation outputs and generated experiment artifacts
 eval_results/
 artifacts/
 reports/
+results_repro/
+results_demo/
 
 # Deferred extended evaluation experiments
 evaluation/faithfulness_eval.py

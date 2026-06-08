@@ -1,0 +1,60 @@
+{
+  "dense_retrieval": {
+    "precision": 0.9536423841059603,
+    "recall": 0.96,
+    "f1-score": 0.9568106312292359,
+    "support": 300.0
+  },
+  "graph_traversal": {
+    "precision": 0.8958333333333334,
+    "recall": 0.86,
+    "f1-score": 0.8775510204081632,
+    "support": 150.0
+  },
+  "hybrid_reasoning": {
+    "precision": 0.954248366013072,
+    "recall": 0.9733333333333334,
+    "f1-score": 0.9636963696369637,
+    "support": 150.0
+  },
+  "clarify": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 0.0
+  },
+  "accuracy": 0.9383333333333334,
+  "macro avg": {
+    "precision": 0.7009310208630914,
+    "recall": 0.6983333333333333,
+    "f1-score": 0.6995145053185907,
+    "support": 600.0
+  },
+  "weighted avg": {
+    "precision": 0.9393416168895815,
+    "recall": 0.9383333333333334,
+    "f1-score": 0.9387171631258997,
+    "support": 600.0
+  },
+  "macro_f1_all_labels": 0.6995145053185907,
+  "macro_f1_gold_labels": 0.9326860070914543,
+  "weighted_f1": 0.9387171631258997,
+  "metadata": {
+    "config": "configs\\config.yaml",
+    "dataset": "qa_pipeline\\data\\legal_strict\\test.json",
+    "model_path": "data\\router_training\\legal_strict\\router_model.pkl",
+    "total_samples": 600,
+    "labels": [
+      "dense_retrieval",
+      "graph_traversal",
+      "hybrid_reasoning",
+      "clarify"
+    ],
+    "gold_labels": [
+      "dense_retrieval",
+      "graph_traversal",
+      "hybrid_reasoning"
+    ],
+    "avg_confidence": 0.9036357429838504
+  }
+}

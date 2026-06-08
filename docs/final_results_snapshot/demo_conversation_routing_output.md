@@ -54,7 +54,7 @@ Stage 1: route=dense_retrieval, confidence=0.916 (Stage 2 skipped by policy)
 <details>
 <summary>Router reasoning</summary>
 
-Stage 1: dense_retrieval(0.873) → Stage 2 rescue override: graph_traversal(0.950) | policy=rescue_dense_to_graph_strong_reasoning_signal | complexity=moderate | reason=Câu hỏi chứa số hiệu văn bản cụ thể 'Quyết định 732/QĐ-UBND'. Theo nguyên tắc bảo toàn tín hiệu pháp lý, các truy vấn yêu cầu tra cứu nội dung, hiệu lực, hoặc quan hệ bãi bỏ/sửa đổi của một văn bản cụ thể (doc-specific lookup) phải sử dụng graph_traversal để truy xuất metadata và quan hệ trong cơ sở dữ liệu pháp lý, thay vì dense_retrieval.
+Stage 1: dense_retrieval(0.873) → Stage 2 rescue override: graph_traversal(0.950) | policy=rescue_dense_to_graph_strong_reasoning_signal | complexity=moderate | reason=Câu hỏi chứa số hiệu văn bản cụ thể 'Quyết định 732/QĐ-UBND'. Theo nguyên tắc bảo toàn tín hiệu pháp lý, các câu hỏi tra cứu nội dung, hiệu lực, hoặc quan hệ bãi bỏ/sửa đổi của một văn bản cụ thể (doc-specific lookup) phải ưu tiên graph_traversal thay vì dense_retrieval để đảm bảo truy xuất chính xác dựa trên metadata và quan hệ pháp lý.
 
 </details>
 
@@ -82,7 +82,7 @@ Stage 1: dense_retrieval(0.873) → Stage 2 rescue override: graph_traversal(0.9
 <details>
 <summary>Router reasoning</summary>
 
-Stage 1: graph_traversal(0.920) → Stage 2 confirmed: graph_traversal(0.950) | complexity=moderate | reason=Câu hỏi yêu cầu tra cứu trạng thái hiệu lực của một văn bản pháp lý cụ thể (Nghị định 100/2019/NĐ-CP) đã được xác định rõ từ lịch sử hội thoại. Theo nguyên tắc bảo toàn tín hiệu pháp lý, các câu hỏi doc-specific (có số hiệu văn bản) về hiệu lực, bãi bỏ, sửa đổi phải ưu tiên graph_traversal để truy xuất quan hệ pháp lý trong cơ sở dữ liệu, thay vì clarify như Stage 1 đã đề xuất. | policy=resolved_history_unblocks_retrieval
+Stage 1: graph_traversal(0.920) → Stage 2 confirmed: graph_traversal(0.950) | complexity=moderate | reason=Câu hỏi yêu cầu tra cứu hiệu lực của một văn bản pháp lý cụ thể (Nghị định 100/2019/NĐ-CP) đã được xác định từ lịch sử hội thoại. Theo nguyên tắc bảo toàn tín hiệu pháp lý, các câu hỏi doc-specific (có số hiệu văn bản) về hiệu lực, bãi bỏ, sửa đổi phải ưu tiên graph_traversal để truy xuất quan hệ pháp lý trong cơ sở dữ liệu, thay vì clarify hay dense_retrieval. | policy=resolved_history_unblocks_retrieval
 
 </details>
 
@@ -105,7 +105,7 @@ Stage 1: graph_traversal(0.920) → Stage 2 confirmed: graph_traversal(0.950) | 
 - Final route: `clarify`
 - Resolved referent: `None`
 - Retrieved backend: `none`
-- Final answer / clarification: Bạn đang muốn hỏi về hiệu lực của văn bản pháp luật nào? Vui lòng cung cấp tên hoặc số hiệu của văn bản đó.
+- Final answer / clarification: Bạn đang muốn hỏi về hiệu lực của văn bản pháp lý nào? Vui lòng cung cấp tên hoặc số hiệu của văn bản (ví dụ: Luật X, Nghị định Y, Thông tư Z).
 
 <details>
 <summary>Router reasoning</summary>
@@ -133,12 +133,12 @@ Stage 1: clarify(0.900) → Stage 2 confirmed: clarify(1.000) | complexity=ambig
 - Final route: `clarify`
 - Resolved referent: `None`
 - Retrieved backend: `none`
-- Final answer / clarification: Bạn đang muốn kiểm tra hiệu lực của văn bản pháp luật cụ thể nào? Vui lòng cung cấp tên hoặc số hiệu của văn bản (ví dụ: Luật X, Nghị định Y, Thông tư Z).
+- Final answer / clarification: Bạn đang muốn kiểm tra hiệu lực của văn bản pháp luật cụ thể nào? Vui lòng cung cấp tên hoặc số hiệu của văn bản.
 
 <details>
 <summary>Router reasoning</summary>
 
-Stage 1: clarify(0.850) → Stage 2 confirmed: clarify(1.000) | complexity=ambiguous
+Stage 1: clarify(0.850) → Stage 2 confirmed: clarify(0.950) | complexity=ambiguous
 
 </details>
 
@@ -189,7 +189,7 @@ Stage 1: clarify(0.900) → Stage 2 confirmed: clarify(0.950) | complexity=ambig
 - Final route: `clarify`
 - Resolved referent: `None`
 - Retrieved backend: `none`
-- Final answer / clarification: Bạn vui lòng cung cấp thêm thông tin về hành vi cụ thể mà doanh nghiệp đã thực hiện hoặc lĩnh vực pháp lý liên quan để tôi có thể tra cứu quy định về mức phạt?
+- Final answer / clarification: Bạn vui lòng cung cấp thêm thông tin về hành vi cụ thể mà doanh nghiệp đã thực hiện hoặc lĩnh vực pháp lý liên quan để tôi có thể xác định xem có bị phạt hay không?
 
 <details>
 <summary>Router reasoning</summary>
