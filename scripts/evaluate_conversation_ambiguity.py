@@ -97,12 +97,23 @@ def _extract_output_fields(output: Any) -> dict[str, Any]:
         "missing_entity_type": getattr(features, "missing_entity_type", None),
         "history_length": getattr(features, "history_length", None),
         "history_resolves_ambiguity": getattr(features, "history_resolves_ambiguity", None),
+        "history_resolution_status": getattr(features, "history_resolution_status", None),
+        "history_resolution_confidence": getattr(features, "history_resolution_confidence", None),
+        "query_has_contextual_reference": getattr(features, "query_has_contextual_reference", None),
+        "candidate_referents": getattr(features, "candidate_referents", None),
+        "missing_entity": getattr(features, "missing_entity", None),
+        "multi_interpretation": getattr(features, "multi_interpretation", None),
+        "incomplete_context": getattr(features, "incomplete_context", None),
+        "pronoun_reference": getattr(features, "pronoun_reference", None),
+        "semantic_ambiguity_score": getattr(features, "semantic_ambiguity_score", None),
+        "contextual_reference_score": getattr(features, "contextual_reference_score", None),
         "complexity_level": getattr(features, "complexity_level", None),
         "multi_hop_score": getattr(features, "multi_hop_score", None),
         "graph_keyword_count": getattr(features, "graph_keyword_count", None),
         "legal_reference_count": getattr(features, "legal_reference_count", None),
-        "resolved_referent": getattr(output, "resolved_referent", "not_available"),
+        "resolved_referent": getattr(output, "resolved_referent", None) or getattr(features, "resolved_referent", "not_available"),
         "resolved_query": getattr(output, "resolved_query", "not_available"),
+        "suggested_resolved_query": getattr(output, "suggested_resolved_query", None),
     }
 
 
@@ -166,6 +177,7 @@ def _summarize(rows: list[dict[str, Any]], *, eval_file: Path, mode: str, limit:
     resolved_available = [
         row for row in answerable_with_history
         if row.get("resolved_referent") not in (None, "", "not_available")
+        and row.get("predicted_route") != "clarify"
     ]
     non_clarify_history = [
         row for row in answerable_with_history

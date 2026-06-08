@@ -49,6 +49,11 @@ class Stage2RouterOutput:
     raw_route: str = ""
     guardrail_applied: bool = False
     guardrail_reason: str | None = None
+    resolved_referent: str | None = None
+    candidate_referents: list[dict[str, Any]] | None = None
+    history_resolution_status: str | None = None
+    clarification_reason_type: str | None = None
+    suggested_resolved_query: str | None = None
 
 
 class LLMReasoningVerifier:
@@ -86,7 +91,12 @@ Bạn PHẢI trả về JSON hợp lệ theo schema sau, KHÔNG có thêm văn b
     "multi_interpretation": <true|false>,
     "incomplete_context": <true|false>
   },
-  "clarify_question": "<câu hỏi làm rõ nếu final_route=clarify, null nếu không>"
+  "clarify_question": "<câu hỏi làm rõ nếu final_route=clarify, null nếu không>",
+  "resolved_referent": "<tham chiếu đã được giải quyết nếu có, null nếu không>",
+  "candidate_referents": [{"text": "<ứng viên>", "type": "<loại>", "confidence": <0.0-1.0>}],
+  "history_resolution_status": "<resolved|no_history|irrelevant_history|conflicting_history|not_needed>",
+  "clarification_reason_type": "<missing_entity|multi_interpretation|incomplete_context|unresolved_history|conflicting_history|null>",
+  "suggested_resolved_query": "<câu hỏi đã thay thế tham chiếu bằng thực thể cụ thể nếu có, null nếu không>"
 }"""
 
     ROUTING_PROMPT_TEMPLATE_VI = """/no_think
@@ -98,6 +108,9 @@ CÂU HỎI:
 
 LỊCH SỬ HỘI THOẠI:
 {history}
+
+PHÂN GIẢI THAM CHIẾU TỪ LỊCH SỬ:
+{history_resolution_block}
 
 QUYẾT ĐỊNH STAGE 1:
 - Route: {stage1_route}
@@ -116,6 +129,10 @@ Bước 1 - Kiểm tra tính đầy đủ của câu hỏi:
 - Đây có phải câu hỏi nối tiếp như "vậy thì sao", "bước tiếp theo là gì", "có đúng không" nhưng không có ngữ cảnh không?
 - KHÔNG chọn clarify chỉ vì câu hỏi dài, có điều kiện giả định, cần suy luận nhiều bước, hoặc có số hiệu/năm văn bản trông mới/lạ. Hãy coi tính tồn tại của văn bản là vấn đề truy xuất trong corpus, trừ khi chính câu hỏi thiếu nguồn cần truy xuất.
 - Nếu câu hỏi đã nêu rõ số hiệu văn bản, điều khoản, chủ thể, hành vi hoặc bối cảnh áp dụng, không yêu cầu người dùng xác nhận lại chỉ vì câu hỏi phức tạp.
+- Nếu history_resolution_status = resolved, hãy coi đại từ/chỉ định như "văn bản đó", "quy định này", "điều này" là đã được giải quyết. Không chọn clarify chỉ vì còn đại từ; hãy chọn dense/graph/hybrid theo loại truy xuất cần thiết.
+- Nếu history_resolution_status = no_history, irrelevant_history, hoặc conflicting_history và câu hỏi có đại từ/chỉ định, ưu tiên clarify.
+- Nếu có nhiều candidate_referents phù hợp, hỏi người dùng muốn nói đến ứng viên nào.
+- Nếu câu hỏi rõ nhưng relation-heavy (bãi bỏ/sửa đổi/hiệu lực/thẩm quyền/căn cứ/áp dụng đồng thời), ưu tiên graph_traversal hoặc hybrid_reasoning thay vì dense_retrieval.
 Nếu thiếu retrieval target nghiêm trọng hoặc có tham chiếu không thể giải quyết, chọn final_route = "clarify".
 
 Bước 2 - Phân loại độ phức tạp:
@@ -174,7 +191,8 @@ Positive examples - chọn clarify:
 YÊU CẦU:
 - Trả về JSON ngay, không bọc markdown.
 - reasoning_steps chỉ ghi tóm tắt ngắn gọn, không viết chain-of-thought dài.
-- Nếu final_route = "clarify", phải có clarify_question cụ thể bằng tiếng Việt."""
+- Nếu final_route = "clarify", phải có clarify_question cụ thể bằng tiếng Việt.
+- Trả về JSON đúng schema, bao gồm history_resolution_status nếu đã được cung cấp."""
 
     SYSTEM_PROMPT_EN = """You are a legal question classification system.
 Return valid JSON only, with no extra text."""
@@ -284,6 +302,7 @@ Answer EXACTLY in the following JSON format (no text other than JSON):
         query: str,
         history: str | None,
         stage1_output: RouterOutput,
+        history_resolution: Any | None = None,
     ) -> Stage2RouterOutput:
         """Verify Stage 1 routing decision using LLM reasoning.
 
@@ -319,6 +338,7 @@ Answer EXACTLY in the following JSON format (no text other than JSON):
         prompt = template.format(
             query=query,
             history=history_text,
+            history_resolution_block=self._format_history_resolution(history_resolution),
             stage1_route=stage1_output.route,
             stage1_confidence=stage1_output.confidence,
             feature_importances=top_features,
@@ -430,6 +450,21 @@ Answer EXACTLY in the following JSON format (no text other than JSON):
         clarify_question = response.get("clarify_question")
         if clarify_question in ("", "null"):
             clarify_question = None
+        resolved_referent = response.get("resolved_referent")
+        if resolved_referent in ("", "null"):
+            resolved_referent = None
+        candidate_referents = response.get("candidate_referents")
+        if not isinstance(candidate_referents, list):
+            candidate_referents = []
+        history_resolution_status = response.get("history_resolution_status")
+        if history_resolution_status in ("", "null"):
+            history_resolution_status = None
+        clarification_reason_type = response.get("clarification_reason_type")
+        if clarification_reason_type in ("", "null"):
+            clarification_reason_type = None
+        suggested_resolved_query = response.get("suggested_resolved_query")
+        if suggested_resolved_query in ("", "null"):
+            suggested_resolved_query = None
 
         route, guardrail_applied, guardrail_reason = self._apply_safety_guardrails(
             route=route,
@@ -466,6 +501,13 @@ Answer EXACTLY in the following JSON format (no text other than JSON):
             raw_route=raw_route,
             guardrail_applied=guardrail_applied,
             guardrail_reason=guardrail_reason,
+            resolved_referent=str(resolved_referent) if resolved_referent else None,
+            candidate_referents=[
+                item for item in candidate_referents if isinstance(item, dict)
+            ],
+            history_resolution_status=str(history_resolution_status) if history_resolution_status else None,
+            clarification_reason_type=str(clarification_reason_type) if clarification_reason_type else None,
+            suggested_resolved_query=str(suggested_resolved_query) if suggested_resolved_query else None,
         )
 
     def _apply_safety_guardrails(
@@ -581,6 +623,18 @@ Answer EXACTLY in the following JSON format (no text other than JSON):
         if not isinstance(value, dict):
             return {key: False for key in keys}
         return {key: bool(value.get(key, False)) for key in keys}
+
+    @staticmethod
+    def _format_history_resolution(history_resolution: Any | None) -> str:
+        if history_resolution is None:
+            return "not_available"
+        if hasattr(history_resolution, "to_dict"):
+            payload = history_resolution.to_dict()
+        elif isinstance(history_resolution, dict):
+            payload = history_resolution
+        else:
+            payload = {"value": str(history_resolution)}
+        return json.dumps(payload, ensure_ascii=False, indent=2)
 
     @staticmethod
     def _repair_json(json_str: str) -> str:

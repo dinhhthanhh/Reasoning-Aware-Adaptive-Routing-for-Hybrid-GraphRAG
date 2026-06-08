@@ -1,0 +1,54 @@
+{
+  "eval_file": "qa_pipeline\\data\\legal_strict\\test.json",
+  "total_samples": 600,
+  "route_accuracy": 0.8933333333333333,
+  "clarify_false_positive_count": 10,
+  "stage2_trigger_rate": 0.5583333333333333,
+  "stage2_override_rate": 0.3402985074626866,
+  "avg_latency_ms": 1972.3544133337175,
+  "route_distribution": {
+    "dense_retrieval": 275,
+    "graph_traversal": 164,
+    "hybrid_reasoning": 151,
+    "clarify": 10
+  },
+  "gold_distribution": {
+    "dense_retrieval": 300,
+    "graph_traversal": 150,
+    "hybrid_reasoning": 150
+  },
+  "by_gold_route": {
+    "dense_retrieval": {
+      "total": 300,
+      "route_accuracy": 0.8833333333333333,
+      "prediction_distribution": {
+        "dense_retrieval": 265,
+        "graph_traversal": 32,
+        "clarify": 2,
+        "hybrid_reasoning": 1
+      },
+      "clarify_false_positives": 2
+    },
+    "graph_traversal": {
+      "total": 150,
+      "route_accuracy": 0.8533333333333334,
+      "prediction_distribution": {
+        "graph_traversal": 128,
+        "clarify": 5,
+        "hybrid_reasoning": 7,
+        "dense_retrieval": 10
+      },
+      "clarify_false_positives": 5
+    },
+    "hybrid_reasoning": {
+      "total": 150,
+      "route_accuracy": 0.9533333333333334,
+      "prediction_distribution": {
+        "hybrid_reasoning": 143,
+        "clarify": 3,
+        "graph_traversal": 4
+      },
+      "clarify_false_positives": 3
+    }
+  }
+}

@@ -106,6 +106,9 @@ def _render_case(case: dict[str, str], output: Any) -> str:
         f"- Has pronoun: `{getattr(features, 'has_pronoun', None)}`",
         f"- History length: `{getattr(features, 'history_length', None)}`",
         f"- History resolves ambiguity feature: `{getattr(features, 'history_resolves_ambiguity', None)}`",
+        f"- History resolution status: `{getattr(features, 'history_resolution_status', None)}`",
+        f"- History resolution confidence: `{getattr(features, 'history_resolution_confidence', None)}`",
+        f"- Query has contextual reference: `{getattr(features, 'query_has_contextual_reference', None)}`",
         f"- Stage 2 triggered: `{_field(output, 'stage2_invoked')}`",
         f"- Stage 2 override: `{_field(output, 'stage2_override')}`",
         f"- Final route: `{final_route}`",
@@ -128,6 +131,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run a small conversation routing demo")
     parser.add_argument("--config", default="configs/config.yaml")
     parser.add_argument("--output", default="results/demo_conversation_routing_output.md")
+    parser.add_argument("--output-dir", default=None, help="Directory for demo_conversation_routing_output.md")
     parser.add_argument("--no-generation", action="store_true", help="Routing-only mode; this is the default behavior")
     args = parser.parse_args()
 
@@ -160,11 +164,17 @@ def main() -> None:
             "stage2_override": _field(output, "stage2_override"),
             "final_route": _field(output, "route"),
             "backend": _backend_for_route(_field(output, "route")),
+            "history_resolution_status": getattr(_field(output, "features"), "history_resolution_status", None),
+            "resolved_referent": _field(output, "resolved_referent", None),
             "latency_ms": _field(output, "latency_ms"),
         })
 
     text = "\n".join(sections)
-    output_path = Path(args.output)
+    output_path = (
+        Path(args.output_dir) / "demo_conversation_routing_output.md"
+        if args.output_dir
+        else Path(args.output)
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text, encoding="utf-8")
     json_path = output_path.with_suffix(".json")

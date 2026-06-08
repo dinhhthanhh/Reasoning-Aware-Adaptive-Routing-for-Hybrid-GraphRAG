@@ -18,6 +18,7 @@ from loguru import logger
 
 from router.ambiguity_detector import AmbiguityDetector
 from router.features import FeatureExtractor, QueryFeatures
+from router.history_resolver import HistoryResolutionResult, resolve_history_referents
 from router.llm_reasoning_verifier import LLMReasoningVerifier
 from router.router_model import RouterModel, RouterOutput as Stage1Output
 
@@ -71,6 +72,12 @@ class RouterOutput:
     stage2_parse_error: str | None = None
     latency_ms: float = 0.0
     features: QueryFeatures = field(default_factory=QueryFeatures)
+    history_resolution_status: str = "not_needed"
+    history_resolution_confidence: float = 0.0
+    resolved_referent: str | None = None
+    candidate_referents: list[dict[str, object]] = field(default_factory=list)
+    query_has_contextual_reference: bool = False
+    suggested_resolved_query: str | None = None
 
 
 class TwoStageRouter:
@@ -167,8 +174,13 @@ class TwoStageRouter:
         """
         start = time.perf_counter()
 
-        # Step 1: Detect ambiguity
-        ambiguity_report = self.ambiguity_detector.detect(query, history)
+        # Step 1: Resolve conversation history and detect ambiguity.
+        history_resolution = resolve_history_referents(query, history)
+        ambiguity_report = self.ambiguity_detector.detect(
+            query,
+            history,
+            history_resolution=history_resolution,
+        )
 
         # Step 2: Extract features (with ambiguity info)
         features = self.feature_extractor.extract(
@@ -177,6 +189,17 @@ class TwoStageRouter:
             ambiguity_score=ambiguity_report.score,
             has_pronoun="pronoun" in ambiguity_report.ambiguity_types,
             missing_entity_type=ambiguity_report.missing_entity_type,
+            history_resolution_status=history_resolution.resolution_status,
+            history_resolution_confidence=history_resolution.history_resolution_confidence,
+            resolved_referent=history_resolution.resolved_referent,
+            candidate_referents=[candidate.to_dict() for candidate in history_resolution.candidate_referents],
+            query_has_contextual_reference=history_resolution.query_has_contextual_reference,
+            missing_entity=ambiguity_report.missing_entity,
+            multi_interpretation=ambiguity_report.multi_interpretation,
+            incomplete_context=ambiguity_report.incomplete_context,
+            pronoun_reference=ambiguity_report.pronoun_reference,
+            semantic_ambiguity_score=ambiguity_report.semantic_ambiguity_score,
+            contextual_reference_score=ambiguity_report.contextual_reference_score,
         )
 
         # Step 3: Stage 1 prediction
@@ -190,6 +213,11 @@ class TwoStageRouter:
         base_confidence = stage1_confidence
         final_route = base_route
         final_confidence = base_confidence
+        history_adjustment_reason: str | None = None
+        if stage1_route == "clarify" and history_resolution.resolution_status == "resolved":
+            final_route = self._route_for_resolved_context(features)
+            final_confidence = max(stage1_confidence, history_resolution.history_resolution_confidence)
+            history_adjustment_reason = "resolved_history_unblocks_retrieval"
 
         ambiguity_candidate_route: str | None = None
         ambiguity_candidate_confidence = 0.0
@@ -224,6 +252,7 @@ class TwoStageRouter:
         stage2_override_policy_reason: str | None = None
         clarify_question: str | None = None
         stage2_parse_error: str | None = None
+        suggested_resolved_query: str | None = None
 
         is_uncertain, stage2_reasons = self._should_invoke_stage2(
             final_route=final_route,
@@ -246,7 +275,12 @@ class TwoStageRouter:
                 "; ".join(stage2_reasons) or "unspecified",
             )
 
-            stage2_output = self.llm_verifier.verify(query, history, stage1_output)
+            stage2_output = self.llm_verifier.verify(
+                query,
+                history,
+                stage1_output,
+                history_resolution=history_resolution,
+            )
             stage2_complexity_level = getattr(stage2_output, "complexity_level", "")
             stage2_reasoning_steps = getattr(stage2_output, "reasoning_steps", None) or []
             stage2_sub_questions = getattr(stage2_output, "sub_questions", None) or []
@@ -257,6 +291,7 @@ class TwoStageRouter:
             stage2_guardrail_reason = getattr(stage2_output, "guardrail_reason", None)
             clarify_question = getattr(stage2_output, "clarify_question", None)
             stage2_parse_error = getattr(stage2_output, "parse_error", None)
+            suggested_resolved_query = getattr(stage2_output, "suggested_resolved_query", None)
 
             if stage2_parse_error:
                 if not ambiguity_override_allowed:
@@ -304,12 +339,40 @@ class TwoStageRouter:
                     f"Stage 1: {final_route}({final_confidence:.3f}) → "
                     f"Stage 2 confirmed: {stage2_output.route}({stage2_output.confidence:.3f})"
                 )
+                if (
+                    final_route == "clarify"
+                    and history_resolution.resolution_status == "resolved"
+                    and not self._stage2_has_independent_clarify_need(stage2_ambiguity_flags)
+                ):
+                    final_route = self._route_for_resolved_context(features)
+                    final_confidence = max(final_confidence, history_resolution.history_resolution_confidence)
+                    stage2_override_policy_reason = "resolved_history_blocks_unnecessary_clarify"
+                    reasoning = (
+                        f"Stage 1/2 suggested clarify, but history resolved referent "
+                        f"'{history_resolution.resolved_referent}'; route={final_route}"
+                    )
+                elif (
+                    final_route == "clarify"
+                    and stage1_route != "clarify"
+                    and history_resolution.resolution_status == "no_history"
+                    and history_resolution.query_has_contextual_reference
+                    and self._has_answerable_context_signal(features)
+                ):
+                    final_route = stage1_route
+                    final_confidence = max(final_confidence, stage1_confidence)
+                    stage2_override_policy_reason = "self_contained_query_blocks_unnecessary_clarify"
+                    reasoning = (
+                        f"Stage 2 confirmed clarify, but query has enough legal anchors "
+                        f"for retrieval; restored Stage 1 route={final_route}"
+                    )
             if stage2_complexity_level:
                 reasoning += f" | complexity={stage2_complexity_level}"
             if stage2_override_reason:
                 reasoning += f" | reason={stage2_override_reason}"
         else:
             reasoning += " (Stage 2 skipped by policy)"
+        if history_adjustment_reason and "resolved_history" not in reasoning:
+            reasoning += f" | policy={history_adjustment_reason}"
 
         latency_ms = (time.perf_counter() - start) * 1000
 
@@ -342,6 +405,12 @@ class TwoStageRouter:
             stage2_parse_error=stage2_parse_error,
             latency_ms=latency_ms,
             features=features,
+            history_resolution_status=history_resolution.resolution_status,
+            history_resolution_confidence=history_resolution.history_resolution_confidence,
+            resolved_referent=history_resolution.resolved_referent,
+            candidate_referents=[candidate.to_dict() for candidate in history_resolution.candidate_referents],
+            query_has_contextual_reference=history_resolution.query_has_contextual_reference,
+            suggested_resolved_query=suggested_resolved_query,
         )
 
         # Step 6: Log routing decision
@@ -379,6 +448,25 @@ class TwoStageRouter:
 
         has_pronoun = bool(getattr(features, "has_pronoun", False))
         history_resolves = bool(getattr(features, "history_resolves_ambiguity", False))
+        history_status = str(getattr(features, "history_resolution_status", "not_needed"))
+        unresolved_history = history_status in {"no_history", "irrelevant_history", "conflicting_history", "unresolved"}
+        semantic_ambiguity = bool(
+            getattr(features, "missing_entity", False)
+            or getattr(features, "multi_interpretation", False)
+            or getattr(features, "incomplete_context", False)
+        )
+
+        if history_status == "resolved":
+            return False, "resolved_history_blocks_auto_clarify"
+
+        if self._has_relation_heavy_signal(features) and not getattr(features, "query_has_contextual_reference", False):
+            return False, "blocked_auto_clarify_for_clear_relation_heavy_query"
+
+        if unresolved_history and getattr(features, "query_has_contextual_reference", False):
+            return True, f"override_to_clarify_{history_status}"
+
+        if semantic_ambiguity and ambiguity_score >= self.ambiguity_force_stage2_threshold:
+            return True, "override_to_clarify_semantic_ambiguity"
 
         if stage1_route in {"graph_traversal", "hybrid_reasoning"}:
             if ambiguity_score >= 0.95 and has_pronoun and not history_resolves:
@@ -419,6 +507,21 @@ class TwoStageRouter:
             stage2_ambiguity_flags.get("missing_entity")
             or stage2_ambiguity_flags.get("pronoun_reference")
             or stage2_ambiguity_flags.get("multi_interpretation")
+            or stage2_ambiguity_flags.get("incomplete_context")
+            or getattr(features, "missing_entity", False)
+            or getattr(features, "multi_interpretation", False)
+            or getattr(features, "incomplete_context", False)
+        )
+        history_status = str(getattr(features, "history_resolution_status", "not_needed"))
+        resolved_history = history_status == "resolved" and bool(getattr(features, "resolved_referent", None))
+        unresolved_history = history_status in {"no_history", "irrelevant_history", "conflicting_history", "unresolved"}
+        query_contextual = bool(getattr(features, "query_has_contextual_reference", False))
+        no_concrete_target = (
+            stage1_route == "dense_retrieval"
+            and features.legal_reference_count == 0
+            and features.law_specificity == 0
+            and features.entity_count == 0
+            and (getattr(features, "missing_entity", False) or getattr(features, "multi_interpretation", False))
         )
         strong_graph_signal = (
             features.authority_chain_count >= 1
@@ -426,13 +529,72 @@ class TwoStageRouter:
             or features.procedural_count >= 1
             or features.multi_entity_relation_count >= 1
             or features.graph_keyword_count >= 2
+            or features.multi_hop_score >= self.reasoning_force_stage2_threshold
             or len(stage2_sub_questions) >= 2
         )
+        relation_heavy = self._has_relation_heavy_signal(features)
+        answerable_context_signal = self._has_answerable_context_signal(features)
+
+        if (
+            stage1_route == "clarify"
+            and resolved_history
+            and stage2_route != "clarify"
+            and stage2_confidence >= 0.80
+        ):
+            return True, "override_clarify_to_retrieval_resolved_history"
+
+        if (
+            stage2_route != "clarify"
+            and stage2_route == stage1_route
+            and stage2_confidence >= 0.82
+            and (
+                not query_contextual
+                or resolved_history
+                or answerable_context_signal
+            )
+        ):
+            return True, "restore_stage1_retrieval_after_stage2_confirmation"
+
+        if (
+            stage1_route in {"graph_traversal", "hybrid_reasoning"}
+            and stage2_route == stage1_route
+            and stage2_confidence >= 0.80
+            and not query_contextual
+        ):
+            return True, "restore_reasoning_route_after_ambiguity_candidate"
+
+        if (
+            stage1_route == "clarify"
+            and stage2_route in {"graph_traversal", "hybrid_reasoning", "dense_retrieval"}
+            and stage2_confidence >= 0.82
+            and (not query_contextual or answerable_context_signal)
+            and (relation_heavy or answerable_context_signal)
+        ):
+            return True, "override_clarify_to_relation_heavy_retrieval"
+
+        if stage2_route == "clarify":
+            if resolved_history and not self._stage2_has_independent_clarify_need(stage2_ambiguity_flags):
+                return False, "resolved_history_blocks_unnecessary_clarify"
+            if stage2_confidence < self.ambiguity_clarify_threshold:
+                return False, "stage2_clarify_below_threshold"
+            if history_status == "conflicting_history":
+                return True, "override_to_clarify_conflicting_history"
+            if unresolved_history and query_contextual:
+                return True, "override_to_clarify_unresolved_history"
+            if ambiguity_score >= self.ambiguity_force_stage2_threshold and severe_ambiguity:
+                if stage2_ambiguity_flags.get("missing_entity") or getattr(features, "missing_entity", False):
+                    return True, "override_to_clarify_missing_entity"
+                if stage2_ambiguity_flags.get("multi_interpretation") or getattr(features, "multi_interpretation", False):
+                    return True, "override_to_clarify_multi_interpretation"
+                return True, "override_to_clarify_severe_ambiguity"
+            if query_contextual and not resolved_history:
+                return True, "override_to_clarify_unresolved_context_reference"
+            if no_concrete_target:
+                return True, "override_to_clarify_dense_underspecified_target"
 
         if (
             stage1_route == "dense_retrieval"
             and stage2_route == "graph_traversal"
-            and stage1_confidence <= 0.65
             and stage2_confidence >= 0.85
             and strong_graph_signal
         ):
@@ -453,13 +615,14 @@ class TwoStageRouter:
         if (
             stage1_route == "dense_retrieval"
             and stage2_route == "hybrid_reasoning"
-            and stage1_confidence <= 0.65
-            and stage2_confidence >= 0.88
+            and stage2_confidence >= 0.82
             and (
                 features.cross_doc_signals
                 or features.legal_reference_count >= 2
                 or features.complexity_level >= 3
                 or features.sub_question_count >= 2
+                or features.multi_hop_score >= 0.30
+                or features.graph_keyword_count >= 2
             )
         ):
             return True, "rescue_dense_to_hybrid_strong_structural_signal"
@@ -522,6 +685,7 @@ class TwoStageRouter:
             or features.authority_chain_count >= 1
             or features.legal_effect_count >= 1
         )
+        relation_heavy_signal = self._has_relation_heavy_signal(features)
         dense_fast_path_candidate = (
             final_route == "dense_retrieval"
             and final_confidence >= self.high_confidence_dense_skip_threshold
@@ -560,7 +724,7 @@ class TwoStageRouter:
             self.reasoning_force_stage2_enabled
             and final_route == "dense_retrieval"
             and strong_legal_signal
-            and final_confidence <= self.reasoning_force_confidence_ceiling
+            and (final_confidence <= self.reasoning_force_confidence_ceiling or relation_heavy_signal)
         ):
             should_invoke = True
             reasons.append(
@@ -605,6 +769,14 @@ class TwoStageRouter:
                 ambiguity_score,
             )
 
+        history_status = str(getattr(features, "history_resolution_status", "not_needed"))
+        if (
+            getattr(features, "query_has_contextual_reference", False)
+            and history_status in {"no_history", "irrelevant_history", "conflicting_history"}
+        ):
+            should_invoke = True
+            reasons.append(f"contextual reference with {history_status}")
+
         if reasoning_signal and not self.reasoning_force_stage2_enabled:
             reasons.append("reasoning signal observed but kept advisory")
 
@@ -631,6 +803,63 @@ class TwoStageRouter:
             or features.multi_entity_relation_count >= 1
         )
         return strong_structural_signal or legal_relation_signal
+
+    def _has_relation_heavy_signal(self, features: QueryFeatures) -> bool:
+        """Detect clear legal-effect/relation questions that should not stay dense."""
+        return bool(
+            features.legal_effect_count >= 1
+            or features.authority_chain_count >= 1
+            or features.graph_keyword_count >= 2
+            or features.cross_doc_signals
+            or features.multi_entity_relation_count >= 1
+            or features.multi_hop_score >= self.reasoning_force_stage2_threshold
+        )
+
+    @staticmethod
+    def _has_answerable_context_signal(features: QueryFeatures) -> bool:
+        """Detect whether a contextual-looking query is self-contained enough to retrieve."""
+        concrete_anchor = bool(
+            features.legal_reference_count >= 2
+            or features.law_specificity >= 1
+            or features.entity_count >= 1
+            or features.authority_chain_count >= 1
+            or features.cross_doc_signals
+        )
+        structural_anchor = bool(
+            features.multi_entity_relation_count >= 1
+            or features.graph_keyword_count >= 2
+            or features.complexity_level >= 3
+            or features.sub_question_count >= 2
+            or features.procedural_count >= 2
+        )
+        if getattr(features, "query_has_contextual_reference", False):
+            return concrete_anchor
+        return concrete_anchor or structural_anchor
+
+    def _route_for_resolved_context(self, features: QueryFeatures) -> str:
+        """Choose a non-clarify route when history uniquely resolves a follow-up."""
+        if self._has_relation_heavy_signal(features):
+            if (
+                features.cross_doc_signals
+                or features.legal_reference_count >= 2
+                or features.complexity_level >= 3
+                or features.sub_question_count >= 2
+            ):
+                return "hybrid_reasoning"
+            return "graph_traversal"
+        if features.query_has_contextual_reference and features.resolved_referent:
+            referent_l = features.resolved_referent.lower()
+            if any(token in referent_l for token in ("nghị định", "quyết định", "thông tư", "luật", "/")):
+                return "graph_traversal"
+        return "dense_retrieval"
+
+    @staticmethod
+    def _stage2_has_independent_clarify_need(stage2_ambiguity_flags: dict[str, bool]) -> bool:
+        return bool(
+            stage2_ambiguity_flags.get("missing_entity")
+            or stage2_ambiguity_flags.get("multi_interpretation")
+            or stage2_ambiguity_flags.get("incomplete_context")
+        )
 
     def _log_routing(
         self,
@@ -660,6 +889,17 @@ class TwoStageRouter:
                 "has_comparison": output.features.has_comparison,
                 "has_pronoun": output.features.has_pronoun,
                 "query_length": output.features.query_length,
+                "history_resolution_status": output.features.history_resolution_status,
+                "history_resolution_confidence": output.features.history_resolution_confidence,
+                "resolved_referent": output.features.resolved_referent,
+                "candidate_referents": output.features.candidate_referents,
+                "query_has_contextual_reference": output.features.query_has_contextual_reference,
+                "missing_entity": output.features.missing_entity,
+                "multi_interpretation": output.features.multi_interpretation,
+                "incomplete_context": output.features.incomplete_context,
+                "pronoun_reference": output.features.pronoun_reference,
+                "semantic_ambiguity_score": output.features.semantic_ambiguity_score,
+                "contextual_reference_score": output.features.contextual_reference_score,
                 "law_specificity": output.features.law_specificity,
                 "complexity_level": output.features.complexity_level,
                 "sub_question_count": output.features.sub_question_count,
@@ -706,6 +946,14 @@ class TwoStageRouter:
                 "guardrail_reason": output.stage2_guardrail_reason,
                 "override_allowed": output.stage2_override_allowed,
                 "override_policy_reason": output.stage2_override_policy_reason,
+                "suggested_resolved_query": output.suggested_resolved_query,
+            },
+            "history_resolution": {
+                "status": output.history_resolution_status,
+                "confidence": output.history_resolution_confidence,
+                "resolved_referent": output.resolved_referent,
+                "candidate_referents": output.candidate_referents,
+                "query_has_contextual_reference": output.query_has_contextual_reference,
             },
             "final_route": output.route,
             "is_ambiguous": output.is_ambiguous,

@@ -68,3 +68,29 @@ def test_conflicting_history_should_remain_ambiguous() -> None:
     )
 
     assert report.is_ambiguous
+    assert report.history_resolution_status == "conflicting_history"
+
+
+def test_no_history_procedure_followup_is_missing_context() -> None:
+    detector = _detector()
+    report = detector.detect("Thủ tục này thực hiện như thế nào?", history=None)
+
+    assert report.is_ambiguous
+    assert report.history_resolution_status == "no_history"
+    assert report.incomplete_context
+
+
+def test_broad_business_penalty_query_is_multi_interpretation() -> None:
+    detector = _detector()
+    report = detector.detect("Doanh nghiệp có bị phạt không?", history=None)
+
+    assert report.is_ambiguous
+    assert report.multi_interpretation
+
+
+def test_clear_dense_query_remains_low_ambiguity() -> None:
+    detector = _detector()
+    report = detector.detect("Điều kiện kết hôn theo Luật Hôn nhân và gia đình gồm những gì?", history=None)
+
+    assert not report.is_ambiguous
+    assert report.score < 0.6

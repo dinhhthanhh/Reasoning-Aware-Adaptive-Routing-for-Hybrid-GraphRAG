@@ -15,6 +15,8 @@ from typing import Any
 import yaml
 from loguru import logger
 
+from router.history_resolver import HistoryResolutionResult, resolve_history_referents
+
 
 @dataclass
 class AmbiguityReport:
@@ -34,6 +36,17 @@ class AmbiguityReport:
     missing_entity_type: str | None = None
     detected_topics: list[str] = field(default_factory=list)
     clarification_question: str | None = None
+    missing_entity: bool = False
+    multi_interpretation: bool = False
+    incomplete_context: bool = False
+    pronoun_reference: bool = False
+    semantic_ambiguity_score: float = 0.0
+    contextual_reference_score: float = 0.0
+    query_has_contextual_reference: bool = False
+    history_resolution_status: str = "not_needed"
+    history_resolution_confidence: float = 0.0
+    resolved_referent: str | None = None
+    candidate_referents: list[dict[str, object]] = field(default_factory=list)
 
 
 class AmbiguityDetector:
@@ -103,6 +116,10 @@ class AmbiguityDetector:
                          "Vui lòng cung cấp thêm chi tiết.",
         "entity_conflict": "Câu hỏi đề cập đến nhiều đối tượng cùng loại. "
                           "Bạn muốn hỏi về đối tượng nào cụ thể?",
+        "multi_interpretation": "Câu hỏi có thể được hiểu theo nhiều cách pháp lý. "
+                                "Bạn vui lòng nêu lĩnh vực, hành vi hoặc văn bản cụ thể.",
+        "incomplete_context": "Câu hỏi đang phụ thuộc vào ngữ cảnh trước đó. "
+                              "Bạn vui lòng nêu rõ văn bản, thủ tục hoặc trường hợp cần hỏi.",
         "general": "Câu hỏi của bạn chưa đủ rõ ràng. "
                   "Vui lòng cung cấp thêm chi tiết để tôi có thể trả lời chính xác hơn.",
     }
@@ -128,7 +145,12 @@ class AmbiguityDetector:
             self.score_threshold,
         )
 
-    def detect(self, query: str, history: str | None = None) -> AmbiguityReport:
+    def detect(
+        self,
+        query: str,
+        history: str | None = None,
+        history_resolution: HistoryResolutionResult | None = None,
+    ) -> AmbiguityReport:
         """Detect ambiguity in a Vietnamese legal query.
 
         Checks for:
@@ -151,6 +173,11 @@ class AmbiguityDetector:
         pronoun_found: str = ""
         detected_topics: list[str] = []
         has_legal_intent: bool = False
+        semantic_ambiguity_score = 0.0
+
+        history_resolution = history_resolution or resolve_history_referents(query, history)
+        history_status = history_resolution.resolution_status
+        query_has_contextual_reference = history_resolution.query_has_contextual_reference
 
         # Extract potential topics for context (including unaccented for robustness)
         topic_keywords = {
@@ -167,10 +194,15 @@ class AmbiguityDetector:
                 has_legal_intent = True
 
         # Check 1: Pronoun resolution
-        pronoun_score, found_pronoun = self._check_pronouns(query, history)
+        pronoun_score, found_pronoun = self._check_pronouns(
+            query,
+            history,
+            history_resolution=history_resolution,
+        )
         if pronoun_score > 0:
             scores.append(pronoun_score)
             ambiguity_types.append("pronoun")
+            ambiguity_types.append("pronoun_reference")
             primary_ambiguity = "pronoun"
             pronoun_found = found_pronoun
 
@@ -189,8 +221,24 @@ class AmbiguityDetector:
             scores.append(missing_score)
             ambiguity_types.append("missing_entity")
             missing_entity_type = missing_type
+            semantic_ambiguity_score = max(semantic_ambiguity_score, missing_score)
             if not primary_ambiguity or primary_ambiguity == "general":
                 primary_ambiguity = "missing_entity"
+
+        multi_score = self._check_multi_interpretation(query)
+        if multi_score > 0:
+            scores.append(multi_score)
+            ambiguity_types.append("multi_interpretation")
+            semantic_ambiguity_score = max(semantic_ambiguity_score, multi_score)
+            if not primary_ambiguity or primary_ambiguity == "general":
+                primary_ambiguity = "multi_interpretation"
+
+        incomplete_score = self._check_incomplete_context(query, history_resolution)
+        if incomplete_score > 0:
+            scores.append(incomplete_score)
+            ambiguity_types.append("incomplete_context")
+            if not primary_ambiguity or primary_ambiguity == "general":
+                primary_ambiguity = "incomplete_context"
 
         # Check 4: Entity conflict
         conflict_score = self._check_entity_conflict(query)
@@ -200,6 +248,7 @@ class AmbiguityDetector:
 
         # Calculate overall score
         overall_score = max(scores) if scores else 0.0
+        ambiguity_types = list(dict.fromkeys(ambiguity_types))
         is_ambiguous = overall_score >= self.score_threshold
 
         # Generate clarification question
@@ -212,6 +261,17 @@ class AmbiguityDetector:
                     ambiguity_types=ambiguity_types,
                     missing_entity_type=missing_entity_type,
                     detected_topics=detected_topics,
+                    missing_entity="missing_entity" in ambiguity_types,
+                    multi_interpretation="multi_interpretation" in ambiguity_types,
+                    incomplete_context="incomplete_context" in ambiguity_types,
+                    pronoun_reference="pronoun_reference" in ambiguity_types,
+                    semantic_ambiguity_score=semantic_ambiguity_score,
+                    contextual_reference_score=pronoun_score or incomplete_score,
+                    query_has_contextual_reference=query_has_contextual_reference,
+                    history_resolution_status=history_status,
+                    history_resolution_confidence=history_resolution.history_resolution_confidence,
+                    resolved_referent=history_resolution.resolved_referent,
+                    candidate_referents=[candidate.to_dict() for candidate in history_resolution.candidate_referents],
                 ),
                 query,
                 pronoun=pronoun_found,
@@ -224,6 +284,17 @@ class AmbiguityDetector:
             missing_entity_type=missing_entity_type,
             detected_topics=detected_topics,
             clarification_question=clarification,
+            missing_entity="missing_entity" in ambiguity_types,
+            multi_interpretation="multi_interpretation" in ambiguity_types,
+            incomplete_context="incomplete_context" in ambiguity_types,
+            pronoun_reference="pronoun_reference" in ambiguity_types,
+            semantic_ambiguity_score=semantic_ambiguity_score,
+            contextual_reference_score=pronoun_score or incomplete_score,
+            query_has_contextual_reference=query_has_contextual_reference,
+            history_resolution_status=history_status,
+            history_resolution_confidence=history_resolution.history_resolution_confidence,
+            resolved_referent=history_resolution.resolved_referent,
+            candidate_referents=[candidate.to_dict() for candidate in history_resolution.candidate_referents],
         )
 
         logger.debug(
@@ -235,7 +306,12 @@ class AmbiguityDetector:
 
         return report
 
-    def _check_pronouns(self, query: str, history: str | None) -> tuple[float, str]:
+    def _check_pronouns(
+        self,
+        query: str,
+        history: str | None,
+        history_resolution: HistoryResolutionResult | None = None,
+    ) -> tuple[float, str]:
         """Check for unresolved pronouns.
 
         Args:
@@ -256,16 +332,24 @@ class AmbiguityDetector:
             if pronoun.lower() in query.lower() and pronoun not in found_pronouns:
                 found_pronouns.append(pronoun)
 
+        if history_resolution and history_resolution.query_has_contextual_reference and not found_pronouns:
+            found_pronouns.append("tham chiếu ngữ cảnh")
+
         if not found_pronouns:
             return 0.0, ""
 
-        # If history exists, check if it resolves the pronouns
-        if history:
-            # Lower the score if history might resolve ambiguity
-            return 0.5, found_pronouns[0]
+        if history_resolution:
+            if history_resolution.resolution_status == "resolved":
+                return 0.0, found_pronouns[0]
+            if history_resolution.resolution_status == "no_history":
+                return 0.9, found_pronouns[0]
+            if history_resolution.resolution_status == "conflicting_history":
+                return 0.9, found_pronouns[0]
+            if history_resolution.resolution_status == "irrelevant_history":
+                return 0.85, found_pronouns[0]
 
         # No history → pronouns are definitely ambiguous
-        return 0.9, found_pronouns[0]
+        return (0.9 if not history else 0.7), found_pronouns[0]
 
     def _check_vague_references(self, query: str) -> float:
         """Check for vague legal references.
@@ -299,6 +383,12 @@ class AmbiguityDetector:
         for _type, pattern in self.ENTITY_CHECKS:
             if pattern.search(query):
                 return True
+        if re.search(
+            r"(?<!\w)(?:Nghị\s+định|Thông\s+tư|Quyết\s+định|Luật|Bộ\s+luật|Điều\s+\d+|\d+/\d{4}/[A-ZĐ\-]+|\d+/QĐ-[A-ZĐ]+)",
+            query,
+            re.IGNORECASE,
+        ):
+            return True
         return False
 
     def _check_missing_entities(self, query: str, has_legal_intent: bool = False) -> tuple[float, str | None]:
@@ -309,6 +399,25 @@ class AmbiguityDetector:
         """
         words = query.lower().split()
         word_count = len(words)
+        query_l = query.lower()
+
+        generic_need = re.search(
+            r"(?<!\w)(?:hồ\s+sơ|thủ\s+tục|mức\s+phạt|trách\s+nhiệm|cơ\s+quan|"
+            r"giấy\s+phép|nghĩa\s+vụ|áp\s+dụng|xin\s+phép|luật\s+nào|"
+            r"quy\s+định\s+cũ|chịu\s+trách\s+nhiệm)(?!\w)",
+            query_l,
+            re.IGNORECASE,
+        )
+        concrete_anchor = self.has_any_entity(query) or bool(re.search(
+            r"(?<!\w)(?:xây\s+dựng|kết\s+hôn|đất\s+đai|giao\s+thông|bảo\s+hiểm|"
+            r"môi\s+trường|y\s+tế|hôn\s+nhân|lao\s+động|thuế|ngân\s+sách|"
+            r"chất\s+thải|đường\s+bộ|tàu\s+biển|hàng\s+không)(?!\w)",
+            query_l,
+            re.IGNORECASE,
+        ))
+
+        if generic_need and not concrete_anchor:
+            return 0.82, "LEGAL_TARGET"
 
         # Simple rule: if no recognized legal entities and short query
         if not self.has_any_entity(query):
@@ -325,6 +434,51 @@ class AmbiguityDetector:
                 return 0.2, "LEGAL_ARTICLE"
         
         return 0.0, None
+
+    def _check_multi_interpretation(self, query: str) -> float:
+        """Detect short broad legal questions with multiple plausible targets."""
+        query_l = query.lower()
+        broad_subject = re.search(
+            r"(?<!\w)(?:doanh\s+nghiệp|cá\s+nhân|công\s+ty|cơ\s+quan\s+nhà\s+nước|"
+            r"ubnd|ủy\s+ban\s+nhân\s+dân|tổ\s+chức\s+nước\s+ngoài|tổ\s+chức)(?!\w)",
+            query_l,
+            re.IGNORECASE,
+        )
+        broad_predicate = re.search(
+            r"(?<!\w)(?:có\s+được|có\s+phải|có\s+bị|có\s+thẩm\s+quyền|"
+            r"được\s+hoạt\s+động|bị\s+phạt|được\s+cấp\s+giấy\s+phép|"
+            r"phải\s+lưu\s+trữ)(?!\w)",
+            query_l,
+            re.IGNORECASE,
+        )
+        domain_anchor = re.search(
+            r"(?<!\w)(?:Nghị\s+định|Thông\s+tư|Quyết\s+định|Luật|Điều\s+\d+|"
+            r"đất\s+đai|xây\s+dựng|môi\s+trường|giao\s+thông|y\s+tế|"
+            r"bảo\s+hiểm|lao\s+động|thuế|ngân\s+sách|hôn\s+nhân)(?!\w)",
+            query_l,
+            re.IGNORECASE,
+        )
+        if broad_subject and broad_predicate and not domain_anchor:
+            return 0.85
+        if len(query_l.split()) <= 7 and broad_predicate and not domain_anchor:
+            return 0.75
+        return 0.0
+
+    def _check_incomplete_context(
+        self,
+        query: str,
+        history_resolution: HistoryResolutionResult,
+    ) -> float:
+        """Detect follow-up questions whose answer depends on missing context."""
+        if not history_resolution.query_has_contextual_reference:
+            return 0.0
+        if history_resolution.resolution_status == "resolved":
+            return 0.0
+        if history_resolution.resolution_status in {"no_history", "conflicting_history"}:
+            return 0.9
+        if history_resolution.resolution_status == "irrelevant_history":
+            return 0.85
+        return 0.0
 
     def _check_entity_conflict(self, query: str) -> float:
         """Check for conflicting entities of the same type.
@@ -373,6 +527,8 @@ class AmbiguityDetector:
             return self.CLARIFICATION_TEMPLATES["pronoun"].format(pronoun=pronoun)
         elif "vague_reference" in report.ambiguity_types:
             return self.CLARIFICATION_TEMPLATES["vague_reference"]
+        elif "incomplete_context" in report.ambiguity_types:
+            return self.CLARIFICATION_TEMPLATES["incomplete_context"]
         elif "missing_entity" in report.ambiguity_types and report.missing_entity_type:
             type_names = {
                 "PERSON": "người/cá nhân",
@@ -386,5 +542,7 @@ class AmbiguityDetector:
             )
         elif "entity_conflict" in report.ambiguity_types:
             return self.CLARIFICATION_TEMPLATES["entity_conflict"]
+        elif "multi_interpretation" in report.ambiguity_types:
+            return self.CLARIFICATION_TEMPLATES["multi_interpretation"]
         else:
             return self.CLARIFICATION_TEMPLATES["general"]

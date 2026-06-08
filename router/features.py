@@ -54,6 +54,20 @@ class QueryFeatures:
     # Conversation context
     history_length: int = 0
     history_resolves_ambiguity: bool = False
+    history_resolution_status: str = "not_needed"
+    history_resolution_confidence: float = 0.0
+    resolved_referent: str | None = None
+    candidate_referents: list[dict[str, object]] = field(default_factory=list)
+    query_has_contextual_reference: bool = False
+
+    # Ambiguity metadata used by Stage 2 policy, intentionally not included in
+    # the Stage 1 vector so the existing XGBoost checkpoint remains compatible.
+    missing_entity: bool = False
+    multi_interpretation: bool = False
+    incomplete_context: bool = False
+    pronoun_reference: bool = False
+    semantic_ambiguity_score: float = 0.0
+    contextual_reference_score: float = 0.0
 
     # --- Advanced complexity features (Adaptive-RAG) ---
     complexity_level: int = 1          # 1=simple, 2=multi-hop, 3=cross-doc
@@ -457,6 +471,17 @@ class FeatureExtractor:
         ambiguity_score: float = 0.0,
         has_pronoun: bool = False,
         missing_entity_type: str | None = None,
+        history_resolution_status: str = "not_needed",
+        history_resolution_confidence: float = 0.0,
+        resolved_referent: str | None = None,
+        candidate_referents: list[dict[str, object]] | None = None,
+        query_has_contextual_reference: bool = False,
+        missing_entity: bool = False,
+        multi_interpretation: bool = False,
+        incomplete_context: bool = False,
+        pronoun_reference: bool = False,
+        semantic_ambiguity_score: float = 0.0,
+        contextual_reference_score: float = 0.0,
     ) -> QueryFeatures:
         """Extract all features from a query.
 
@@ -516,7 +541,9 @@ class FeatureExtractor:
         history_resolves = False
         if history:
             history_length = len(history.strip().split("\n"))
-            if has_pronoun:
+            if history_resolution_status != "not_needed":
+                history_resolves = history_resolution_status == "resolved"
+            elif has_pronoun:
                 # Check if pronouns in query are resolved by history
                 res_terms = ["ông ấy", "bà ấy", "người đó"] if lang == "vi" else ["he", "she", "they", "it"]
                 history_resolves = any(p in history.lower() for p in res_terms)
@@ -563,6 +590,17 @@ class FeatureExtractor:
             missing_entity_type=missing_entity_type,
             history_length=history_length,
             history_resolves_ambiguity=history_resolves,
+            history_resolution_status=history_resolution_status,
+            history_resolution_confidence=history_resolution_confidence,
+            resolved_referent=resolved_referent,
+            candidate_referents=candidate_referents or [],
+            query_has_contextual_reference=query_has_contextual_reference,
+            missing_entity=missing_entity,
+            multi_interpretation=multi_interpretation,
+            incomplete_context=incomplete_context,
+            pronoun_reference=pronoun_reference,
+            semantic_ambiguity_score=semantic_ambiguity_score,
+            contextual_reference_score=contextual_reference_score,
             complexity_level=complexity_feats.complexity_level,
             sub_question_count=complexity_feats.sub_question_count,
             entity_density=complexity_feats.entity_density,
