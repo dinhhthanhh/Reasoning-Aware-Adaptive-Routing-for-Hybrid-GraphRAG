@@ -140,19 +140,18 @@ $0.3556$ for Pure Graph, while reaching $0.9350$ routing
 accuracy. The Two-stage Hybrid system obtains the best answer
 F1, $0.4235$, but slightly reduces strict routing accuracy to
 $0.9283$ because the strict test set contains no intended
-clarification queries. On a separate constructed ambiguity
-benchmark, Stage~1 has clarification F1 $=0.000$ because it is
-trained on three retrieval classes and has no clarify label.
-Adding Stage~2 increases clarification F1 to $0.684$ with
-precision $1.000$, but recall remains $0.519$. After adding
-deterministic history-referent resolution and a
-severe-ambiguity override policy, a separate $160$-query
-conversation stress test reaches clarification F1 $=0.862$
-and history-resolution accuracy $=0.850$. These results
-support adaptive routing as a practical quality--efficiency
-trade-off for Vietnamese Legal Hybrid GraphRAG, while
-identifying semantic ambiguity detection as the main remaining
-bottleneck.
+clarification queries. On the original constructed ambiguity
+benchmark, the initial Stage~2 configuration increases
+clarification F1 to $0.684$ with precision $1.000$. After
+adding deterministic history-referent resolution and a
+severe-ambiguity override policy, the same ambiguity benchmark
+improves to clarification F1 $=0.840$. On a separate
+$160$-query conversation stress test, the router reaches
+clarification F1 $=0.862$ and history-resolution accuracy
+$=0.850$. These diagnostic results do not replace the strict
+benchmark; they show that ambiguity handling improves while
+multi-interpretation cases and false clarification calibration
+remain open issues.
 
 \textbf{Keywords:} Retrieval-Augmented Generation,
 GraphRAG, Hybrid RAG, Adaptive Routing, Vietnamese Legal QA,
@@ -363,15 +362,15 @@ rather than an exceptional failure case.
 Recent benchmark papers emphasize that a dataset contribution
 should report not only final model scores, but also source
 provenance, generation pipeline, label definition, quality
-analysis, evaluation protocol, and scope limitations. For
-example, MIST presents a dataset together with its generation
-pipeline, statistics, quality analysis, and task-specific
-metrics for a different modality and problem setting
-\cite{vu2026mist}. We follow this reporting style for
-Vietnamese legal QA: the present dataset is not an audio
-tampering benchmark, but its description is organized around
-data sources, construction rules, routing labels, split
-protocol, and limitations.
+analysis, evaluation protocol, and scope limitations. MIST,
+although developed for a different modality and task, is an
+example of this reporting style because it describes the data
+generation pipeline, statistics, quality analysis, and
+task-specific metrics \cite{vu2026mist}. We follow this style
+lightly for Vietnamese legal QA: the present dataset is
+organized around data sources, construction rules, routing
+labels, split protocol, and limitations, but it is not compared
+as a method against MIST.
 
 \subsection{Vietnamese NLP and Legal QA}
 
@@ -468,12 +467,6 @@ Ambiguity QA
 Handles ambiguous questions, but clarification is rarely
 integrated as a Hybrid GraphRAG route. &
 Clarify \\
-
-Dataset
-\cite{vu2026mist} &
-Reports sources, generation pipeline, statistics, quality
-analysis, and scope, but for a different modality and task. &
-Dataset \\
 
 VN Legal NLP
 \cite{nguyen2020phobert,vu2018vncorenlp,chalkidis2020legalbert,
@@ -784,8 +777,7 @@ clarification.
 
 \begin{figure*}[p]
 \centering
-\vspace*{0.5cm}
-\resizebox{0.98\textwidth}{!}{
+\resizebox{0.94\textwidth}{!}{
 \begin{tikzpicture}[
     font=\small,
     >=Latex,
@@ -835,7 +827,6 @@ clarification.
 \node[draw,dashed,rounded corners,fit=(exdense)(exgraph)(exhybrid)(exclarify),inner sep=7mm,label={[font=\small]above:Concrete Vietnamese examples for four routing outcomes}] {};
 \node[note, below=18mm of exgraph, xshift=39mm] (exnote) {\textbf{Interpretation.} Simple lookup questions can be handled by dense retrieval; relation-oriented questions benefit from graph traversal; relation-plus-content questions require hybrid evidence; and underspecified questions should be clarified before retrieval.};
 \end{tikzpicture}}
-\vspace{0.4cm}
 \caption{Overview of the proposed Reasoning-aware Adaptive Router for Vietnamese Legal Hybrid GraphRAG. The figure also explains the notation used in the paper: $q_t$ is the current query, $H$ is the conversation history, $\mathbf{f}$ is the extracted feature vector, $\phi_{\mathrm{amb}}$ is the ambiguity score, $\xi$ is the multi-hop score, $(d_1,s_1)$ is the Stage~1 route and confidence, and $d^*$ is the final route. The dashed fallback guard summarizes the implementation policy that retries another retrieval backend when the first answer is uninformative.}
 \label{fig:system_pipeline}
 \end{figure*}
@@ -1078,33 +1069,33 @@ clarification when the query contains a contextual reference.
 \caption{Stage~2 verification policy used by the implemented two-stage router.}
 \label{tab:stage2_policy}
 \scriptsize
-\setlength{\tabcolsep}{2.2pt}
-\renewcommand{\arraystretch}{1.08}
-\begin{tabularx}{\columnwidth}{L{2.45cm}L{3.65cm}Y}
+\setlength{\tabcolsep}{1.8pt}
+\renewcommand{\arraystretch}{0.96}
+\begin{tabularx}{\columnwidth}{L{2.15cm}L{3.35cm}Y}
 \toprule
 \textbf{Signal} & \textbf{Condition} & \textbf{Purpose} \\
 \midrule
 Low confidence &
 $s_1 < \tau_{\mathrm{conf}}$ &
-Verify uncertain Stage~1 decisions before retrieval. \\
+Check uncertain Stage~1 decisions. \\
 Ambiguity risk &
 $b \ge \tau_{\mathrm{force}}$ &
-Avoid unsafe retrieval when the legal target is underspecified. \\
+Avoid retrieval when the legal target is underspecified. \\
 Resolved history &
 $r_H.\mathrm{status}=\texttt{resolved}$ &
-Use the resolved referent to avoid unnecessary clarification. \\
+Use the referent and avoid unnecessary clarification. \\
 Unresolved history &
 $r_H.\mathrm{status}$ is no, irrelevant, or conflicting &
-Force verification or clarification for unresolved contextual references. \\
+Force verification or clarification. \\
 Dense fast path &
-High-confidence dense route with low ambiguity and no strong legal signal &
-Skip Stage~2 to preserve latency on clear direct-lookup queries. \\
+High-confidence dense, low ambiguity, no strong legal signal &
+Skip Stage~2 for clear lookup queries. \\
 Dense legal signal &
-Dense route with legal-reference, graph-keyword, authority, or legal-effect signals inside the confidence ceiling &
-Catch dense false negatives that may require graph or hybrid retrieval. \\
+Dense route with legal-reference, graph, authority, or effect signals &
+Catch cases needing graph or hybrid retrieval. \\
 Reasoning signal &
-Multi-hop, cross-document, high-complexity, or relation-heavy features inside the uncertainty band &
-Invoke the verifier for relation-heavy legal questions. \\
+Multi-hop, cross-document, complex, or relation-heavy features &
+Verify relation-heavy legal questions. \\
 Clarify sanity check &
 Predicted \texttt{clarify} with low ambiguity score &
 Reduce false clarification on answerable questions. \\
@@ -1501,20 +1492,21 @@ hybrid routes for relation-heavy questions.
 \subsection{Clarification Benchmark}
 \label{subsec:clarify_results}
 
-Table~\ref{tab:clarify_results} reports clarification results
-on the $234$-query constructed ambiguity benchmark. The most important
-finding is that Stage~1 has clarify F1 $=0.000$. This is not
-an implementation bug. Stage~1 is trained on the strict
+Table~\ref{tab:clarify_results} reports the original
+pre-Phase-3 configuration on the $234$-query constructed
+ambiguity benchmark. The most important finding is that
+Stage~1 has clarify F1 $=0.000$. This is not an
+implementation bug. Stage~1 is trained on the strict
 three-class dataset with labels \texttt{dense\_retrieval},
 \texttt{graph\_traversal}, and \texttt{hybrid\_reasoning};
 it has no \texttt{clarify} class during training and
-therefore cannot architecturally predict clarification. All
-clarification behavior in the current system depends on
+therefore cannot architecturally predict clarification. In
+this initial configuration, clarification behavior depends on
 Stage~2 and the ambiguity trigger.
 
 \begin{table}[!htbp]
 \centering
-\caption{Clarification results on the constructed ambiguity benchmark.}
+\caption{Original pre-Phase-3 clarification results on the constructed ambiguity benchmark.}
 \label{tab:clarify_results}
 \scriptsize
 \setlength{\tabcolsep}{2.2pt}
@@ -1530,14 +1522,14 @@ Stage~1 + Stage~2 & 0.585 & 1.000 & 0.519 & 0.684 & 0.577 \\
 }
 \end{table}
 
-The full two-stage system improves clarify F1 from $0.000$
-to $0.684$. Its clarify precision is $1.000$, meaning that
-when the system predicts \texttt{clarify}, the prediction is
-correct in this benchmark. However, clarify recall is only
+The initial two-stage configuration improves clarify F1 from
+$0.000$ to $0.684$. Its clarify precision is $1.000$, meaning
+that when the system predicts \texttt{clarify}, the prediction
+is correct in this benchmark. However, clarify recall is only
 $0.519$, so many ambiguous queries are still missed. This
 pattern is preferable to an over-clarifying system in a first
 iteration because it avoids false clarification, but it also
-shows that the ambiguity detector is incomplete.
+shows that the initial ambiguity detector is incomplete.
 
 Table~\ref{tab:ambiguity_type_results} explains the failure
 mode. Stage~2 detects surface-context ambiguity very well:
@@ -1595,7 +1587,7 @@ Multi-interpretation & 36 & 0.000 & 0.000 \\
 \legend{Stage~1 only, Stage~1+Stage~2}
 \end{axis}
 \end{tikzpicture}
-\caption{Clarification metrics on the ambiguity benchmark.
+\caption{Original pre-Phase-3 clarification metrics on the ambiguity benchmark.
 Stage~1 scores zero on all clarification metrics because it has
 no clarify label. Stage~2 achieves perfect precision ($1.000$)
 by relying on explicit surface-context cues.}
@@ -1605,23 +1597,23 @@ by relying on explicit surface-context cues.}
 \subsection{Conversation-aware Ambiguity Stress Test}
 \label{subsec:conversation_ambiguity_results}
 
-After adding deterministic history-referent resolution, we
-evaluate the router on the $160$-query conversation stress
-test described in Section~\ref{subsec:dataset_description}.
-This diagnostic is reported separately from the strict
-end-to-end benchmark because it measures whether the router
-uses conversation history correctly, not answer generation
-quality. Table~\ref{tab:conversation_stress_summary} compares
-the router before and after Phase~3. Clarify F1 improves from
-$0.545$ to $0.862$, and history-resolution accuracy reaches
-$0.850$. The improvement comes from two complementary
-behaviors: resolved history can unblock retrieval, while
-absent, irrelevant, or conflicting history can preserve or
-force clarification.
+After adding deterministic history-referent resolution and a
+severe-ambiguity override policy, we evaluate the router on the
+$160$-query conversation stress test described in
+Section~\ref{subsec:dataset_description}. This diagnostic is
+reported separately from the strict end-to-end benchmark because
+it measures whether the router uses conversation history
+correctly, not answer generation quality.
+Table~\ref{tab:conversation_stress_summary} compares the router
+before and after Phase~3. Clarify F1 improves from $0.545$ to
+$0.862$, and history-resolution accuracy reaches $0.850$. The
+improvement comes from two complementary behaviors: resolved
+history can unblock retrieval, while absent, irrelevant, or
+conflicting history can preserve or force clarification.
 
 \begin{table}[!htbp]
 \centering
-\caption{Conversation-aware ambiguity stress-test results.}
+\caption{Diagnostic conversation-aware ambiguity stress-test results.}
 \label{tab:conversation_stress_summary}
 \scriptsize
 \setlength{\tabcolsep}{2.2pt}
@@ -1650,7 +1642,7 @@ confuse the correct retrieval mechanism.
 
 \begin{table}[!htbp]
 \centering
-\caption{Conversation stress-test category results after Phase~3.}
+\caption{Diagnostic conversation stress-test category results after Phase~3.}
 \label{tab:conversation_category_results}
 \scriptsize
 \setlength{\tabcolsep}{2.0pt}
@@ -1671,17 +1663,18 @@ Graph/hybrid ctrl. & 0.500 & 0.950 & Relation-heavy route choice remains hard. \
 \end{table}
 
 The original $234$-query ambiguity benchmark was also rerun
-after Phase~3, as shown in
+after adding deterministic history-referent resolution and the
+severe-ambiguity override, as shown in
 Table~\ref{tab:clarify_phase3_before_after}. Clarify F1
 increases from $0.684$ to $0.840$ with zero false positives.
 The strongest gains are on missing-entity cases, but
-multi-interpretation remains weak on the old template
+multi-interpretation remains weak on the original template
 benchmark because these queries often look answerable without
 an explicit contextual pronoun.
 
 \begin{table}[!htbp]
 \centering
-\caption{Original ambiguity benchmark before and after Phase~3.}
+\caption{Original ambiguity benchmark before and after deterministic history-referent resolution and severe-ambiguity override.}
 \label{tab:clarify_phase3_before_after}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
@@ -1867,19 +1860,22 @@ a replacement for the strict end-to-end QA table.
 
 Several limitations remain. First, the strict training split
 does not include a \texttt{clarify} class, so Stage~1 cannot
-predict clarification by design. The current system relies on
-Stage~2 for clarification, which improves clarify F1 from
-$0.000$ to $0.684$ but still misses many ambiguous queries.
-Second, the ambiguity benchmark is synthetic and
-template-generated. It is useful for controlled stress
-testing, but it should be validated with manually written or
+predict clarification by design. The initial Stage~2
+configuration improves clarify F1 from $0.000$ to $0.684$,
+and the Phase~3 additions improve the original ambiguity
+benchmark further to $0.840$ and the separate conversation
+stress test to $0.862$. However, clarification still depends
+on the LLM verifier and remains sensitive to trigger
+calibration. Second, the ambiguity benchmarks are synthetic
+and template-generated. They are useful for controlled stress
+testing, but they should be validated with manually written or
 human-reviewed ambiguous legal questions before being treated
-as a realistic production benchmark. Third, the ambiguity
-benchmark shows that Stage~2 detects surface cues such as
-unresolved pronouns and incomplete context, but fails on
-semantic ambiguity such as missing legal entities and multiple
-valid interpretations. This is the most important limitation
-of the current clarification module.
+as realistic production benchmarks. Third, the initial
+configuration detects surface cues such as unresolved pronouns
+and incomplete context more reliably than semantic ambiguity.
+After Phase~3, missing-entity cases improve substantially, but
+multi-interpretation remains weak on the original template
+benchmark.
 
 Fourth, Stage~2 introduces a large latency cost. Routing with
 Stage~2 is about $119\times$ slower than Stage~1-only routing
@@ -1904,9 +1900,9 @@ template ambiguity benchmark, \texttt{multi\_interpretation}
 remains weak even after Phase~3, despite improvements on
 missing-entity and pronoun-reference cases. Finally, a
 routing-only strict sanity run after Phase~3 still produces
-$10$ false clarifications out of $600$ queries, so threshold
-calibration remains necessary before conversation-aware
-policies should replace the strict end-to-end configuration.
+$10$ false clarifications out of $600$ queries; therefore,
+these diagnostic improvements are not used to replace the
+strict end-to-end metrics in Table~\ref{tab:end_to_end_results}.
 
 Sixth, the graph is larger and better connected after the
 migration, but curated legal relations remain sparse:
@@ -1962,29 +1958,29 @@ than the single-stage system. This confirms that Stage~2
 should be used selectively rather than as a default step for
 every query.
 
-The ambiguity benchmark shows that clarification handling is
+The ambiguity benchmarks show that clarification handling is
 the main role of Stage~2. Stage~1 has clarify F1 $=0.000$
-because it is trained only on three retrieval labels. Adding
-Stage~2 increases clarify F1 to $0.684$ with precision
-$1.000$, but recall remains $0.519$. The detailed ambiguity
-analysis shows that the current verifier detects unresolved
-pronouns and incomplete context, but misses missing-entity
-and multi-interpretation ambiguity. These results support the
-central design of reasoning-aware adaptive routing while also
-identifying the next technical bottleneck for the project:
-semantic ambiguity detection in Vietnamese legal QA.
-
+because it is trained only on three retrieval labels. The
+initial Stage~2 configuration improves clarify F1 to $0.684$
+with precision $1.000$. After adding deterministic
+history-referent resolution and the severe-ambiguity override,
+the original ambiguity benchmark improves to F1 $=0.840$.
 The Phase~3 conversation-aware extension further shows that
 history resolution is a useful intermediate signal for legal
-QA. On the $160$-query conversation stress test, the router
-reaches clarify F1 $=0.862$ and history-resolution accuracy
-$=0.850$. The same follow-up query can therefore be routed
-differently depending on whether history contains a unique
-legal referent. However, resolved-history route selection and
-multi-interpretation ambiguity remain open problems, and the
-strict routing-only sanity check confirms that false
-clarification must still be controlled before updating the
-main end-to-end configuration.
+QA: on the separate $160$-query conversation stress test, the
+router reaches clarify F1 $=0.862$ and history-resolution
+accuracy $=0.850$.
+
+The same follow-up query can therefore be routed differently
+depending on whether history contains a unique legal referent.
+However, multi-interpretation ambiguity remains weak on the
+original template benchmark, resolved-history route selection
+is still imperfect, and the strict routing-only sanity check
+still produces false clarifications. These results support the
+central design of reasoning-aware adaptive routing while
+showing that the Phase~3 diagnostic improvements should not
+replace the strict end-to-end configuration without further
+calibration.
 
 \section*{Acknowledgements}
 
