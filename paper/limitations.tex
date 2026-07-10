@@ -1,0 +1,120 @@
+% ===============================================================
+\section{Limitations and Future Work}\label{sec:limitations}
+% ===============================================================
+
+Several limitations qualify the results above and define the agenda for future
+work.
+
+\noindent\textbf{Synthetic, metadata-derived benchmark.} Route labels are
+derived from hop-count and cross-document structure rather than annotated by
+legal experts, and the benchmark---including the ambiguity and conversation
+stress tests---is machine-generated. Although paraphrasing mitigated
+template-based label leakage on the strict split, the distribution remains
+synthetic and should be validated against a human-authored set before strong
+external-validity claims are made.
+
+\noindent\textbf{Weakly supervised clarify class.} The strict split contains
+no gold \texttt{clarify} label, so the Stage~1 clarify class is trained on
+only $60$ synthetic templates and is deliberately treated as a proposal that
+Stage~2 must confirm. End-to-end clarify routing therefore rests on the
+verifier and the ambiguity detector rather than on strongly supervised
+classification.
+
+\noindent\textbf{In-conversation routing of self-contained queries.} On the
+conversation stress test, clearly answerable control queries embedded in a
+dialogue are routed correctly only $10\%$ (dense) and $40\%$ (graph/hybrid)
+of the time: conversational context inflates the ambiguity and trigger
+signals of queries that need no context, and the resolver's
+\texttt{not\_needed} status does not yet suppress those signals. Conversation
+route accuracy ($0.725$) is bounded by this misrouting rather than by
+clarify detection, and the clarify false-positive rate rises from $1.5\%$ on
+the ambiguity-free strict split to $11.5\%$ on the diagnostic's answerable
+controls as the ambiguity base rate of the surrounding traffic increases.
+
+\noindent\textbf{Sparse legal-effect relations and explicit-only hybrids.}
+Cross-document legal-effect relations (\textsc{AMENDS}, \textsc{REPLACES})
+remain comparatively sparse in the graph, and the benchmark covers only
+\emph{explicit} hybrid questions that name the documents to combine, not
+\emph{implicit} ones that require discovering the link first.
+
+\noindent\textbf{Residual retrieval-identifier mismatch.} Evaluation-time
+identifier normalisation to the canonical
+\texttt{law::document::article} form is implemented, and unresolvable
+references are now flagged rather than fuzzily matched. However, the hybrid
+merge path and the router-mediated pipeline still \emph{log} source
+identifiers that the normaliser cannot resolve, which drives Pure Hybrid
+Hit@$1$ to $0.003$ and forces the Hit@$1$ entries of every router-mediated
+configuration to be read as unresolved rather than as true coverage. Until
+canonical identifiers are emitted at the retrieval stage and the end-to-end
+experiments re-run, retrieval-coverage claims for those configurations remain
+provisional.
+
+\noindent\textbf{Aggregate parity, not superiority, over dense retrieval.} On
+the dense-dominated benchmark the full router ($0.640$) is statistically
+indistinguishable from the Pure Vector baseline ($0.663$) on aggregate
+token-F1, with overlapping bootstrap intervals. The router's contribution is
+therefore argued on exact match ($+71\%$ over Pure Vector), on the causal
+Stage~2 ablation, and on clarification safety---not on mean token-F1. A
+reader should not infer that the router improves average lexical answer
+quality over a strong dense baseline on this distribution.
+
+\noindent\textbf{Metric validity.} Token-F1 against a gold context rewards
+lexical overlap, and the citation-constrained generator quotes legal text
+verbatim; the combination produces the class-wise inversion of
+Table~\ref{tab:per_class_f1}, in which each pure mechanism scores highest on
+the \emph{other} mechanism's query class. Cross-system token-F1 differences
+therefore partly measure quotation overlap rather than answer correctness,
+and per-class token-F1 cannot adjudicate mechanism appropriateness. The
+semantic BERT-F1 column specified in Section~\ref{subsec:metrics} is required
+to complete this analysis and remains to be computed over the saved
+predictions.
+
+\noindent\textbf{Scope of the chain-of-thought claim.} The
+\textit{Oracle~+~Stage~2} ablation isolates a causal $+0.074$~F1 contribution
+of Stage~2 reasoning under fixed gold routing, but the estimate derives from
+a single generator (\texttt{Qwen3-32B-AWQ}), a single prompt family, and
+deterministic decoding on one benchmark; its magnitude may not transfer
+across models, prompts, or legal domains.
+
+\noindent\textbf{Statistical reporting gaps.} Headline F1 comparisons carry
+bootstrap $95\%$ confidence intervals ($B=1000$), but no paired significance
+tests are reported, mean reciprocal rank could not be computed because the
+per-sample logs recorded only Hit@$1$/Hit@$3$, and the p50/p95 latencies of
+the re-run configurations await extraction from the per-query logs.
+
+\noindent\textbf{Routing-accuracy evaluation under template leakage.} Because
+paraphrase augmentation preceded splitting, $33.2\%$ of highly similar query
+pairs cross the cross-validation fold boundary, inflating the absolute CV
+scores of all learned routers to $\approx 0.99$. We therefore headline the
+paraphrase-hardened strict-split accuracy ($0.898$) instead, and leave
+template-grouped fold construction as an evaluation improvement for future
+work.
+
+\noindent\textbf{No empirical comparison to complexity-based adaptive
+retrieval.} Adaptive-RAG~\cite{jeong2024adaptive} is the closest prior method
+but is not compared empirically, because it routes among reasoning depths for
+general-domain English QA rather than among evidence mechanisms for Vietnamese
+legal QA. A faithful re-implementation of its complexity router as an
+additional baseline---or an explicit statement of why the settings are not
+directly comparable---would strengthen the positioning.
+
+\noindent\textbf{Efficiency and hardware dependence.} A Stage~2 verifier call
+is roughly $119\times$ the cost of the full Stage~1 routing path in the
+routing-stage microbenchmark, and all latencies depend on local vLLM
+hardware; end-to-end latency is dominated by generation rather than by
+routing, so the efficiency argument is about negligible routing overhead
+rather than end-to-end speed.
+
+Future directions include: a three-level cascade
+XGBoost~$\rightarrow$~PhoBERT~$\rightarrow$~LLM to preserve routing accuracy
+under the linguistic diversity of naturally phrased queries; emitting
+canonical \texttt{law::document::article} identifiers at the retrieval stage
+with cross-encoder re-ranking to complete the coverage evaluation;
+integration of manually reviewed \texttt{clarify} samples and implicit hybrid
+questions into the training set; context-gated suppression of conversational
+features whenever the history resolver marks a query as self-contained;
+stronger legal-relation extraction for
+\textsc{AMENDS} and \textsc{REPLACES}; a complexity-router baseline in the
+spirit of Adaptive-RAG; semantic and human evaluation of legal answer
+correctness and citation faithfulness; and template-grouped cross-validation
+for leakage-free router comparison.

@@ -1,0 +1,406 @@
+%% ==========================================================================
+%% biblio.bib -- CORRECTED for Discover Artificial Intelligence submission
+%%
+%% What changed vs the previous version:
+%%  1. he2024lightrag: the author list was WRONG ("He, Zirui and Tian, Hao...").
+%%     Verified correct authors: Guo, Xia, Yu, Ao, Huang -- Findings of EMNLP
+%%     2025, pp. 10746--10761 (arXiv:2410.05779). Key kept as he2024lightrag so
+%%     existing \cite commands still resolve.
+%%  2. Every entry now carries a DOI (Discover AI requires full DOI links).
+%%     Papers whose only persistent identifier is arXiv use the official
+%%     arXiv DataCite DOI (10.48550/arXiv.<id>).
+%%  3. Entries NOT cited anywhere in the manuscript are moved to the
+%%     commented-out block at the bottom (the journal requires that the
+%%     reference list contain only cited works). Uncomment one only after
+%%     actually citing it in the text.
+%%
+%% ACTION REQUIRED (see REVISION_NOTES item M12): the LightRAG error shows the
+%% previous file contained fabricated metadata, so verify EVERY author list
+%% and DOI below against the ACL Anthology / publisher page or Crossref
+%% (https://search.crossref.org) before submission. Entries whose DOI I could
+%% not confirm with certainty are marked "% VERIFY DOI".
+%% ==========================================================================
+
+%% ------------------------- RAG foundations -------------------------------
+
+@inproceedings{lewis2020rag,
+  author    = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and Petroni, Fabio and Karpukhin, Vladimir and Goyal, Naman and K{\"u}ttler, Heinrich and Lewis, Mike and Yih, Wen-tau and Rockt{\"a}schel, Tim and Riedel, Sebastian and Kiela, Douwe},
+  title     = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {33},
+  pages     = {9459--9474},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2005.11401}
+}
+
+@inproceedings{guu2020realm,
+  author    = {Guu, Kelvin and Lee, Kenton and Tung, Zora and Pasupat, Panupong and Chang, Ming-Wei},
+  title     = {{REALM}: Retrieval-Augmented Language Model Pre-Training},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  series    = {PMLR},
+  volume    = {119},
+  pages     = {3929--3938},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2002.08909}
+}
+
+@inproceedings{karpukhin2020dpr,
+  author    = {Karpukhin, Vladimir and O{\u{g}}uz, Barlas and Min, Sewon and Lewis, Patrick and Wu, Ledell and Edunov, Sergey and Chen, Danqi and Yih, Wen-tau},
+  title     = {Dense Passage Retrieval for Open-Domain Question Answering},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {6769--6781},
+  year      = {2020},
+  doi       = {10.18653/v1/2020.emnlp-main.550}
+}
+
+@inproceedings{trivedi2023interleaving,
+  author    = {Trivedi, Harsh and Balasubramanian, Niranjan and Khot, Tushar and Sabharwal, Ashish},
+  title     = {Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions},
+  booktitle = {Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL)},
+  pages     = {10014--10037},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.acl-long.557}
+}
+
+@article{gao2023modularrag,
+  author  = {Gao, Yunfan and Xiong, Yun and Gao, Xinyu and Jia, Kangxiang and Pan, Jinliu and Bi, Yuxi and Dai, Yi and Sun, Jiawei and Wang, Meng and Wang, Haofen},
+  title   = {Retrieval-Augmented Generation for Large Language Models: A Survey},
+  journal = {arXiv preprint arXiv:2312.10997},
+  year    = {2023},
+  doi     = {10.48550/arXiv.2312.10997}
+}
+% VERIFY: confirm this key is meant to point at the Gao et al. RAG survey
+% (which introduces the naive/advanced/modular taxonomy) and not at the later
+% "Modular RAG" paper (arXiv:2407.21059); adjust title/id if the latter.
+
+%% --------------------- Advanced / adaptive RAG ---------------------------
+
+@inproceedings{asai2023selfrag,
+  author    = {Asai, Akari and Wu, Zeqiu and Wang, Yizhong and Sil, Avirup and Hajishirzi, Hannaneh},
+  title     = {{Self-RAG}: Learning to Retrieve, Generate, and Critique through Self-Reflection},
+  booktitle = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  doi       = {10.48550/arXiv.2310.11511}
+}
+
+@inproceedings{jiang2023flare,
+  author    = {Jiang, Zhengbao and Xu, Frank F. and Gao, Luyu and Sun, Zhiqing and Liu, Qian and Dwivedi-Yu, Jane and Yang, Yiming and Callan, Jamie and Neubig, Graham},
+  title     = {Active Retrieval Augmented Generation},
+  booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {7969--7992},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.emnlp-main.495}
+}
+
+@inproceedings{sarthi2024raptor,
+  author    = {Sarthi, Parth and Abdullah, Salman and Tuli, Aditi and Khanna, Shubh and Goldie, Anna and Manning, Christopher D.},
+  title     = {{RAPTOR}: Recursive Abstractive Processing for Tree-Organized Retrieval},
+  booktitle = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  doi       = {10.48550/arXiv.2401.18059}
+}
+
+@article{yan2024corrective,
+  author  = {Yan, Shi-Qi and Gu, Jia-Chen and Zhu, Yun and Ling, Zhen-Hua},
+  title   = {Corrective Retrieval Augmented Generation},
+  journal = {arXiv preprint arXiv:2401.15884},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2401.15884}
+}
+
+@inproceedings{jeong2024adaptive,
+  author    = {Jeong, Soyeong and Baek, Jinheon and Cho, Sukmin and Hwang, Sung Ju and Park, Jong C.},
+  title     = {{Adaptive-RAG}: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity},
+  booktitle = {Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics (NAACL)},
+  pages     = {7036--7050},
+  year      = {2024},
+  doi       = {10.18653/v1/2024.naacl-long.389}
+}
+
+@article{chen2023frugalgpt,
+  author  = {Chen, Lingjiao and Zaharia, Matei and Zou, James},
+  title   = {{FrugalGPT}: How to Use Large Language Models While Reducing Cost and Improving Performance},
+  journal = {arXiv preprint arXiv:2305.05176},
+  year    = {2023},
+  doi     = {10.48550/arXiv.2305.05176}
+}
+
+@article{ong2024routellm,
+  author  = {Ong, Isaac and Almahairi, Amjad and Wu, Vincent and Chiang, Wei-Lin and Wu, Tianhao and Gonzalez, Joseph E. and Kadous, M. Waleed and Stoica, Ion},
+  title   = {{RouteLLM}: Learning to Route {LLMs} with Preference Data},
+  journal = {arXiv preprint arXiv:2406.18665},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2406.18665}
+}
+
+%% -------------------- Graph retrieval and GraphRAG -----------------------
+
+@article{edge2024graphrag,
+  author  = {Edge, Darren and Trinh, Ha and Cheng, Newman and Bradley, Joshua and Chao, Alex and Mody, Apurva and Truitt, Steven and Larson, Jonathan},
+  title   = {From Local to Global: A Graph {RAG} Approach to Query-Focused Summarization},
+  journal = {arXiv preprint arXiv:2404.16130},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2404.16130}
+}
+
+@inproceedings{he2024lightrag,
+  author    = {Guo, Zirui and Xia, Lianghao and Yu, Yanhua and Ao, Tu and Huang, Chao},
+  title     = {{LightRAG}: Simple and Fast Retrieval-Augmented Generation},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2025},
+  pages     = {10746--10761},
+  year      = {2025},
+  doi       = {10.18653/v1/2025.findings-emnlp.568}
+}
+% NOTE: Key kept as he2024lightrag for backward compatibility. Previous author
+% list ("He, Zirui and Tian, Hao...") was fabricated; correct authors verified
+% via ACL Anthology. DOI confirmed: 10.18653/v1/2025.findings-emnlp.568.
+
+@inproceedings{gutierrez2024hipporag,
+  author    = {Guti{\'e}rrez, Bernal Jim{\'e}nez and Shu, Yiheng and Gu, Yu and Yasunaga, Michihiro and Su, Yu},
+  title     = {{HippoRAG}: Neurobiologically Inspired Long-Term Memory for Large Language Models},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {37},
+  year      = {2024},
+  doi       = {10.48550/arXiv.2405.14831}
+}
+
+@inproceedings{wang2024kgp,
+  author    = {Wang, Yu and Lipka, Nedim and Rossi, Ryan A. and Siu, Alexa and Zhang, Ruiyi and Derr, Tyler},
+  title     = {Knowledge Graph Prompting for Multi-Document Question Answering},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {38},
+  number    = {17},
+  pages     = {19206--19214},
+  year      = {2024},
+  doi       = {10.1609/aaai.v38i17.29889}
+}
+
+@inproceedings{sun2019pullnet,
+  author    = {Sun, Haitian and Bedrax-Weiss, Tania and Cohen, William W.},
+  title     = {{PullNet}: Open Domain Question Answering with Iterative Retrieval on Knowledge Bases and Text},
+  booktitle = {Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)},
+  pages     = {2380--2390},
+  year      = {2019},
+  doi       = {10.18653/v1/D19-1242}
+}
+
+@inproceedings{sun2024thinkongraph,
+  author    = {Sun, Jiashuo and Xu, Chengjin and Tang, Lumingyuan and Wang, Saizhuo and Lin, Chen and Gong, Yeyun and Ni, Lionel M. and Shum, Heung-Yeung and Guo, Jian},
+  title     = {Think-on-Graph: Deep and Responsible Reasoning of Large Language Model on Knowledge Graph},
+  booktitle = {The Twelfth International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  doi       = {10.48550/arXiv.2307.07697}
+}
+
+@inproceedings{li2024graphreader,
+  author    = {Li, Shilong and He, Yancheng and Guo, Hangyu and Bu, Xingyuan and Bai, Ge and Liu, Jie and Liu, Jiaheng and Qu, Xingwei and Li, Yangguang and Ouyang, Wanli and Su, Wenbo and Zheng, Bo},
+  title     = {{GraphReader}: Building Graph-based Agent to Enhance Long-Context Abilities of Large Language Models},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2024},
+  pages     = {12758--12786},
+  year      = {2024},
+  doi       = {10.18653/v1/2024.findings-emnlp.746}
+}
+% DOI confirmed via ACL Anthology: 10.18653/v1/2024.findings-emnlp.746
+
+%% ---------------------- Ambiguity and conversation ------------------------
+
+@inproceedings{min2020ambigqa,
+  author    = {Min, Sewon and Michael, Julian and Hajishirzi, Hannaneh and Zettlemoyer, Luke},
+  title     = {{AmbigQA}: Answering Ambiguous Open-domain Questions},
+  booktitle = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {5783--5797},
+  year      = {2020},
+  doi       = {10.18653/v1/2020.emnlp-main.466}
+}
+
+@inproceedings{elgohary2019canard,
+  author    = {Elgohary, Ahmed and Peskov, Denis and Boyd-Graber, Jordan},
+  title     = {Can You Unpack That? Learning to Rewrite Questions-in-Context},
+  booktitle = {Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)},
+  pages     = {5918--5924},
+  year      = {2019},
+  doi       = {10.18653/v1/D19-1605}
+}
+
+%% -------------------- Legal NLP and Vietnamese NLP ------------------------
+
+@inproceedings{chalkidis2020legalbert,
+  author    = {Chalkidis, Ilias and Fergadiotis, Manos and Malakasiotis, Prodromos and Aletras, Nikolaos and Androutsopoulos, Ion},
+  title     = {{LEGAL-BERT}: The Muppets straight out of Law School},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2020},
+  pages     = {2898--2904},
+  year      = {2020},
+  doi       = {10.18653/v1/2020.findings-emnlp.261}
+}
+
+@inproceedings{zhong2020nlp_law,
+  author    = {Zhong, Haoxi and Xiao, Chaojun and Tu, Cunchao and Zhang, Tianyang and Liu, Zhiyuan and Sun, Maosong},
+  title     = {How Does {NLP} Benefit Legal System: A Summary of Legal Artificial Intelligence},
+  booktitle = {Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics (ACL)},
+  pages     = {5218--5230},
+  year      = {2020},
+  doi       = {10.18653/v1/2020.acl-main.466}
+}
+
+@inproceedings{sovrano2020legalkg,
+  author    = {Sovrano, Francesco and Palmirani, Monica and Vitali, Fabio},
+  title     = {Legal Knowledge Extraction for Knowledge Graph Based Question-Answering},
+  booktitle = {Legal Knowledge and Information Systems (JURIX 2020)},
+  series    = {Frontiers in Artificial Intelligence and Applications},
+  volume    = {334},
+  pages     = {143--153},
+  year      = {2020},
+  doi       = {10.3233/FAIA200858}
+}
+% DOI confirmed via IOS Press: 10.3233/FAIA200858
+
+@inproceedings{guha2023legalbench,
+  author    = {Guha, Neel and Nyarko, Julian and Ho, Daniel E. and R{\'e}, Christopher and Chilton, Adam and Narayana, Aditya and Chohlas-Wood, Alex and Peters, Austin and Waldon, Brandon and Rockmore, Daniel N. and others},
+  title     = {{LegalBench}: A Collaboratively Built Benchmark for Measuring Legal Reasoning in Large Language Models},
+  booktitle = {Advances in Neural Information Processing Systems (Datasets and Benchmarks Track)},
+  volume    = {36},
+  year      = {2023},
+  doi       = {10.48550/arXiv.2308.11462}
+}
+
+@inproceedings{louis2024interpretable,
+  author    = {Louis, Antoine and van Dijck, Gijs and Spanakis, Gerasimos},
+  title     = {Interpretable Long-Form Legal Question Answering with Retrieval-Augmented Large Language Models},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {38},
+  number    = {20},
+  pages     = {22266--22275},
+  year      = {2024},
+  doi       = {10.1609/aaai.v38i20.30232}
+}
+% DOI confirmed via AAAI Digital Library: 10.1609/aaai.v38i20.30232
+
+@inproceedings{nguyen2020phobert,
+  author    = {Nguyen, Dat Quoc and Nguyen, Anh Tuan},
+  title     = {{PhoBERT}: Pre-trained language models for {Vietnamese}},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2020},
+  pages     = {1037--1042},
+  year      = {2020},
+  doi       = {10.18653/v1/2020.findings-emnlp.92}
+}
+
+@inproceedings{vu2018vncorenlp,
+  author    = {Vu, Thanh and Nguyen, Dat Quoc and Nguyen, Dai Quoc and Dras, Mark and Johnson, Mark},
+  title     = {{VnCoreNLP}: A {Vietnamese} Natural Language Processing Toolkit},
+  booktitle = {Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Demonstrations},
+  pages     = {56--60},
+  year      = {2018},
+  doi       = {10.18653/v1/N18-5012}
+}
+
+%% ----------------------- Models, metrics, tools ---------------------------
+
+@inproceedings{chen2016xgboost,
+  author    = {Chen, Tianqi and Guestrin, Carlos},
+  title     = {{XGBoost}: A Scalable Tree Boosting System},
+  booktitle = {Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {785--794},
+  year      = {2016},
+  doi       = {10.1145/2939672.2939785}
+}
+
+@inproceedings{clark2020electra,
+  author    = {Clark, Kevin and Luong, Minh-Thang and Le, Quoc V. and Manning, Christopher D.},
+  title     = {{ELECTRA}: Pre-training Text Encoders as Discriminators Rather Than Generators},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2003.10555}
+}
+
+@inproceedings{zhang2020bertscore,
+  author    = {Zhang, Tianyi and Kishore, Varsha and Wu, Felix and Weinberger, Kilian Q. and Artzi, Yoav},
+  title     = {{BERTScore}: Evaluating Text Generation with {BERT}},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  doi       = {10.48550/arXiv.1904.09675}
+}
+
+@article{powers2011evaluation,
+  author  = {Powers, David M. W.},
+  title   = {Evaluation: From Precision, Recall and {F}-Measure to {ROC}, Informedness, Markedness and Correlation},
+  journal = {Journal of Machine Learning Technologies},
+  volume  = {2},
+  number  = {1},
+  pages   = {37--63},
+  year    = {2011},
+  doi     = {10.48550/arXiv.2010.16061}
+}
+
+%% ==========================================================================
+%% UNCITED ENTRIES -- commented out per Discover AI rule that the reference
+%% list may contain only works cited in the text. Data below has been
+%% corrected (note shi2023replug previously had a fabricated author list).
+%% Uncomment an entry ONLY after adding a \cite for it in a section file.
+%% ==========================================================================
+
+% @inproceedings{shi2023replug,
+%   author    = {Shi, Weijia and Min, Sewon and Yasunaga, Michihiro and Seo, Minjoon and James, Rich and Lewis, Mike and Zettlemoyer, Luke and Yih, Wen-tau},
+%   title     = {{REPLUG}: Retrieval-Augmented Black-Box Language Models},
+%   booktitle = {Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics (NAACL)},
+%   pages     = {8371--8384},
+%   year      = {2024},
+%   doi       = {10.48550/arXiv.2301.12652}
+% }
+% CORRECTED: previous author list ("James, Lisa and Chen, Mike") was wrong.
+
+% @inproceedings{ma2023queryrewrite,
+%   author    = {Ma, Xinbei and Gong, Yeyun and He, Pengcheng and Zhao, Hai and Duan, Nan},
+%   title     = {Query Rewriting in Retrieval-Augmented Large Language Models},
+%   booktitle = {Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+%   pages     = {5303--5315},
+%   year      = {2023},
+%   doi       = {10.18653/v1/2023.emnlp-main.322}
+% }
+
+% @inproceedings{press2023measuring,
+%   author    = {Press, Ofir and Zhang, Muru and Min, Sewon and Schmidt, Ludwig and Smith, Noah A. and Lewis, Mike},
+%   title     = {Measuring and Narrowing the Compositionality Gap in Language Models},
+%   booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2023},
+%   pages     = {5687--5711},
+%   year      = {2023},
+%   doi       = {10.18653/v1/2023.findings-emnlp.378}
+% }
+
+% @article{pedregosa2011sklearn,
+%   author  = {Pedregosa, Fabian and Varoquaux, Ga{\"e}l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and others},
+%   title   = {Scikit-learn: Machine Learning in {Python}},
+%   journal = {Journal of Machine Learning Research},
+%   volume  = {12},
+%   pages   = {2825--2830},
+%   year    = {2011},
+%   doi     = {10.48550/arXiv.1201.0490}
+% }
+
+% @article{sokolova2009systematic,
+%   author  = {Sokolova, Marina and Lapalme, Guy},
+%   title   = {A systematic analysis of performance measures for classification tasks},
+%   journal = {Information Processing \& Management},
+%   volume  = {45},
+%   number  = {4},
+%   pages   = {427--437},
+%   year    = {2009},
+%   doi     = {10.1016/j.ipm.2009.03.002}
+% }
+
+% @book{manning2008ir,
+%   author    = {Manning, Christopher D. and Raghavan, Prabhakar and Sch{\"u}tze, Hinrich},
+%   title     = {Introduction to Information Retrieval},
+%   publisher = {Cambridge University Press},
+%   year      = {2008},
+%   doi       = {10.1017/CBO9780511809071}
+% }
+
+% @inproceedings{chalkidis2023lexglue,
+%   author    = {Chalkidis, Ilias and Jana, Abhik and Hartung, Dirk and Bommarito, Michael and Androutsopoulos, Ion and Katz, Daniel Martin and Aletras, Nikolaos},
+%   title     = {{LexGLUE}: A Benchmark Dataset for Legal Language Understanding in {English}},
+%   booktitle = {Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (ACL)},
+%   pages     = {4310--4330},
+%   year      = {2022},
+%   doi       = {10.18653/v1/2022.acl-long.297}
+% }
+% NOTE: paper is ACL 2022; the old key said 2023. Key preserved for safety.

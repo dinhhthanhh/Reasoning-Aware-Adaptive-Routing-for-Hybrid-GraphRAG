@@ -1,0 +1,1 @@
+["query_length_chars", "query_length_words", "graph_keyword_count", "legal_reference_count", "dieu_reference_count", "multi_article_ref", "is_yes_no_question", "is_factoid_question", "cross_doc_signal_count", "has_conditional_structure", "has_negation", "has_comparison", "has_enumeration", "has_procedure_marker", "ambiguity_score", "has_multi_hop_connector"]

@@ -1,0 +1,125 @@
+{
+  "verified_at": "2026-06-28T15:08:59.409241+00:00",
+  "source": "BoPhapDienDienTu",
+  "database": "phapdien",
+  "total_nodes": 804322,
+  "total_edges": 1968621,
+  "legal_doc": 4598,
+  "legal_article": 68570,
+  "semantic_nodes": 731154,
+  "other_nodes": 0,
+  "legal_doc_pd": 4598,
+  "legal_doc_hf": 0,
+  "has_article_edges": 68568,
+  "co_occurred": 0,
+  "vector_chunk": 0,
+  "sources": [
+    {
+      "source": "phapdien",
+      "c": 4598
+    }
+  ],
+  "top_relationship_types": [
+    {
+      "type": "MENTIONS",
+      "c": 1033341
+    },
+    {
+      "type": "HAS_CONDITION",
+      "c": 202298
+    },
+    {
+      "type": "OBLIGATES",
+      "c": 128768
+    },
+    {
+      "type": "PART_OF_PROCEDURE",
+      "c": 102004
+    },
+    {
+      "type": "REGULATES",
+      "c": 75137
+    },
+    {
+      "type": "RESPONSIBLE_FOR",
+      "c": 73867
+    },
+    {
+      "type": "HAS_ARTICLE",
+      "c": 68568
+    },
+    {
+      "type": "REFERS_TO",
+      "c": 68028
+    },
+    {
+      "type": "APPLIES_TO",
+      "c": 38908
+    },
+    {
+      "type": "PERMITS",
+      "c": 33772
+    },
+    {
+      "type": "HAS_EXCEPTION",
+      "c": 33164
+    },
+    {
+      "type": "AUTHORIZES",
+      "c": 24843
+    },
+    {
+      "type": "PROHIBITS",
+      "c": 23789
+    },
+    {
+      "type": "ELIGIBLE_FOR",
+      "c": 22848
+    },
+    {
+      "type": "SUPERVISES",
+      "c": 14417
+    },
+    {
+      "type": "ENFORCES",
+      "c": 9380
+    },
+    {
+      "type": "AMENDS",
+      "c": 5944
+    },
+    {
+      "type": "NEXT_STEP",
+      "c": 5239
+    },
+    {
+      "type": "REPLACES",
+      "c": 4189
+    },
+    {
+      "type": "REQUIRES",
+      "c": 85
+    }
+  ],
+  "node_labels": [
+    "ACTOR",
+    "AUTHORITY",
+    "CONDITION",
+    "LEGAL_CONCEPT",
+    "LegalArticle",
+    "LegalDoc",
+    "OBLIGATION",
+    "PD",
+    "PENALTY",
+    "PROCEDURE",
+    "RIGHT"
+  ],
+  "schema": "(:LegalDoc:PD)-[:HAS_ARTICLE]->(:LegalArticle:PD) + semantic layer",
+  "checks": {
+    "no_hf_label": true,
+    "no_foreign_sources": true,
+    "no_co_occurred": true,
+    "has_structural_pd": true
+  },
+  "pd_only_pass": true
+}

@@ -128,6 +128,7 @@ def index_jsonl(
     log_every=1000,
     initial_indexed=0,
     initial_batch_id=0,
+    seen_ids=None,
 ):
     if not file_path.exists():
         logger.warning(f"File not found: {file_path}")
@@ -141,6 +142,8 @@ def index_jsonl(
     batch_id = initial_batch_id
     started_at = time.perf_counter()
     next_log_at = None
+    if seen_ids is None:
+        seen_ids = set()
     if log_every:
         next_log_at = ((initial_indexed // log_every) + 1) * log_every
     
@@ -171,8 +174,15 @@ def index_jsonl(
                 text_to_index = " ".join(text_to_index.split())  # remove control chars and extra whitespace
                 
                 documents.append(text_to_index)
-                # Prefixed ID to avoid collisions
-                ids.append(f"{source_prefix}_{doc_id}")
+                # Prefixed ID to avoid collisions, but skip prefix if it's already a canonical ID (contains ::)
+                base_doc_id = str(doc_id) if "::" in str(doc_id) else f"{source_prefix}_{doc_id}"
+                final_id = base_doc_id
+                counter = 1
+                while final_id in seen_ids:
+                    counter += 1
+                    final_id = f"{base_doc_id}_{counter}"
+                seen_ids.add(final_id)
+                ids.append(final_id)
                 
                 metadatas.append({
                     "title": str(item.get("title", "")),
@@ -293,6 +303,7 @@ def main():
 
         total_indexed = 0
         batch_id = 0
+        global_seen_ids = set()
         if is_en:
             total_indexed, batch_id = index_jsonl(
                 Path(data_dir) / "hotpot_full.jsonl",
@@ -303,10 +314,12 @@ def main():
                 log_every=args.log_every,
                 initial_indexed=total_indexed,
                 initial_batch_id=batch_id,
+                seen_ids=global_seen_ids,
             )
         else:
             for jsonl_path in (
-                Path(data_dir) / "hf_processed.jsonl",
+                Path(data_dir) / "core_laws_rechunked.jsonl",
+                Path(data_dir) / "hf_rechunked.jsonl",
                 Path(data_dir) / "phapdien_processed.jsonl",
             ):
                 if args.limit is not None and total_indexed >= args.limit:
@@ -320,6 +333,7 @@ def main():
                     log_every=args.log_every,
                     initial_indexed=total_indexed,
                     initial_batch_id=batch_id,
+                    seen_ids=global_seen_ids,
                 )
 
         logger.info(f"Indexing complete. Total docs: {collection.count():,}")

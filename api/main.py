@@ -4,12 +4,14 @@ import time
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from loguru import logger
 
 from pipeline.hybrid_pipeline import HybridPipeline
+from api.auth import router as auth_router, get_current_user
 
 app = FastAPI(title="Vietnamese Legal QA API", version="1.0.0")
 
@@ -21,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix="/auth")
 
 # Initialize pipeline lazily
 _pipeline = None
@@ -36,6 +40,7 @@ def get_pipeline():
 class QueryRequest(BaseModel):
     query: str
     session_id: Optional[str] = "web_session"
+    k: Optional[int] = 3
     verbose: bool = True
 
 class QueryResponse(BaseModel):
@@ -48,13 +53,14 @@ class QueryResponse(BaseModel):
     sources: List[str]
     latency_ms: float
     is_ambiguous: bool
+    resolved_query: Optional[str] = None
 
 @app.get("/")
 async def root():
     return {"message": "Vietnamese Legal QA API is running", "status": "ok"}
 
-@app.post("/query", response_model=QueryResponse)
-async def query_legal(request: QueryRequest):
+@app.post("/query")
+async def query(request: QueryRequest, username: str = Depends(get_current_user)):
     try:
         pipeline = get_pipeline()
         logger.info(f"API Query: {request.query}")
@@ -62,7 +68,8 @@ async def query_legal(request: QueryRequest):
         response = pipeline.query(
             query=request.query,
             session_id=request.session_id,
-            verbose=request.verbose
+            verbose=request.verbose,
+            username=username
         )
         
         return QueryResponse(
@@ -74,8 +81,97 @@ async def query_legal(request: QueryRequest):
             stage2_override=response.stage2_override,
             sources=response.sources,
             latency_ms=response.latency_ms,
-            is_ambiguous=response.is_ambiguous
+            is_ambiguous=response.is_ambiguous,
+            resolved_query=getattr(response, "resolved_query", None)
         )
+    except Exception as e:
+        logger.exception("API Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/query_stream")
+async def query_stream(request: QueryRequest, username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        logger.info(f"API Stream Query: {request.query}")
+        
+        def generate():
+            for chunk in pipeline.query_stream(
+                query=request.query,
+                session_id=request.session_id,
+                verbose=request.verbose,
+                username=username
+            ):
+                yield chunk
+                
+        return StreamingResponse(generate(), media_type="text/event-stream")
+    except Exception as e:
+        logger.exception("API Stream Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sessions")
+async def get_all_sessions(username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        return {"sessions": pipeline.conversation_manager.get_all_sessions(username)}
+    except Exception as e:
+        logger.exception("API Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sessions/{session_id}")
+async def get_session_history(session_id: str, username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        
+        # Check if session belongs to user
+        sessions = pipeline.conversation_manager.get_all_sessions(username)
+        turns = pipeline.conversation_manager.get_history(session_id)
+        
+        # If the session exists (has turns) but doesn't belong to the user, deny access
+        if turns and not any(s['session_id'] == session_id for s in sessions):
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+            
+        return {"session_id": session_id, "history": turns}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("API Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str, username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        pipeline.conversation_manager.clear_session(session_id, username)
+        return {"status": "success", "message": f"Session {session_id} deleted."}
+    except Exception as e:
+        logger.exception("API Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/sessions/{session_id}/truncate")
+async def truncate_session(session_id: str, keep_turns: int, username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        sessions = pipeline.conversation_manager.get_all_sessions(username)
+        if not any(s['session_id'] == session_id for s in sessions):
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+            
+        pipeline.conversation_manager.truncate_session(session_id, keep_turns)
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("API Error:")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class SessionUpdate(BaseModel):
+    title: str
+
+@app.put("/sessions/{session_id}")
+async def update_session(session_id: str, payload: SessionUpdate, username: str = Depends(get_current_user)):
+    try:
+        pipeline = get_pipeline()
+        pipeline.conversation_manager.update_session_title(session_id, payload.title, username)
+        return {"status": "success", "message": f"Session {session_id} renamed."}
     except Exception as e:
         logger.exception("API Error:")
         raise HTTPException(status_code=500, detail=str(e))

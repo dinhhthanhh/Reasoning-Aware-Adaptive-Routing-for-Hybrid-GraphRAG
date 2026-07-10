@@ -46,6 +46,7 @@ class Neo4jClient:
         self.password = _get_config_or_env(config.get("password"), "NEO4J_PASSWORD", "password")
         self.database = _get_config_or_env(config.get("database"), "NEO4J_DATABASE", "neo4j")
         self.batch_size = config.get("batch_size") or 500
+        self.graph_scope = config.get("graph_scope")  # e.g. "phapdien" — limit retrieval to PD nodes
 
         self._driver = GraphDatabase.driver(
             self.uri,
@@ -73,6 +74,25 @@ class Neo4jClient:
     def _get_driver(self):
         """Return the active driver."""
         return self._driver
+
+    def _graph_scope_matches(self, source: str, labels: list[str] | None = None) -> bool:
+        """Return True if node passes configured graph_scope filter."""
+        if not self.graph_scope:
+            return True
+        if source == self.graph_scope:
+            return True
+        return bool(labels and "PD" in labels)
+
+    def _filter_scoped_rows(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if not self.graph_scope:
+            return rows
+        return [
+            row for row in rows
+            if self._graph_scope_matches(
+                str(row.get("source", "")),
+                row.get("labels") if isinstance(row.get("labels"), list) else None,
+            )
+        ]
 
     def batch_insert_nodes(self, nodes: list[dict[str, Any]]) -> int:
         """Insert nodes in batches using separate sessions per chunk.
@@ -184,6 +204,337 @@ class Neo4jClient:
         with self._get_driver().session(database=self.database) as session:
             result = session.run(cypher, parameters or {})
             return [record.data() for record in result]
+
+
+    def get_cypher_context(self, query: str, llm_client: Any, top_k: int = 3) -> str:
+        """Perform a Text-to-Cypher search to find context.
+
+        Args:
+            query: The natural language query.
+            llm_client: The LLM client to generate Cypher.
+            top_k: Number of results (often handled by the LIMIT in Cypher).
+
+        Returns:
+            Formatted context string.
+        """
+        if not llm_client or not hasattr(llm_client, "generate_cypher"):
+            logger.warning("No llm_client provided for Cypher generation.")
+            return NO_GRAPH_CONTEXT
+
+        try:
+            cypher = llm_client.generate_cypher(query)
+            if not cypher:
+                return NO_GRAPH_CONTEXT
+                
+            logger.info("Generated Cypher: {}", cypher)
+            
+            records = self.query(cypher)
+            if not records:
+                return NO_GRAPH_CONTEXT
+
+            context_parts: list[str] = []
+            for record in records:
+                # The LLM is instructed to return `title` and `content` alias
+                title = record.get("title") or "Unknown Title"
+                content = record.get("content") or record.get("summary") or str(record)
+                context_parts.append(f"[Start: {title}]\nContent: {content}")
+
+            return "\n\n".join(context_parts)
+
+        except Exception as exc:
+            logger.warning("Neo4j Text-to-Cypher retrieval failed: {}", exc)
+            return NO_GRAPH_CONTEXT
+
+    @staticmethod
+    def _extract_doc_and_article_refs(query: str) -> tuple[list[str], list[int]]:
+        """Extract original doc_numbers and article_numbers from a legal query.
+
+        Returns:
+            Tuple of (doc_numbers, article_numbers) found in the query.
+        """
+        doc_num_re = re.compile(
+            r"\b(\d{1,4}/\d{4}/[A-ZĐa-z][A-ZĐa-z\-/]{1,25})\b",
+            re.UNICODE,
+        )
+        art_num_re = re.compile(r"Điều\s+(\d+)", re.IGNORECASE | re.UNICODE)
+
+        doc_nums: list[str] = list(dict.fromkeys(m.group(1) for m in doc_num_re.finditer(query)))
+        art_nums: list[int] = list(dict.fromkeys(int(m.group(1)) for m in art_num_re.finditer(query)))
+        return doc_nums, art_nums
+
+    def get_direct_article_context(
+        self,
+        doc_number: str,
+        article_numbers: list[int],
+        top_k: int = 5,
+    ) -> str:
+        """Targeted lookup of articles by original doc_number and article numbers.
+
+        Searches content_preview for 'Nguồn gốc: Điều N ... số doc_number' patterns.
+        This is the primary retrieval path for graph_traversal and hybrid queries
+        that mention explicit document numbers.
+
+        Args:
+            doc_number: Original legal document number, e.g. '10/2016/TT-BTP'.
+            article_numbers: List of article numbers to retrieve, e.g. [3, 11].
+            top_k: Maximum articles to return.
+
+        Returns:
+            Formatted context string with Nguồn gốc ID lines for source extraction.
+        """
+        if not doc_number:
+            return NO_GRAPH_CONTEXT
+
+        try:
+            if article_numbers:
+                # Use "Nguồn gốc: Điều N" pattern for precise matching.
+                # This avoids false positives where a body article merely MENTIONS
+                # "Điều 24" without being the origin article.
+                art_num_strs = [str(n) for n in article_numbers[:8]]
+                art_cond = " OR ".join(
+                    f"a.content CONTAINS 'Nguồn gốc: Điều {n} '"
+                    + f" OR a.content CONTAINS 'Nguồn gốc: Điều {n},'"
+                    + f" OR a.content CONTAINS 'Nguồn gốc: Điều {n}.'"
+                    + f" OR a.content CONTAINS 'Nguồn gốc: Điều {n})'"
+                    for n in art_num_strs
+                )
+                cypher = f"""
+                MATCH (a:LegalArticle:PD)
+                WHERE a.content CONTAINS $doc_num
+                  AND ({art_cond})
+                RETURN elementId(a) AS element_id,
+                       a.article_id AS article_id,
+                       a.law_id AS law_id,
+                       a.title AS title,
+                       a.content AS content_preview
+                LIMIT $limit
+                """
+                rows = self.query(cypher, {"doc_num": doc_number, "limit": top_k})
+            else:
+                rows = []
+
+            if not rows:
+                return NO_GRAPH_CONTEXT
+
+            orig_art_re = re.compile(
+                r"Nguồn gốc:\s*Điều\s+(\d+)[^\n]{0,120}?số\s+([\d]+/\d{4}/[\w/\-]+)",
+                re.IGNORECASE | re.UNICODE,
+            )
+            context_parts: list[str] = []
+            for row in rows:
+                preview = str(row.get("content_preview") or "")
+                title = str(row.get("title") or "Unknown")
+                article_id = str(row.get("article_id") or "")
+                law_id = str(row.get("law_id") or "")
+
+                # Extract original canonical ID from Nguồn gốc pattern
+                m = orig_art_re.search(preview)
+                orig_id = ""
+                if m:
+                    orig_art_num = m.group(1).strip()
+                    orig_doc_num = m.group(2).strip().rstrip(".,")
+                    orig_id = f"{orig_doc_num}::{orig_art_num}"
+
+                context_parts.append(
+                    f"[Start: {title}] (LegalArticle)\n"
+                    f"Article ID: {article_id}\n"
+                    f"Law ID: {law_id}\n"
+                    + (f"Nguồn gốc ID: {orig_id}\n" if orig_id else "")
+                    + f"Content: {preview[:2500]}"
+                )
+
+            return "\n\n".join(context_parts)
+
+        except Exception as exc:
+            logger.warning("Direct article lookup failed for {}: {}", doc_number, exc)
+            return NO_GRAPH_CONTEXT
+
+    def get_semantic_context(self, entities: list[str], top_k: int = 5) -> str:
+        """Semantic Traversal Flow for Layer 2 Legal Knowledge Graph.
+        
+        Args:
+            entities: List of entity names extracted from query.
+            top_k: Number of articles to retrieve.
+        """
+        if not entities:
+            return ""
+            
+        try:
+            # Cypher to match any semantic node that CONTAINS one of the entities,
+            # then traverse to the LegalArticle.
+            # Using toLower() for case-insensitive matching
+            conditions = " OR ".join([f"toLower(s.name) CONTAINS toLower($e{i})" for i in range(len(entities))])
+            params = {f"e{i}": e for i, e in enumerate(entities)}
+            params["limit"] = top_k
+            
+            # Semantic nodes have one of these labels
+            labels = "s:LEGAL_CONCEPT OR s:ACTOR OR s:AUTHORITY OR s:OBLIGATION OR s:RIGHT OR s:PROCEDURE OR s:CONDITION OR s:PENALTY"
+            
+            cypher = f"""
+            MATCH (s)
+            WHERE ({labels}) AND ({conditions})
+            MATCH (a:LegalArticle)-[:MENTIONS]->(s)
+            OPTIONAL MATCH (s)-[r]-(o)
+            WHERE type(r) <> 'MENTIONS' 
+              AND (o:LEGAL_CONCEPT OR o:ACTOR OR o:AUTHORITY OR o:OBLIGATION OR o:RIGHT OR o:PROCEDURE OR o:CONDITION OR o:PENALTY)
+            WITH a, s, r, o
+            LIMIT $limit
+            WITH a, collect(DISTINCT labels(s)[0] + '("' + s.name + '") -[' + type(r) + ']-> ' + labels(o)[0] + '("' + o.name + '")') AS semantic_paths
+            RETURN elementId(a) AS element_id,
+                   a.article_id AS article_id,
+                   a.law_id AS law_id,
+                   a.title AS title,
+                   a.content AS content,
+                   semantic_paths
+            """
+            rows = self.query(cypher, params)
+            if not rows:
+                return ""
+                
+            context_parts: list[str] = []
+            for row in rows:
+                content = str(row.get("content") or "")
+                title = str(row.get("title") or "Unknown")
+                article_id = str(row.get("article_id") or "")
+                law_id = str(row.get("law_id") or "")
+                semantic_paths = row.get("semantic_paths") or []
+                paths_str = "\n".join([f"  - {p}" for p in semantic_paths if "None" not in p])
+                
+                # Format similar to get_direct_article_context for sources extraction
+                orig_id = article_id if "::" in article_id else f"{law_id}::{article_id.split('_')[-1]}"
+                
+                context_parts.append(
+                    f"[Start: {title}]\n"
+                    f"Article ID: {article_id}\n"
+                    f"Law ID: {law_id}\n"
+                    f"Nguồn gốc ID: {orig_id}\n"
+                    f"Semantic Traversal Paths:\n{paths_str}\n"
+                    f"Content: {content[:2500]}"
+                )
+            
+            return "\n\n".join(context_parts)
+        except Exception as exc:
+            logger.warning("Semantic traversal failed: {}", exc)
+            return ""
+
+    def get_semantic_vector_context(self, query_embedding: list[float], top_k: int = 5) -> str:
+        """Vector-based Semantic Traversal Flow for Layer 2 Legal Knowledge Graph.
+        
+        Searches across all semantic vector indexes and performs 1-hop reasoning.
+        """
+        if not query_embedding:
+            return ""
+            
+        try:
+            labels = ["LEGAL_CONCEPT", "ACTOR", "RIGHT", "OBLIGATION", "CONDITION", "PROCEDURE", "PENALTY", "AUTHORITY"]
+            unions = []
+            for l in labels:
+                unions.append(f"CALL db.index.vector.queryNodes('semantic_{l.lower()}_emb', $limit, $embedding) YIELD node AS s, score RETURN s, score")
+            
+            union_cypher = " UNION ALL ".join(unions)
+            
+            cypher = f"""
+            CALL () {{
+                {union_cypher}
+            }}
+            WITH s, score ORDER BY score DESC LIMIT $limit
+            MATCH (a:LegalArticle)-[:MENTIONS]->(s)
+            OPTIONAL MATCH (s)-[r]-(o)
+            WHERE type(r) <> 'MENTIONS'
+              AND (o:LEGAL_CONCEPT OR o:ACTOR OR o:AUTHORITY OR o:OBLIGATION OR o:RIGHT OR o:PROCEDURE OR o:CONDITION OR o:PENALTY)
+            WITH a, s, r, o, score
+            WITH a, max(score) as max_score, collect(DISTINCT labels(s)[0] + '("' + s.name + '") -[' + type(r) + ']-> ' + coalesce(labels(o)[0], 'None') + '("' + coalesce(o.name, 'None') + '")') AS semantic_paths
+            ORDER BY max_score DESC LIMIT $limit
+            
+            RETURN elementId(a) AS element_id,
+                   a.article_id AS article_id,
+                   a.law_id AS law_id,
+                   a.title AS title,
+                   a.content AS content,
+                   semantic_paths
+            """
+            
+            rows = self.query(cypher, {"embedding": query_embedding, "limit": top_k})
+            if not rows:
+                return ""
+                
+            context_parts: list[str] = []
+            for row in rows:
+                content = str(row.get("content") or "")
+                title = str(row.get("title") or "Unknown")
+                article_id = str(row.get("article_id") or "")
+                law_id = str(row.get("law_id") or "")
+                semantic_paths = row.get("semantic_paths") or []
+                paths_str = "\n".join([f"  - {p}" for p in semantic_paths if "None" not in p])
+                
+                orig_id = article_id if "::" in article_id else f"{law_id}::{article_id.split('_')[-1]}"
+                
+                context_parts.append(
+                    f"[Start: {title}]\n"
+                    f"Article ID: {article_id}\n"
+                    f"Law ID: {law_id}\n"
+                    f"Nguồn gốc ID: {orig_id}\n"
+                    f"Semantic Traversal Paths:\n{paths_str}\n"
+                    f"Content: {content[:2500]}"
+                )
+            
+            return "\n\n".join(context_parts)
+        except Exception as exc:
+            logger.warning("Semantic vector traversal failed: {}", exc)
+            return ""
+
+    def get_multi_hop_context_by_chunks(self, chunk_ids: list[str], top_k: int = 3) -> str:
+        """Perform a multi-hop search starting from given chunk IDs."""
+        if not chunk_ids:
+            return NO_GRAPH_CONTEXT
+
+        try:
+            cypher = """
+            MATCH (node)
+            WHERE (node:VectorChunk AND (node.chunk_id IN $chunk_ids OR node.doc_id IN $chunk_ids OR node.title IN $chunk_ids)) OR
+                  (node:LegalArticle AND (node.article_id IN $chunk_ids OR node.doc_id IN $chunk_ids OR node.title IN $chunk_ids)) OR
+                  (node:LegalDoc AND (node.doc_id IN $chunk_ids OR node.title IN $chunk_ids)) OR
+                  (node.name IN $chunk_ids)
+            RETURN elementId(node) AS element_id,
+                   coalesce(properties(node).name, properties(node).title, properties(node).article_id, properties(node).doc_id, properties(node).chunk_id, "Unknown") AS name,
+                   labels(node) AS labels,
+                   coalesce(properties(node).content, properties(node).text, properties(node).title, properties(node).source_doc, "") AS summary
+            LIMIT $limit
+            """
+            starts = self.query(cypher, {"chunk_ids": chunk_ids, "limit": top_k * 2})
+            if not starts:
+                return NO_GRAPH_CONTEXT
+
+            context_parts: list[str] = []
+            seen_paths: set[str] = set()
+
+            for start in starts:
+                start_name = start.get("name") or "Unknown"
+                start_type = ",".join(start.get("labels", [])) or "Node"
+                start_text = start.get("summary") or ""
+                context_parts.append(
+                    f"[Start: {start_name}] ({start_type})\n{str(start_text)[:1800]}"
+                )
+
+                paths = self._expand_paths(start["element_id"], max_paths=max(top_k * 2, 3))
+                for path in paths:
+                    path_key = " -> ".join(path.get("node_names", [])) + "|" + " -> ".join(path.get("rel_types", []))
+                    if path_key in seen_paths:
+                        continue
+                    seen_paths.add(path_key)
+
+                    rel_chain = " -> ".join(path.get("rel_types", [])) or "RELATED"
+                    node_chain = " -> ".join(path.get("node_names", []))
+                    end_text = path.get("end_summary") or path.get("end_text") or ""
+                    context_parts.append(
+                        f"Path: {node_chain}\nRelation chain: {rel_chain}\nEvidence: {str(end_text)[:1200]}"
+                    )
+
+            return "\n\n".join(context_parts[: max(1, top_k * 5)])
+
+        except Exception as exc:
+            logger.warning("Neo4j chunk-based multi-hop retrieval failed: {}", exc)
+            return NO_GRAPH_CONTEXT
 
     def get_multi_hop_context(self, query: str, top_k: int = 3) -> str:
         """Perform a multi-hop search to build reasoning context.
@@ -548,7 +899,7 @@ class Neo4jClient:
              coalesce(props.doc_id, props.law_id, "") AS doc_id,
              coalesce(props.article_id, "") AS article_id,
              coalesce(props.chunk_id, "") AS chunk_id,
-             coalesce(props.content, props.text, props.content_preview, props.source_doc, "") AS content,
+             coalesce(props.content, props.text, props.source_doc, "") AS content,
              coalesce(props.authority, "") AS authority,
              coalesce(props.type, "") AS node_type,
              coalesce(props.source, "") AS source,
@@ -581,15 +932,16 @@ class Neo4jClient:
                score,
                degree
         """
-        return self.query(cypher, {
+        return self._filter_scoped_rows(self.query(cypher, {
             "index_name": index_name,
             "search_query": search_query,
             "limit": limit,
-        })
+        }))
 
     def _query_legal_doc_metadata(self, keywords: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
         cypher = """
         MATCH (node:LegalDoc)
+        WHERE ($graph_scope IS NULL OR node.source = $graph_scope OR node:PD)
         WITH node, labels(node) AS labels, properties(node) AS props
         WITH node, labels, props,
              coalesce(props.title, props.doc_id, "") AS display,
@@ -635,7 +987,13 @@ class Neo4jClient:
         ORDER BY score DESC, degree DESC, size(display) ASC
         LIMIT $limit
         """
-        return self.query(cypher, {"keywords": keywords, "limit": limit})
+        return self._filter_scoped_rows(
+            self.query(cypher, {
+                "keywords": keywords,
+                "limit": limit,
+                "graph_scope": self.graph_scope,
+            })
+        )
 
     def _expand_paths(self, start_element_id: str, max_paths: int) -> list[dict[str, Any]]:
         """Expand 1-2 hop paths from a start node and format path metadata."""
@@ -648,7 +1006,7 @@ class Neo4jClient:
         RETURN
             [node IN ns | coalesce(properties(node).name, properties(node).title, properties(node).article_id, properties(node).doc_id, properties(node).chunk_id, "Unknown")] AS node_names,
             [rel IN rels | type(rel) + coalesce(" (" + properties(rel).type + ")", "")] AS rel_types,
-            coalesce(end_props.content, end_props.text, end_props.content_preview, end_props.title, end_props.source_doc, "") AS end_text,
+            coalesce(end_props.content, end_props.text, end_props.title, end_props.source_doc, "") AS end_text,
             CASE
                 WHEN "LegalDoc" IN labels(end) THEN
                     "Title: " + coalesce(end_props.title, "") +
@@ -661,13 +1019,13 @@ class Neo4jClient:
                     "Title: " + coalesce(end_props.title, "") +
                     "\nArticle ID: " + coalesce(end_props.article_id, "") +
                     "\nLaw ID: " + coalesce(end_props.law_id, "") +
-                    "\nContent: " + coalesce(end_props.content, end_props.content_preview, "")
+                    "\nContent: " + coalesce(end_props.content, "")
                 WHEN "VectorChunk" IN labels(end) THEN
                     "Title: " + coalesce(end_props.title, "") +
                     "\nDoc ID: " + coalesce(end_props.doc_id, "") +
                     "\nVector chunk: " + coalesce(end_props.chunk_id, "") +
-                    "\nContent: " + coalesce(end_props.content_preview, "")
-                ELSE coalesce(end_props.content, end_props.text, end_props.content_preview, end_props.source_doc, "")
+                    "\nContent: " + coalesce(end_props.content, "")
+                ELSE coalesce(end_props.content, end_props.text, end_props.source_doc, "")
             END AS end_summary,
             length(p) AS hops
         ORDER BY hops ASC,

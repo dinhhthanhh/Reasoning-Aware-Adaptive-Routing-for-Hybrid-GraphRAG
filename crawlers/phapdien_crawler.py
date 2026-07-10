@@ -72,13 +72,18 @@ def parse_html_demuc(html_path: Path) -> list[dict]:
                     dieu_list.append({
                         "so_dieu": current_dieu["so_dieu"],
                         "tieu_de": current_dieu["tieu_de"],
+                        "ghi_chu": current_dieu.get("ghi_chu", ""),
                         "noi_dung": "\n".join(current_parts)
                     })
                 # Extract so dieu
                 m = re.search(r"Điều\s+([\d\.]+a?)", text, re.IGNORECASE)
                 so_dieu = m.group(1) if m else ""
-                current_dieu = {"so_dieu": so_dieu, "tieu_de": text}
+                current_dieu = {"so_dieu": so_dieu, "tieu_de": text, "ghi_chu": ""}
                 current_parts = []
+            elif "pGhiChu" in cls and current_dieu:
+                # Bắt thẻ ghi chú chứa tên luật
+                if text:
+                    current_dieu["ghi_chu"] = text.strip("()")
             elif any(c in cls for c in TARGET_CLASSES) and current_dieu:
                 if text:
                     current_parts.append(text)
@@ -87,6 +92,7 @@ def parse_html_demuc(html_path: Path) -> list[dict]:
             dieu_list.append({
                 "so_dieu": current_dieu["so_dieu"],
                 "tieu_de": current_dieu["tieu_de"],
+                "ghi_chu": current_dieu.get("ghi_chu", ""),
                 "noi_dung": "\n".join(current_parts)
             })
             

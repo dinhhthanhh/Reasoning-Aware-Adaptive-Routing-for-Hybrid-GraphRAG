@@ -75,9 +75,11 @@ DEEP_COMPARATIVE = re.compile(
 # Aggregation/summary patterns (factoid, → dense_retrieval)
 FACTOID_PATTERNS = re.compile(
     r"(?:"
-    r"là gì|được định nghĩa|có nghĩa là|bao gồm những gì|"
-    r"quy định gì|có những loại|các loại.*là|định nghĩa|"
-    r"khái niệm|thuật ngữ"
+    r"bao\s+nhiêu|mức\s+phạt|mức\s+xử\s+phạt|phạt\s+bao\s+nhiêu|bao\s+nhiêu\s+tiền|"
+    r"là\s+gì|như\s+thế\s+nào|gồm\s+những\s+gì|bao\s+gồm|"
+    r"thời\s+hạn|thời\s+gian|khi\s+nào|ngày\s+nào|tối\s+đa|tối\s+thiểu|bao\s+lâu|"
+    r"có\s+được\s+không|ai\s+được|tại\s+sao|"
+    r"khái\s+niệm|thuật\s+ngữ"
     r")",
     re.IGNORECASE,
 )
@@ -400,17 +402,22 @@ class QueryComplexityAnalyzer:
         # Law specificity
         specific_articles = len(specific_article_pattern.findall(query))
         law_names = len(law_name_pattern.findall(query))
-        if specific_articles > 0:
+        law_specificity = 0
+        if specific_article_pattern.search(query):
             law_specificity = 2
-        elif law_names > 0:
+        elif law_name_pattern.search(query):
             law_specificity = 1
-        else:
-            law_specificity = 0
 
-        # Conditional depth
-        cond_depth = len(conditional_pattern.findall(query))
+        conditional_depth = len(conditional_pattern.findall(query))
+        
+        # Modify graph keyword logic: conditionals in very short/informal queries might be less indicative of graph traversal
+        # We can use a proxy like the lack of law_specificity to downweight it slightly if needed, but since we don't have access to the full feature extractor here we'll just check if it's highly specific.
+        if law_specificity == 0 and conditional_depth > 0:
+            # We don't have legal_reference_count directly here, so we use law_specificity as a proxy.
+            # If no specific law is mentioned, informal conditionals shouldn't dominate.
+            pass # Keep it for now, but rely on the TwoStageRouter override to catch the zero-reference cases.
 
-        # Factoid detection
+        factoid = factoid_pattern.search(query) is not None
         is_factoid = bool(factoid_pattern.search(query))
 
         # Multi-hop verbs
@@ -443,7 +450,7 @@ class QueryComplexityAnalyzer:
             
             # Public finance / project plan queries behave like procedural/eligibility reasoning.
             procedural += public_finance_plan
-            if public_finance_plan >= 2 and cond_depth >= 1:
+            if public_finance_plan >= 2 and conditional_depth >= 1:
                 sub_q = max(sub_q, 1)
 
         # --- Complexity level classification (Adaptive-RAG 3-level) ---
@@ -452,7 +459,7 @@ class QueryComplexityAnalyzer:
             law_names=law_names,
             sub_q=sub_q,
             multi_hop_verbs=multi_hop_verbs,
-            cond_depth=cond_depth,
+            cond_depth=conditional_depth,
             is_factoid=is_factoid,
             comp_depth=comp_depth,
             token_count=token_count,
@@ -469,7 +476,7 @@ class QueryComplexityAnalyzer:
             sub_question_count=sub_q,
             entity_density=round(entity_density, 4),
             law_specificity=law_specificity,
-            conditional_depth=cond_depth,
+            conditional_depth=conditional_depth,
             is_factoid=is_factoid,
             multi_hop_verb_count=multi_hop_verbs,
             comparative_depth=comp_depth,
@@ -486,7 +493,7 @@ class QueryComplexityAnalyzer:
             sub_q,
             law_specificity,
             is_factoid,
-            cond_depth,
+            conditional_depth,
             authority_chain,
             legal_effect,
             procedural,

@@ -1,0 +1,7 @@
+{
+  "leakage_rate": 0.3317757009345794,
+  "high_sim_pair_count": 214,
+  "boundary_jaccard_mean": 0.1921811762154439,
+  "within_split_jaccard_mean": 0.1898487860386192,
+  "leakage_warning": "HIGH LEAKAGE DETECTED — paraphrase templates likely span the split boundary. The 0.995 single-split accuracy is unreliable."
+}

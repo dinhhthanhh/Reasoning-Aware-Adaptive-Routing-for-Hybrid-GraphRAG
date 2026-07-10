@@ -4,30 +4,30 @@
     "expected": "dense_retrieval",
     "query": "Điều kiện kết hôn theo Luật Hôn nhân và gia đình gồm những gì?",
     "history": "",
-    "stage1_route": "dense_retrieval",
-    "stage1_confidence": 0.9162303643953668,
-    "stage2_invoked": false,
-    "stage2_override": false,
+    "stage1_route": "clarify",
+    "stage1_confidence": 0.4722902259934576,
+    "stage2_invoked": true,
+    "stage2_override": true,
     "final_route": "dense_retrieval",
     "backend": "vector",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 1712.9921999876387
+    "latency_ms": 2808.361099974718
   },
   {
     "name": "Relation-heavy graph/hybrid",
     "expected": "graph_traversal",
     "query": "Quyết định 732/QĐ-UBND bãi bỏ hoặc sửa đổi quy định nào?",
     "history": "",
-    "stage1_route": "dense_retrieval",
-    "stage1_confidence": 0.8727272738306976,
+    "stage1_route": "graph_traversal",
+    "stage1_confidence": 0.55,
     "stage2_invoked": true,
-    "stage2_override": true,
+    "stage2_override": false,
     "final_route": "graph_traversal",
     "backend": "graph",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 3740.6421000196133
+    "latency_ms": 2939.767400006531
   },
   {
     "name": "Pronoun with valid history",
@@ -35,14 +35,14 @@
     "query": "Văn bản đó còn hiệu lực không?",
     "history": "Người dùng đang hỏi về Nghị định 100/2019/NĐ-CP về xử phạt vi phạm hành chính trong lĩnh vực giao thông đường bộ.",
     "stage1_route": "clarify",
-    "stage1_confidence": 0.6129032311094662,
+    "stage1_confidence": 1.0,
     "stage2_invoked": true,
     "stage2_override": false,
     "final_route": "graph_traversal",
     "backend": "graph",
     "history_resolution_status": "resolved",
     "resolved_referent": "Nghị định 100/2019/NĐ-CP",
-    "latency_ms": 4547.56050001015
+    "latency_ms": 4500.361400016118
   },
   {
     "name": "Pronoun without history",
@@ -57,7 +57,7 @@
     "backend": "none",
     "history_resolution_status": "no_history",
     "resolved_referent": null,
-    "latency_ms": 2820.4440000117756
+    "latency_ms": 2731.5008000005037
   },
   {
     "name": "Pronoun with irrelevant history",
@@ -72,7 +72,7 @@
     "backend": "none",
     "history_resolution_status": "irrelevant_history",
     "resolved_referent": null,
-    "latency_ms": 3338.2385000004433
+    "latency_ms": 2984.857600007672
   },
   {
     "name": "Missing entity",
@@ -80,14 +80,14 @@
     "query": "Mức phạt trong trường hợp này là bao nhiêu?",
     "history": "",
     "stage1_route": "clarify",
-    "stage1_confidence": 0.6125486227663145,
+    "stage1_confidence": 1.0,
     "stage2_invoked": true,
     "stage2_override": false,
     "final_route": "clarify",
     "backend": "none",
     "history_resolution_status": "no_history",
     "resolved_referent": null,
-    "latency_ms": 3180.7818000088446
+    "latency_ms": 2986.0217999957968
   },
   {
     "name": "Multi-interpretation",
@@ -95,13 +95,13 @@
     "query": "Doanh nghiệp có bị phạt không?",
     "history": "",
     "stage1_route": "clarify",
-    "stage1_confidence": 0.8285985448768098,
+    "stage1_confidence": 1.0,
     "stage2_invoked": true,
     "stage2_override": false,
     "final_route": "clarify",
     "backend": "none",
     "history_resolution_status": "not_needed",
     "resolved_referent": null,
-    "latency_ms": 2997.6208999869414
+    "latency_ms": 2655.0125000067055
   }
 ]

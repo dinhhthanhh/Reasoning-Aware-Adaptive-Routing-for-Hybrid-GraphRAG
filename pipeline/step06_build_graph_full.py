@@ -1,3 +1,10 @@
+# DEPRECATED for article ingestion — use scripts/build_kg.py only.
+# step06 calls Neo4jClient.batch_insert_nodes(), which MERGEs nodes under the
+# :Entity label (n:Entity {name}), NOT the :LegalArticle label that the query
+# layer (graph/neo4j_client.py) expects and label-boosts. Running this for
+# article ingestion creates a parallel, incompatible schema (see
+# docs/architecture/pipeline_audit.md and audit/critical_graph_risks.md, Risk 1).
+# Do NOT run this for article ingestion. Kept only for historical reference.
 import json
 import os
 import sys

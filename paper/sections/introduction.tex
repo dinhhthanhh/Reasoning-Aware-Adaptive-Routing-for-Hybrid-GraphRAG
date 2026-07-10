@@ -1,0 +1,127 @@
+% ===============================================================
+\section{Introduction}\label{sec:intro}
+% ===============================================================
+
+\subsection{Background and Motivation}\label{subsec:background}
+
+Retrieval-Augmented Generation (RAG) grounds language-model outputs in
+external evidence, improving factual reliability without
+retraining~\cite{lewis2020rag,guu2020realm}. Its most common form relies on
+dense passage retrieval, embedding query and corpus into a shared vector
+space and returning the most semantically similar chunks~\cite{karpukhin2020dpr}.
+This is effective for factoid questions answered in a single passage, but it
+treats the corpus as a flat collection of independent chunks and reduces
+retrieval to nearest-neighbour search over isolated
+spans~\cite{karpukhin2020dpr,trivedi2023interleaving}.
+
+In practice, this assumption is overly simplistic for many real-world
+question-answering settings. When the answer depends on relations among
+entities, on document structure, or on chains of evidence spanning multiple
+documents, dense retrieval cannot follow those connections because the
+relations are not represented in the vector space~\cite{trivedi2023interleaving}.
+Graph-based retrieval was introduced precisely to address this gap: by
+organising the corpus as a knowledge graph, retrieval can traverse explicit,
+typed relationships rather than relying solely on surface
+similarity~\cite{edge2024graphrag,wang2024kgp,gutierrez2024hipporag}. Yet
+graph traversal is more expensive than dense lookup, and applying it to every
+query---including simple ones whose answer lies in a single article---incurs
+unnecessary latency and computational cost. Vietnamese legal question
+answering exposes this tension sharply: the same system must serve both
+simple article-level definitions and multi-document questions involving
+amendment, replacement, and cross-document
+reference~\cite{chalkidis2020legalbert,zhong2020nlp_law,sovrano2020legalkg},
+while Vietnamese-specific word segmentation and multi-syllable named entities
+further complicate legal reference matching~\cite{nguyen2020phobert,vu2018vncorenlp}.
+
+When confronted with such heterogeneous queries, a question naturally arises:
+how to decide \emph{which} retrieval strategy a given query requires,
+\emph{before} any evidence is retrieved. Existing Hybrid RAG systems sidestep
+this question by applying dense and graph retrieval indiscriminately, paying
+the cost of both regardless of query
+complexity~\cite{edge2024graphrag,he2024lightrag,gao2023modularrag}. Recent
+adaptive-routing methods show that selecting a strategy by query complexity
+improves both quality and
+efficiency~\cite{jeong2024adaptive,chen2023frugalgpt,ong2024routellm}, but
+they route among \emph{model sizes} or \emph{retrieval depths} rather than
+among distinct \emph{evidence mechanisms}; the decision of whether a query
+needs relational traversal at all is left unaddressed. A separate and
+safety-critical gap concerns ambiguity. When a user asks \textit{``Văn bản đó
+còn hiệu lực không?''} (\textit{``Is that document still in effect?''})
+without a usable referent in the conversation, forcing retrieval grounds the
+answer in an arbitrary legal document and returns a confidently wrong
+answer~\cite{min2020ambigqa,elgohary2019canard}. No prior system
+simultaneously decides among dense retrieval, graph traversal, hybrid
+reasoning, and clarification for Vietnamese legal question answering.
+
+Motivated by the observation that the appropriate retrieval strategy is a
+property of the query itself---and can be predicted cheaply from the query
+and its conversational context---we propose a two-stage reasoning-aware
+adaptive router that selects one of four evidence actions before retrieval. A
+lightweight XGBoost classifier~\cite{chen2016xgboost} handles clear cases at
+low cost; a selective LLM verifier is invoked only for uncertain, ambiguous,
+or relation-heavy queries, following the cost-aware cascade
+principle~\cite{chen2023frugalgpt,ong2024routellm}. A deterministic history
+resolver precedes both stages to distinguish resolved, irrelevant, and
+conflicting conversation references, so that clarification is triggered only
+when the legal target is genuinely underspecified.
+
+\subsection{Main Contributions}\label{subsec:contributions}
+
+To address the heterogeneity of legal queries described above, we adopt a
+design principle in which the retrieval strategy is selected by a two-stage
+router operating upstream of retrieval, rather than by running all strategies
+and merging their outputs. The first stage performs a fast, feature-based
+classification of the query into a retrieval mechanism using an XGBoost model
+trained on routing labels derived from evidence structure. Because this stage
+is lightweight, it can serve as a real-time gateway that resolves the
+majority of clear cases without invoking a large model. The second stage is
+an LLM verifier triggered selectively, only when the first-stage decision is
+uncertain, when the query carries strong relational signals, or when the
+conversational referent cannot be resolved. This selective design keeps the
+expected per-query cost low while reserving explicit reasoning for the cases
+that need it. Crucially, the second stage does more than correct routing
+decisions: by reasoning explicitly over query intent and legal constraints
+before answering, it also functions as a chain-of-thought step that improves
+the quality of the generated answer. Clarification is integrated as a
+first-class routing action so that, when no retrieval strategy can safely
+ground the answer, the system asks the user rather than guessing.
+
+Our contributions are four-fold. \textbf{First}, we formulate
+reasoning-aware retrieval routing for Vietnamese legal QA as a four-class
+decision---dense retrieval, graph traversal, hybrid reasoning, and
+clarification---made before evidence retrieval, unifying mechanism selection
+and ambiguity handling in a single
+framework~\cite{jeong2024adaptive,min2020ambigqa}. \textbf{Second}, we design
+a two-stage router in which a lightweight XGBoost stage handles clear cases
+and a selective LLM verifier is invoked only for uncertain, ambiguous, or
+relation-heavy queries, and we show that this verifier acts as an explicit
+chain-of-thought mechanism: the Two-stage Hybrid ($\text{F1}=0.640$)
+outperforms an Oracle Router with perfect routing labels
+($\text{F1}=0.563$), and a controlled \textit{Oracle+Stage-2} ablation that
+holds routing at gold labels while enabling the verifier isolates a causal
+$+0.074$~F1 contribution of second-stage reasoning ($0.637$ vs $0.563$),
+demonstrating that the gain comes from reasoning during generation rather
+than from route correction alone~\cite{chen2023frugalgpt}. \textbf{Third}, we introduce a deterministic
+history resolver that classifies a conversational referent as resolved,
+irrelevant, or conflicting, enabling the router to unblock retrieval when a
+referent is available and to force clarification when it is
+absent~\cite{elgohary2019canard}. \textbf{Fourth}, through experiments on a
+strict $600$-query benchmark, a $234$-query ambiguity benchmark, and a
+$160$-query conversation stress test, we validate (a)~end-to-end answer
+quality against fixed-strategy and oracle baselines, (b)~routing accuracy
+against rule-based and learned baselines, (c)~clarification behaviour, and
+(d)~the cost--quality trade-off of selective verification.
+
+To the best of our knowledge, this is the first system to treat
+clarification as a first-class routing action alongside dense, graph, and
+hybrid retrieval in a Hybrid GraphRAG pipeline for Vietnamese legal question
+answering~\cite{sovrano2020legalkg,zhong2020nlp_law}.
+
+\subsection{Organisation}\label{subsec:organisation}
+
+Section~\ref{sec:related_work} reviews related work.
+Section~\ref{sec:methodology} defines the routing problem, dataset, and
+pipeline. Section~\ref{sec:routing_framework} details the routing framework.
+Sections~\ref{sec:eval} and~\ref{sec:results} present the experimental setup
+and results. Section~\ref{sec:limitations} discusses limitations before
+Section~\ref{sec:conclusion} concludes.

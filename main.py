@@ -5,13 +5,14 @@ Vietnamese Legal Documents Crawler
 Crawls from 3 sources:
   1. HuggingFace dataset: th1nhng0/vietnamese-legal-documents
        configs: relationships, metadata, content
-  2. VBPL: https://vbpl.vn/pages/portal.aspx
-  3. Pháp Điển: https://phapdien.moj.gov.vn/Pages/chi-tiet-bo-phap-dien.aspx
+  2. Pháp Điển: https://phapdien.moj.gov.vn/Pages/chi-tiet-bo-phap-dien.aspx
+
+(VBPL was attempted but the crawler failed and has been archived; see
+archive/legacy_vbpl/README.md.)
 
 Usage:
     python main.py --source all --output data/
     python main.py --source huggingface --hf-configs relationships metadata content
-    python main.py --source vbpl --doc-type luat --max-pages 5
     python main.py --source phapdien --max-chu-de 3
 
 Requirements:
@@ -26,8 +27,11 @@ from pathlib import Path
 from datetime import datetime
 
 from crawlers.huggingface_crawler import crawl_huggingface, ALL_CONFIGS
-from crawlers.vbpl_crawler import crawl_vbpl, DOC_TYPES
 from crawlers.phapdien_crawler import crawl_phapdien
+
+# NOTE: The VBPL crawler has been archived (it produced empty output; its HTML
+# selectors were fragile). See archive/legacy_vbpl/README.md. VBPL is no longer
+# a supported data source.
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -49,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--source",
-        choices=["all", "huggingface", "vbpl", "phapdien"],
+        choices=["all", "huggingface", "phapdien"],
         default="all",
         help="Which source to crawl (default: all)",
     )
@@ -89,26 +93,6 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Max rows per split per config for HuggingFace (default: all)",
-    )
-
-    # VBPL options
-    vbpl_group = parser.add_argument_group("VBPL options")
-    vbpl_group.add_argument(
-        "--doc-type",
-        choices=list(DOC_TYPES.keys()),
-        default="all",
-        help="VBPL document type filter (default: all)",
-    )
-    vbpl_group.add_argument(
-        "--max-pages",
-        type=int,
-        default=None,
-        help="Max search result pages for VBPL (default: all)",
-    )
-    vbpl_group.add_argument(
-        "--fetch-content",
-        action="store_true",
-        help="Fetch full document text for each VBPL document",
     )
 
     # Pháp Điển options
@@ -184,24 +168,6 @@ def main() -> None:
         except Exception as e:
             logger.error(f"HuggingFace crawler failed: {e}", exc_info=True)
             results["huggingface"] = {"count": 0, "sample": []}
-
-    # ── VBPL ─────────────────────────────────────────────────────────────────
-    if args.source in ("all", "vbpl"):
-        logger.info("=" * 60)
-        logger.info("Starting VBPL crawler...")
-        logger.info("=" * 60)
-        try:
-            vbpl_records = crawl_vbpl(
-                output_dir=output_dir / "vbpl",
-                doc_type=args.doc_type,
-                max_pages=args.max_pages,
-                fetch_content=args.fetch_content,
-                delay=args.delay,
-            )
-            results["vbpl"] = vbpl_records
-        except Exception as e:
-            logger.error(f"VBPL crawler failed: {e}", exc_info=True)
-            results["vbpl"] = []
 
     # ── Pháp Điển ────────────────────────────────────────────────────────────
     if args.source in ("all", "phapdien"):

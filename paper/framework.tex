@@ -1,0 +1,281 @@
+% ===============================================================
+\section{Reasoning-aware Adaptive Routing Framework}\label{sec:routing_framework}
+% ===============================================================
+
+\subsection{Legal Knowledge Base}\label{subsec:legal_kb}
+
+The vector index $\mathcal{I}_v$ contains $68{,}835$ embedded chunks
+appropriate for direct questions whose answers are stated in legal text. The
+graph $\mathcal{G}$ stores explicit typed relations among legal documents,
+articles, and concepts. Tables~\ref{tab:graph_stats}
+and~\ref{tab:graph_relations} report the statistics of the graph built from
+the Pháp~điển codification, in which article nodes are promoted to
+\textsc{LegalArticle} to enable article-level evidence retrieval.
+
+\begin{table}[!htbp]
+\centering
+\caption{Vietnamese legal graph $\mathcal{G}$ statistics}\label{tab:graph_stats}
+\begin{tabular}{lr}
+\toprule
+\textbf{Graph item} & \textbf{Count} \\
+\midrule
+Nodes $|\mathcal{V}|$ & 804{,}322 \\
+Edges $|\mathcal{E}|$ & 1{,}968{,}621 \\
+Legal documents & 4{,}598 \\
+Legal articles (\textsc{LegalArticle}) & 68{,}570 \\
+Semantic concepts & 392{,}592 \\
+Other entities & 338{,}562 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Main relation types in the legal graph, ordered by count}\label{tab:graph_relations}
+\begin{tabular}{lr}
+\toprule
+\textbf{Relation type} & \textbf{Count} \\
+\midrule
+\textsc{MENTIONS} & 1{,}033{,}341 \\
+\textsc{HAS\_CONDITION} & 202{,}298 \\
+\textsc{OBLIGATES} & 128{,}768 \\
+\textsc{PART\_OF\_PROCEDURE} & 102{,}004 \\
+\textsc{REGULATES} & 75{,}137 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The graph is large and densely linked at the semantic level through relations
+such as \textsc{MENTIONS} ($1{,}033{,}341$ edges) and \textsc{HAS\_CONDITION}
+($202{,}298$), whereas explicit cross-document legal-effect relations such as
+\textsc{AMENDS} ($5{,}944$ edges) and \textsc{REPLACES} ($4{,}189$) remain
+comparatively sparse. This asymmetry directly motivates adaptive routing:
+graph traversal is valuable for relation-heavy queries but unnecessarily
+costly for simple article-level lookups.
+
+\subsection{Reasoning-aware Feature Extraction}\label{subsec:features}
+
+For each input $(q_t,H)$, the router first runs the history resolver
+(Eq.~\ref{eq:history_resolver}) and then extracts a feature vector
+$\mathbf{f}(q_t,H,r_H)\in\mathbb{R}^{n_f}$ that blends lexical signals with
+reasoning-aware metrics, together with two auxiliary scores: the ambiguity
+score $\phi_{\mathrm{amb}}(q_t,H,r_H)\in[0,1]$ and the multi-hop score
+$\xi(q_t)\in\{0,1,2\}$.
+Here $n_f=27$, comprising $16$ lexical surface features produced by a
+Vietnamese legal feature extractor and $11$ reasoning-aware complexity
+features produced by a query-complexity analyser; the complete list, in the
+canonical vector order used for both training and inference, is given in
+Appendix~\ref{app:repro}, Table~\ref{tab:features}. Using an explicit feature
+vector rather than a hidden query embedding keeps Stage~1 both interpretable
+and cheap to evaluate.
+% TODO: re-export feature importances from the retrained 27-feature model
+% (train_router.py writes them into the training report) and reinstate the
+% top-4 numeric importances here; the previous values (0.3225/0.2131/...)
+% belonged to the earlier model and were removed as stale.
+The Stage~1 classifier relies most heavily on a small set of structural
+features: the \textbf{legal reference count}, which tracks how many distinct
+legal documents are mentioned; the \textbf{query length in words}, as
+cross-document synthesis questions tend to be longer;
+\textbf{cross-document signals}, reflecting explicit synthesis indicators;
+and the \textbf{article reference count}. Additional reasoning
+metrics---multi-hop connectors, sub-question count, procedural depth, and a
+discrete complexity level---provide finer-grained separation for harder
+cases, while question-type cues (\textit{gì}, \textit{khi nào},
+\textit{bao nhiêu}) and legal-relation cues (\textit{sửa đổi},
+\textit{thay thế}, \textit{có hiệu lực từ}) further inform the decision.
+
+\paragraph{Multi-hop score.}
+Let $\mathcal{K}_{\mathrm{rel}}$ be the fixed lexicon of legal-relation cue
+phrases (e.g.\ \textit{sửa đổi}, \textit{thay thế}, \textit{bãi bỏ},
+\textit{hướng dẫn}, \textit{căn cứ}), listed in full in
+Appendix~\ref{app:repro}. The multi-hop score counts how many distinct cues
+occur in the query, capped at two:
+\begin{equation}
+\xi(q_t)=\min\!\Bigl(2,\;\bigl|\{\,\kappa\in\mathcal{K}_{\mathrm{rel}} : \kappa\ \text{occurs in}\ q_t\,\}\bigr|\Bigr).
+\label{eq:multihop_score}
+\end{equation}
+Thus $\xi(q_t)=0$ means no relation signal (likely a direct lookup),
+$\xi(q_t)=1$ means a single relation cue, and $\xi(q_t)=2$ means two or more
+co-occurring cues, indicating the strongest multi-hop demand.
+
+\paragraph{Ambiguity score.}
+The ambiguity score is produced by a deterministic detector that evaluates a
+set of $m=11$ binary ambiguity indicators
+$\{\psi_1(q_t,H,r_H),\ldots,\psi_m(q_t,H,r_H)\}$---for example, an
+unresolved demonstrative or pronoun (\textit{đó}, \textit{này}, \textit{nó})
+whose referent is not fixed by $r_H$, a generic legal need with no concrete
+legal-object anchor, or an elliptical follow-up with no usable history---each
+carrying a calibrated weight $w_i\in[0,1]$. The score is the strongest
+triggered signal, gated by the history-resolution status:
+\begin{equation}
+\phi_{\mathrm{amb}}(q_t,H,r_H)=
+\begin{cases}
+0 & \text{if } r_H=\texttt{resolved},\\[3pt]
+\displaystyle\max_{1\le i\le m}\; w_i\,\psi_i(q_t,H,r_H) & \text{otherwise},
+\end{cases}
+\label{eq:ambiguity_score}
+\end{equation}
+so that a referent recovered from history suppresses the ambiguity signal
+regardless of surface cues. Taking the maximum rather than a sum reflects the
+weight calibration: a single strong indicator (e.g.\ an unresolved pronoun
+with empty history, $w=0.90$) is sufficient to exceed the trigger threshold
+$\tau_{\mathrm{force}}=0.60$, whereas weak indicators ($w\le 0.30$) cannot
+force verification on their own. The full indicator set and weights
+$\{(\psi_i,w_i)\}$, including two graded indicator families whose scores
+scale with match counts, are specified in Appendix~\ref{app:repro},
+Table~\ref{tab:ambiguity_features}.
+
+\paragraph{History resolver.}
+A deterministic history resolver runs before ambiguity scoring,
+\begin{equation}
+r_H = \mathrm{Resolve}(q_t,H),
+\label{eq:history_resolver}
+\end{equation}
+returning a referent-resolution status
+\begin{equation}
+r_H\in\{\texttt{resolved},\,\texttt{no\_history},\,\texttt{irrelevant\_history},\,\texttt{conflicting\_history},\,\texttt{not\_needed}\}.
+\label{eq:history_states}
+\end{equation}
+If \textit{văn bản đó} (``that document'') has a unique document referent in
+$H$, the resolved referent can unblock graph traversal; otherwise the same
+surface form remains ambiguous. The status $r_H$ is used both as a Stage~1
+input feature and as one of the Stage~2 trigger conditions; the resolution
+rules are listed in Appendix~\ref{app:repro}.
+
+\subsection{Stage~1: XGBoost Router}\label{subsec:stage1}
+
+Stage~1 is an XGBoost multi-class classifier~\cite{chen2016xgboost} trained on
+the $800$ routing-labelled training queries augmented with $60$ synthetic
+\texttt{clarify} samples drawn from ambiguous-query templates, since the QA
+dataset itself contains no gold \texttt{clarify} label:
+\begin{equation}
+(d_1,s_1) = f_1\bigl(\mathbf{f}(q_t,H,r_H)\bigr),
+\label{eq:stage1}
+\end{equation}
+where $d_1\in\mathcal{D}=\{d_v,d_g,d_h,d_c\}$ is the initial route and
+$s_1\in[0,1]$ is the confidence, taken as the maximum class probability of
+the softmax output. Because the \texttt{clarify} class is only weakly
+supervised by synthetic templates, a Stage~1 prediction $d_1=d_c$ is treated
+as a proposal rather than a decision: whenever $d_1=d_c$, Stage~2 is invoked
+to adjudicate, so clarification is never emitted on the strength of the
+weakly supervised class alone.
+% TODO: verify against two_stage_router.py that a Stage-1 clarify prediction
+% unconditionally triggers Stage-2 (or is demoted when Stage-2 is off); if the
+% actual mechanism differs, align this sentence and Algorithm 1 with the code. XGBoost is selected for three reasons: the
+features are mostly discrete counts and binary indicators that
+gradient-boosted trees handle without elaborate normalisation; inference over
+$n_f$ features is orders of magnitude cheaper than one LLM pass, meeting the
+latency-aware requirement of a stage that processes all traffic; and tree
+models expose feature importances that support interpretability, which is
+valuable in the legal domain. Empirically, the classifier forward pass takes
+$\approx\!8.9$~ms per query on CPU (the full Stage~1 path, including feature
+extraction and history resolution, is $\approx\!33.7$~ms; see
+Section~\ref{subsec:rq5}), versus $\approx\!53.3$~ms for a
+PhoBERT~\cite{nguyen2020phobert} classifier on GPU, making Stage~1 suitable as
+a real-time gateway and motivating a future three-level cascade
+XGBoost~$\rightarrow$~PhoBERT~$\rightarrow$~LLM following
+FrugalGPT~\cite{chen2023frugalgpt}.
+
+\subsection{Stage~2: Selective LLM Verifier}\label{subsec:stage2}
+
+Stage~2 is an LLM verifier invoked selectively. Three binary trigger
+indicators, each taking values in $\{0,1\}$, are defined as
+\begin{align}
+\gamma_{\mathrm{conf}} &= \mathbb{I}[\,s_1 < \tau_{\mathrm{conf}}\,],
+    \label{eq:gamma_conf}\\
+\gamma_{\mathrm{amb}}  &= \mathbb{I}[\,\phi_{\mathrm{amb}}(q_t,H,r_H) \geq \tau_{\mathrm{force}}\,],
+    \label{eq:gamma_amb}\\
+\gamma_{\mathrm{hop}}  &= \mathbb{I}[\,\xi(q_t) \geq 2\,],
+    \label{eq:gamma_hop}
+\end{align}
+where $\mathbb{I}[\cdot]$ is the indicator function (equal to $1$ when its
+argument is true and $0$ otherwise). Thus $\gamma_{\mathrm{conf}}$ fires when
+Stage~1 confidence is below $\tau_{\mathrm{conf}}$, $\gamma_{\mathrm{amb}}$
+fires when the ambiguity score reaches the forcing threshold
+$\tau_{\mathrm{force}}$, and $\gamma_{\mathrm{hop}}$ fires at the strongest
+multi-hop level ($\xi=2$). With the convention $a\vee b=\max(a,b)$ on
+$\{0,1\}$, the composite trigger is the logical disjunction of the three
+indicators together with the conflicting-history condition,
+\begin{equation}
+\Gamma(q_t,H,r_H) = \gamma_{\mathrm{conf}}\vee\gamma_{\mathrm{amb}}\vee\gamma_{\mathrm{hop}}\vee\mathbb{I}[\,r_H=\texttt{conflicting\_history}\,]\;\in\;\{0,1\},
+\label{eq:trigger_function}
+\end{equation}
+so that $r_H$ enters the trigger explicitly.
+
+When $\Gamma=0$, Stage~1 is trusted and $d^*=d_1$. When $\Gamma=1$, the
+verifier is queried and returns a proposed route $\tilde{d}\in\mathcal{D}$
+together with, when $\tilde{d}=d_c$, a clarify confidence
+$p_c\in[0,1]$ (the model's estimated probability that the query cannot be
+safely grounded as posed). A clarification is emitted only if the verifier is
+sufficiently confident; otherwise the proposed retrieval route is kept. The
+clarify-override threshold $\tau_{\mathrm{clar}}$ therefore acts on the
+verifier output, and the final route is
+\begin{equation}
+d^* =
+\begin{cases}
+d_1 & \text{if } \Gamma(q_t,H,r_H)=0,\\[3pt]
+d_c & \text{if } \Gamma=1,\ \tilde{d}=d_c,\ \text{and } p_c\ge\tau_{\mathrm{clar}},\\[3pt]
+\tilde{d} & \text{otherwise } (\Gamma=1,\ \tilde{d}\in\{d_v,d_g,d_h\}\ \text{or } p_c<\tau_{\mathrm{clar}}),
+\end{cases}
+\label{eq:final_route}
+\end{equation}
+where in the last case a below-threshold clarify proposal is demoted to the
+verifier's best retrieval route. Default thresholds are
+$\tau_{\mathrm{conf}}=0.50$, $\tau_{\mathrm{force}}=0.60$, and
+$\tau_{\mathrm{clar}}=0.80$; their effect is analysed in
+Section~\ref{subsec:rq4}. In words, Stage~2 is invoked on low-confidence
+Stage~1 decisions, on high ambiguity risk, on strong multi-hop signals, or on
+conflicting history; a \texttt{resolved} history unblocks retrieval and
+suppresses false clarification, whereas missing, irrelevant, or conflicting
+history forces verification or clarification.
+
+Algorithm~\ref{alg:router} summarises the procedure. The deployed
+implementation additionally uses two heuristics: a dense fast path that skips
+Stage~2 for high-confidence, low-ambiguity dense queries, and a
+reasoning-signal check that escalates queries with strong legal features even
+at moderate Stage~1 confidence.
+
+\begin{algorithm}[!htbp]
+\caption{Two-stage adaptive router}\label{alg:router}
+\begin{algorithmic}[1]
+\Require query $q_t$, history $H$, thresholds $\tau_{\mathrm{conf}},\tau_{\mathrm{force}},\tau_{\mathrm{clar}}$
+\Ensure final route $d^*\in\mathcal{D}$
+\State $r_H \gets \mathrm{Resolve}(q_t,H)$
+\State $(\mathbf{f},\phi_{\mathrm{amb}},\xi) \gets \mathrm{ExtractFeatures}(q_t,H,r_H)$
+\State $(d_1,s_1) \gets f_1(\mathbf{f})$
+\State $\gamma_{\mathrm{conf}}\gets\mathbb{I}[s_1<\tau_{\mathrm{conf}}]$;\ \ $\gamma_{\mathrm{amb}}\gets\mathbb{I}[\phi_{\mathrm{amb}}\ge\tau_{\mathrm{force}}]$;\ \ $\gamma_{\mathrm{hop}}\gets\mathbb{I}[\xi\ge 2]$
+\State $\Gamma \gets \gamma_{\mathrm{conf}}\vee\gamma_{\mathrm{amb}}\vee\gamma_{\mathrm{hop}}\vee\mathbb{I}[r_H=\texttt{conflicting\_history}]$
+\If{$\Gamma=0$}
+  \State \Return $d_1$
+\EndIf
+\State $(\tilde{d},p_c) \gets f_2(q_t,H,d_1,s_1,\mathbf{f})$
+\If{$\tilde{d}=d_c$ \textbf{and} $p_c\ge\tau_{\mathrm{clar}}$}
+  \State \Return $d_c$
+\Else
+  \State \Return $\tilde{d}$ \Comment{demote below-threshold clarify to best retrieval route}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Running example.}
+For $q_1=$ \textit{``Điều kiện để được cấp giấy phép xây dựng là gì?''}
+(``What are the conditions for a building permit?''), $\xi(q_1)=0$ and Stage~1
+predicts $d_v$ with high confidence; Stage~2 is bypassed. For $q_2=$
+\textit{``Nghị định nào sửa đổi quy định về xử phạt vi phạm hành chính trong
+lĩnh vực đất đai?''} (``Which decree amends the administrative-penalty rules
+on land?''), the phrase \textit{sửa đổi} (``amend'') raises relational
+signals, so the router selects $d_g$ or $d_h$. For $q_3=$ \textit{``Văn bản đó
+còn hiệu lực không?''} (``Is that document still in effect?'') with
+$H=\emptyset$, the referent is unresolved, $\phi_{\mathrm{amb}}$ is high,
+$\Gamma=1$, and the verifier returns $\tilde{d}=d_c$ with $p_c\ge\tau_{\mathrm{clar}}$.
+
+\subsection{Route Execution and Fallback Policy}\label{subsec:route_execution}
+
+For $d_v$, the system retrieves top-$k$ chunks from $\mathcal{I}_v$. For
+$d_g$, it links query entities to graph nodes and traverses $\mathcal{G}$. For
+$d_h$, it constructs $E_{d^*}=E_v\cup E_g$. For $d_c$, it returns a
+clarification question without retrieval. A defensive fallback policy applies
+when primary retrieval is uninformative: a failed graph traversal or hybrid
+synthesis falls back to dense retrieval; an uninformative dense lookup expands
+$k$ once and retries; and a clarify route, if unanswered, keeps the
+conversation in a waiting state rather than guessing the referent.

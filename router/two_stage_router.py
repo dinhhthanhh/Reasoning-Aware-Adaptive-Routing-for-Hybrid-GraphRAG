@@ -131,6 +131,12 @@ class TwoStageRouter:
             "reasoning_force_confidence_ceiling", 0.7
         )
 
+        ablation = config.get("ablation", {})
+        self.ablation_no_ambiguity = ablation.get("no_ambiguity_features", False)
+        self.ablation_no_history = ablation.get("no_history_resolver", False)
+        self.ablation_no_severe_override = ablation.get("no_severe_ambiguity_override", False)
+        self.ablation_no_clarify_sanity = ablation.get("no_clarify_sanity_check", False)
+
         # Initialize components
         self.feature_extractor = FeatureExtractor(config=config)
         self.ambiguity_detector = AmbiguityDetector(config.get("ambiguity"))
@@ -150,8 +156,10 @@ class TwoStageRouter:
     def route(
         self,
         query: str,
-        history: str | None = None,
-        session_id: str = "",
+        history: str = "",
+        session_id: str | None = None,
+        force_stage1_route: str | None = None,
+        force_stage2: bool = False,
     ) -> RouterOutput:
         """Route a query through the two-stage process.
 
@@ -174,13 +182,46 @@ class TwoStageRouter:
         """
         start = time.perf_counter()
 
+        # Stage 0: Fast-path for greetings (chitchat)
+        import re
+        if re.match(r"^(hi|hello|chào|xin chào|chào bạn|hello bạn)\b", query.lower().strip()):
+            return RouterOutput(
+                route="chitchat",
+                confidence=1.0,
+                reasoning="Heuristic fast-path: Greeting detected.",
+                stage1_route="chitchat",
+                stage2_invoked=False,
+                stage2_override=False,
+                is_ambiguous=False,
+                features=QueryFeatures(feature_dict={})
+            )
+
         # Step 1: Resolve conversation history and detect ambiguity.
-        history_resolution = resolve_history_referents(query, history)
-        ambiguity_report = self.ambiguity_detector.detect(
-            query,
-            history,
-            history_resolution=history_resolution,
-        )
+        if self.ablation_no_history:
+            history_resolution = HistoryResolutionResult(
+                resolution_status="not_needed",
+                history_resolution_confidence=0.0,
+                resolved_referent=None,
+                candidate_referents=[],
+                query_has_contextual_reference=False,
+            )
+        else:
+            history_resolution = resolve_history_referents(query, history)
+
+        if self.ablation_no_ambiguity:
+            from router.ambiguity_detector import AmbiguityReport
+            ambiguity_report = AmbiguityReport(
+                is_ambiguous=False,
+                score=0.0,
+                ambiguity_types=[],
+                clarification_question=None,
+            )
+        else:
+            ambiguity_report = self.ambiguity_detector.detect(
+                query,
+                history,
+                history_resolution=history_resolution,
+            )
 
         # Step 2: Extract features (with ambiguity info)
         features = self.feature_extractor.extract(
@@ -203,9 +244,31 @@ class TwoStageRouter:
         )
 
         # Step 3: Stage 1 prediction
-        stage1_output = self.router_model.predict(features)
-        stage1_confidence = stage1_output.confidence
-        stage1_route = stage1_output.route
+        if force_stage1_route:
+            stage1_route = force_stage1_route
+            stage1_confidence = 1.0
+            stage1_output = Stage1Output(
+                route=force_stage1_route,
+                confidence=1.0,
+            )
+        else:
+            stage1_output = self.router_model.predict(features)
+            stage1_confidence = stage1_output.confidence
+            stage1_route = stage1_output.route
+
+        # Heuristic Override: Rescue dense_retrieval for simple factoids
+        # (XGBoost trained on phapdien_strict is often biased towards graph_traversal)
+        if (
+            stage1_route in {"graph_traversal", "hybrid_reasoning"}
+            and features.is_factoid
+            and getattr(features, "complexity_level", 1) == 1
+            and getattr(features, "conditional_depth", 0) == 0
+            and getattr(features, "authority_chain_count", 0) == 0
+        ):
+            stage1_route = "dense_retrieval"
+            stage1_confidence = 0.99
+            stage1_output.route = "dense_retrieval"
+            stage1_output.confidence = 0.99
 
         # Stage 1 is the base decision. Ambiguity and Stage 2 can only
         # change it through explicit conservative override policies.
@@ -261,6 +324,11 @@ class TwoStageRouter:
             ambiguity_is_detected=ambiguity_report.is_ambiguous,
             features=features,
         )
+
+        if force_stage2:
+            is_uncertain = True
+            stage2_reasons.append("forced_by_always_on")
+            logger.info("Stage 2 forced by force_stage2 flag.")
 
         if (
             self.stage2_enabled
@@ -342,7 +410,7 @@ class TwoStageRouter:
                 if (
                     final_route == "clarify"
                     and history_resolution.resolution_status == "resolved"
-                    and not self._stage2_has_independent_clarify_need(stage2_ambiguity_flags)
+                    and (self.ablation_no_clarify_sanity or not self._stage2_has_independent_clarify_need(stage2_ambiguity_flags))
                 ):
                     final_route = self._route_for_resolved_context(features)
                     final_confidence = max(final_confidence, history_resolution.history_resolution_confidence)
@@ -443,6 +511,9 @@ class TwoStageRouter:
         complex conditions. Stage 1 remains the base route unless ambiguity
         clearly points to an unresolved retrieval target.
         """
+        if self.ablation_no_severe_override:
+            return False, "ablation_no_severe_override_active"
+
         if ambiguity_score < self.ambiguity_clarify_threshold:
             return False, "ambiguity_below_clarify_threshold"
 
@@ -572,6 +643,15 @@ class TwoStageRouter:
         ):
             return True, "override_clarify_to_relation_heavy_retrieval"
 
+        if (
+            stage1_route == "clarify"
+            and stage2_route == "dense_retrieval"
+            and stage2_confidence >= 0.82
+            and not severe_ambiguity
+            and not query_contextual
+        ):
+            return True, "override_clarify_to_dense_factoid"
+
         if stage2_route == "clarify":
             if resolved_history and not self._stage2_has_independent_clarify_need(stage2_ambiguity_flags):
                 return False, "resolved_history_blocks_unnecessary_clarify"
@@ -582,6 +662,8 @@ class TwoStageRouter:
             if unresolved_history and query_contextual:
                 return True, "override_to_clarify_unresolved_history"
             if ambiguity_score >= self.ambiguity_force_stage2_threshold and severe_ambiguity:
+                if self.ablation_no_severe_override:
+                    return False, "ablation_no_severe_override_active"
                 if stage2_ambiguity_flags.get("missing_entity") or getattr(features, "missing_entity", False):
                     return True, "override_to_clarify_missing_entity"
                 if stage2_ambiguity_flags.get("multi_interpretation") or getattr(features, "multi_interpretation", False):
@@ -608,9 +690,10 @@ class TwoStageRouter:
                 features.cross_doc_signals
                 or features.legal_reference_count >= 2
                 or features.complexity_level >= 3
+                or features.legal_reference_count == 0  # Allow override for OOD queries
             )
         ):
-            return True, "rescue_graph_to_hybrid_cross_document_signal"
+            return True, "rescue_graph_to_hybrid_cross_document_signal_or_ood"
 
         if (
             stage1_route == "dense_retrieval"
@@ -632,6 +715,7 @@ class TwoStageRouter:
             and stage2_confidence >= 0.92
             and ambiguity_score >= 0.75
             and severe_ambiguity
+            and not self.ablation_no_severe_override
         ):
             return True, "rescue_to_clarify_severe_ambiguity"
 
@@ -776,6 +860,11 @@ class TwoStageRouter:
         ):
             should_invoke = True
             reasons.append(f"contextual reference with {history_status}")
+
+        if features.legal_reference_count == 0 and not dense_fast_path:
+            should_invoke = True
+            reasons.append("zero legal references (out of distribution risk)")
+            logger.info("Zero legal references detected. Forcing Stage 2 verification to prevent false 100% confidence.")
 
         if reasoning_signal and not self.reasoning_force_stage2_enabled:
             reasons.append("reasoning signal observed but kept advisory")

@@ -8,9 +8,13 @@ for Vietnamese legal terms (Điều, Khoản, Luật, Nghị định, etc.).
 from __future__ import annotations
 
 import re
+import os
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+os.environ["TORCH_FORCE_WEIGHTS_ONLY_LOAD"] = "0"
 
 import torch
 import yaml
@@ -109,34 +113,41 @@ class ViNER:
         self._pipeline: Any | None = None
         logger.info("ViNER initialized | model={} | device={}", self.model_name, self.device)
 
+    _load_lock = threading.Lock()
+
     def _load_model(self) -> None:
         """Lazy-load NER pipeline. Falls back to phobert if primary model unavailable."""
         if self._pipeline is not None:
             return
 
-        models_to_try = [
-            self.model_name,
-            "vinai/phobert-base",
-        ]
-
-        for model_name in models_to_try:
-            try:
-                logger.info("Loading NER model: {}", model_name)
-                tokenizer = AutoTokenizer.from_pretrained(model_name)
-                model = AutoModelForTokenClassification.from_pretrained(model_name)
-                self._pipeline = pipeline(
-                    "ner",
-                    model=model,
-                    tokenizer=tokenizer,
-                    device=0 if self.device == "cuda" and torch.cuda.is_available() else -1,
-                    aggregation_strategy="simple",
-                )
-                logger.info("NER model loaded successfully: {}", model_name)
+        with self._load_lock:
+            if self._pipeline is not None:
                 return
-            except Exception as exc:
-                logger.warning("Failed to load NER model '{}': {}", model_name, exc)
 
-        raise RuntimeError("Could not load any NER model.")
+            models_to_try = [
+                self.model_name,
+                "vinai/phobert-base",
+            ]
+
+            for model_name in models_to_try:
+                try:
+                    logger.info("Loading NER model: {}", model_name)
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    model = AutoModelForTokenClassification.from_pretrained(model_name)
+                    self._pipeline = pipeline(
+                        "ner",
+                        model=model,
+                        tokenizer=tokenizer,
+                        device=0 if self.device == "cuda" and torch.cuda.is_available() else -1,
+                        aggregation_strategy="simple",
+                    )
+                    logger.info("NER model loaded successfully: {}", model_name)
+                    return
+                except Exception as exc:
+                    logger.warning("Failed to load NER model '{}': {}", model_name, exc)
+
+            logger.error("Could not load any NER model. Falling back to rule-based only.")
+            self._pipeline = None
 
     def extract(self, texts: list[str]) -> list[list[Entity]]:
         """Extract named entities from a batch of texts.

@@ -1,0 +1,76 @@
+% ===============================================================
+\section{Related Work}\label{sec:related_work}
+% ===============================================================
+
+\noindent\textbf{Retrieval-Augmented Generation.}
+RAG combines parametric knowledge from neural language models with
+non-parametric knowledge retrieved from an external
+corpus~\cite{lewis2020rag,guu2020realm}. Dense retrieval is effective for
+open-domain factoid QA but degrades on multi-hop evidence
+chains~\cite{karpukhin2020dpr,trivedi2023interleaving}. A line of advanced
+variants improves retrieval control---Self-RAG through
+self-reflection~\cite{asai2023selfrag}, FLARE through active
+retrieval~\cite{jiang2023flare}, RAPTOR through hierarchical
+summaries~\cite{sarthi2024raptor}, and CRAG through corrective
+re-retrieval~\cite{yan2024corrective}. These methods refine \emph{how} dense
+retrieval is performed, but they operate within a single evidence mechanism
+and do not decide whether a query requires relational traversal or
+clarification.
+
+\noindent\textbf{Graph Retrieval and GraphRAG.}
+Graph-based retrieval lets evidence follow explicit
+relationships~\cite{sun2019pullnet,wang2024kgp}. GraphRAG builds entity
+graphs for query-focused summarisation~\cite{edge2024graphrag}; HippoRAG
+introduces a neurobiologically inspired graph memory for associative
+retrieval~\cite{gutierrez2024hipporag}; LightRAG uses dual-level retrieval
+over entity and community knowledge~\cite{he2024lightrag}; and
+agent-style methods such as Think-on-Graph~\cite{sun2024thinkongraph} and
+GraphReader~\cite{li2024graphreader} let a language model iteratively explore
+the graph during reasoning. For legal QA, graph retrieval is especially
+relevant because legal documents encode structured relations such as
+amendment, replacement, and jurisdiction~\cite{sovrano2020legalkg}. However,
+these systems assume graph traversal is always applied; none decides
+\emph{when} traversal is warranted versus when a dense lookup would suffice at
+lower cost.
+
+\noindent\textbf{Adaptive Routing and Cost-aware Inference.}
+Adaptive-RAG selects a retrieval strategy according to question
+complexity~\cite{jeong2024adaptive}, while FrugalGPT and RouteLLM route
+queries across models of different
+cost~\cite{chen2023frugalgpt,ong2024routellm}. These works establish the
+cost-aware cascade principle that motivates our design. Their routing target,
+however, is the \emph{model} or \emph{retrieval depth}; they do not route
+among qualitatively different evidence mechanisms, and they do not treat
+clarification as a routable action. Adaptive-RAG is the closest method in
+spirit, but it was developed for English open-domain QA and routes among
+zero-, single-, and multi-step retrieval over a single dense index, so it is
+not directly transferable to a Vietnamese legal corpus that must additionally
+choose between dense and graph evidence; we discuss this comparability gap in
+Section~\ref{sec:limitations}.
+
+\noindent\textbf{Ambiguity Handling.}
+CANARD studies question rewriting for context-dependent
+questions~\cite{elgohary2019canard}, and AmbigQA shows that open-domain
+questions often admit multiple valid interpretations~\cite{min2020ambigqa}.
+These studies treat ambiguity resolution as a stand-alone task applied before
+or after retrieval, rather than as one possible outcome of a unified routing
+decision.
+
+\noindent\textbf{Vietnamese NLP and Legal QA.}
+VnCoreNLP provides Vietnamese word segmentation and
+NER~\cite{vu2018vncorenlp}, and PhoBERT provides pretrained Vietnamese
+representations~\cite{nguyen2020phobert}. Legal NLP more broadly requires
+reasoning over regulatory
+relations~\cite{chalkidis2020legalbert,zhong2020nlp_law,guha2023legalbench,louis2024interpretable}.
+This body of work supplies the linguistic and legal-domain foundations our
+system builds on, but does not address adaptive retrieval routing.
+
+In summary, despite substantial progress along each of these lines, no prior
+system decides among dense retrieval, graph traversal, hybrid reasoning, and
+clarification \emph{before} retrieval in a single framework. Advanced RAG
+methods improve a single mechanism; GraphRAG methods assume traversal is
+always needed; cost-aware routers select models rather than evidence
+mechanisms; and ambiguity-handling methods treat clarification in isolation.
+Our work differs in placing an explicit, reasoning-aware routing decision at
+the centre of the pipeline, and in treating clarification as a first-class
+route backed by deterministic conversational context resolution.

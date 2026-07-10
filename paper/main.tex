@@ -1,0 +1,122 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Reasoning-aware Adaptive Routing for Hybrid GraphRAG
+%% Target journal: Discover Artificial Intelligence (Springer Nature, #44163)
+%% Article type in Snapp: "Research" (alternatively "Methodology" -- see REVISION_NOTES)
+%%
+%% CONNECTOR FILE. This file only holds the preamble, front matter, and the
+%% \input list. Each section lives in ./sections/*.tex. Compile with:
+%%     pdflatex main -> bibtex main -> pdflatex main -> pdflatex main
+%%
+%% Template: official Springer Nature sn-jnl.cls with sn-mathphys-num.bst.
+%% Download from:
+%% https://www.springernature.com/gp/authors/campaigns/latex-author-support
+%% Place sn-jnl.cls + sn-mathphys-num.bst in this project root.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+
+% ---------------------------------------------------------------
+% Packages (sn-jnl preloads amsmath/graphicx-like essentials; keep minimal)
+% ---------------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[T5]{fontenc}   % T5 encoding for Vietnamese glyphs in inline examples
+\usepackage{lmodern}       % supplies T5 (Vietnamese) glyphs under pdfLaTeX; remove if compiling with LuaLaTeX+fontspec
+\usepackage{textcomp}
+\usepackage{xcolor}        % REVIEW ONLY: for the \pending placeholder; remove before final submission
+
+% Column types for description tables
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+% ---------------------------------------------------------------
+% REVIEW SCAFFOLDING -- delete this block before final submission.
+% \pending marks a numeric cell that must be filled in AFTER you re-run the
+% experiments described in REVISION_NOTES_and_TODO.md (per-class F1,
+% Oracle+Stage-2 row, latency decomposition, confidence intervals, etc.).
+% ---------------------------------------------------------------
+\newcommand{\pending}{\textcolor{red}{\textbf{??}}}
+\newcommand{\ci}[1]{{\small$\pm$#1}}   % helper to typeset confidence half-widths
+
+% ---------------------------------------------------------------
+\begin{document}
+
+\title[Reasoning-aware Adaptive Routing for Hybrid GraphRAG]{Reasoning-aware Adaptive Routing for Hybrid GraphRAG in Vietnamese Legal Question Answering}
+
+\author[1]{\fnm{Cong} \sur{Tran}}\email{congtran@ptit.edu.vn}
+
+\author*[2]{\fnm{Nguyen Dinh} \sur{Thanh}}\email{thanh.nd225670@sis.hust.edu.vn}
+
+\author[2]{\fnm{Pham Van} \sur{Hai}}\email{haipv@soict.hust.edu.vn}
+
+\affil[1]{\orgname{Posts and Telecommunications Institute of Technology (PTIT)}, \city{Hanoi}, \country{Vietnam}}
+
+\affil[2]{\orgdiv{School of Information and Communication Technology}, \orgname{Hanoi University of Science and Technology}, \city{Hanoi}, \country{Vietnam}}
+
+% ---------------------------------------------------------------
+% Abstract: MUST be < 250 words (Discover AI requirement). Foregrounds the
+% re-run headline numbers (0.640 with bootstrap CIs), the CAUSAL Oracle+
+% Stage-2 chain-of-thought ablation (+0.074), and the strict-split routing
+% accuracy (0.898) rather than the leakage-inflated CV figures (see
+% REVISION_NOTES, item M2).
+% ---------------------------------------------------------------
+\abstract{In Vietnamese legal question answering, the appropriate retrieval
+strategy varies with the query: simple questions require direct textual
+lookup, relational questions demand reasoning over legal structures such as
+amendment and cross-document reference, and ambiguous questions risk
+grounding answers in the wrong legal target. We propose a Hybrid GraphRAG
+system with a two-stage, reasoning-aware adaptive router that chooses among
+dense retrieval, graph traversal, hybrid reasoning, and clarification before
+any evidence is retrieved. A lightweight XGBoost first stage handles clear
+cases at millisecond latency, a selective large language model (LLM) verifier
+is invoked only for uncertain, ambiguous, or relation-heavy queries, and a
+deterministic history resolver settles conversational references before
+routing. The system operates over a dense chunk index and a Vietnamese legal
+knowledge graph built from the official codification. On a strict
+$600$-query benchmark with bootstrap
+confidence intervals, the two-stage router reaches answer F1 of $0.640$,
+statistically indistinguishable from the strongest fixed strategy
+(always-dense, $0.663$), while achieving $71\%$ higher exact match and
+intercepting every ambiguous query (clarify F1 of $0.972$) on a $234$-query
+diagnostic. A controlled ablation that holds routing labels at gold values
+shows the second stage causally contributes $+0.074$~F1 ($0.637$ vs
+$0.563$), confirming that it acts as a chain-of-thought step rather than a
+route corrector; selective invocation at a $79.5\%$ trigger rate matches
+always-on verification while adding only $6\%$ latency over never
+verifying. The first-stage classifier reaches
+$0.898$ routing accuracy on the paraphrase-hardened strict split.}
+
+\keywords{Retrieval-Augmented Generation, GraphRAG, Hybrid RAG, Adaptive
+Routing, Vietnamese Legal QA, Knowledge Graphs, Multi-hop Reasoning,
+Ambiguity Detection}
+
+\maketitle
+
+% ---------------------------------------------------------------
+% Body -- each section is a separate file under ./sections/
+% ---------------------------------------------------------------
+\input{introduction}
+\input{related_work}
+\input{methodology}
+\input{framework}
+\input{experimental_setup}
+\input{results}
+\input{limitations}
+\input{conclusion}
+
+% Back matter, declarations, appendix
+\input{declarations}
+\input{appendix}
+
+% ---------------------------------------------------------------
+\bibliography{biblio}
+
+\end{document}

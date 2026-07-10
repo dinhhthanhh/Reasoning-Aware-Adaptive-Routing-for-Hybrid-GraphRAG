@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from typing import Any
+import threading
 from loguru import logger
 from chromadb.utils import embedding_functions
 
@@ -15,18 +16,23 @@ def load_sentence_transformer(model_name: str, device: str):
     from sentence_transformers import SentenceTransformer
 
     try:
-        return SentenceTransformer(model_name, device=device, local_files_only=True)
+        model = SentenceTransformer(model_name, device="cpu", local_files_only=True)
     except TypeError:
-        return SentenceTransformer(model_name, device=device)
+        model = SentenceTransformer(model_name, device="cpu")
     except Exception as exc:
         logger.warning("Local embedding model load failed, trying online load: {}", exc)
-        return SentenceTransformer(model_name, device=device)
+        model = SentenceTransformer(model_name, device="cpu")
+        
+    if device != "cpu":
+        model = model.to(device)
+    return model
 
 
 class SafeEmbeddingFunction(embedding_functions.EmbeddingFunction):
     _model_cache: dict[str, Any] = {}
+    _cache_lock = threading.Lock()
 
-    def __init__(self, model_name: str, device: str, max_seq_length: int = 512):
+    def __init__(self, model_name: str, device: str = "cpu", max_seq_length: int = 512):
         """Initialize safe embedding function with model caching.
         
         Args:
@@ -39,9 +45,13 @@ class SafeEmbeddingFunction(embedding_functions.EmbeddingFunction):
         if cache_key in SafeEmbeddingFunction._model_cache:
             self._model = SafeEmbeddingFunction._model_cache[cache_key]
         else:
-            logger.info("Loading embedding model into cache: {} (device: {})", model_name, device)
-            self._model = load_sentence_transformer(model_name, device)
-            SafeEmbeddingFunction._model_cache[cache_key] = self._model
+            with SafeEmbeddingFunction._cache_lock:
+                if cache_key in SafeEmbeddingFunction._model_cache:
+                    self._model = SafeEmbeddingFunction._model_cache[cache_key]
+                else:
+                    logger.info("Loading embedding model into cache: {} (device: {})", model_name, device)
+                    self._model = load_sentence_transformer(model_name, device)
+                    SafeEmbeddingFunction._model_cache[cache_key] = self._model
             
         self._model.max_seq_length = max_seq_length  # Force token-level truncation
 

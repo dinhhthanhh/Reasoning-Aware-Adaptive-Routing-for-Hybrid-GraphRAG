@@ -1,0 +1,155 @@
+ambiguity:
+  pronoun_list:
+  - anh ấy
+  - chị ấy
+  - ông ấy
+  - bà ấy
+  - họ
+  - nó
+  - người đó
+  - bên đó
+  - bên kia
+  - công ty đó
+  - công ty này
+  - doanh nghiệp đó
+  - doanh nghiệp này
+  - tổ chức đó
+  - tổ chức này
+  - cơ quan đó
+  - điều đó
+  - việc đó
+  - luật đó
+  - điều khoản đó
+  - quy định này
+  - quy định đó
+  - trường hợp này
+  - trường hợp đó
+  - tài sản này
+  score_threshold: 0.6
+  vague_terms:
+  - quy định
+  - luật
+  - điều khoản
+  - văn bản
+chroma:
+  chunk_overlap: 32
+  chunk_size: 256
+  collection_name: phapdien_full
+  path: data/vector_store/chroma_full
+  top_k: 8
+concise_answer: false
+conversation:
+  max_history_turns: 5
+  session_timeout_minutes: 30
+crawler:
+  delay_seconds: 2.0
+  max_docs: 500
+  max_retries: 3
+  sources:
+  - base_url: https://thuvienphapluat.vn
+    category: luat
+    name: thuvienphapluat
+  - base_url: https://luatvietnam.vn
+    category: van-ban
+    name: luatvietnam
+  timeout_seconds: 30
+data:
+  kg_dir: data/kg
+  kg_filename: legal_kg.db
+  processed_dir: data/processed
+  raw_dir: data/raw
+  router_training_dir: data/router_training/phapdien_strict
+embedding:
+  batch_size: 96
+  device: cuda
+  max_length: 512
+  model_name: microsoft/Harrier-OSS-v1-0.6B
+faiss:
+  chunk_overlap: 32
+  chunk_size: 256
+  index_path: data/processed/faiss_index.bin
+  metadata_path: data/processed/faiss_metadata.pkl
+  top_k: 8
+hyde:
+  enabled: true
+language: vi
+logging:
+  level: INFO
+  routing_log_path: logs/routing_log_legal.jsonl
+neo4j:
+  batch_size: 2500
+  database: phapdien
+  password: dinhhthanhh
+  uri: neo4j://127.0.0.1:7687
+  user: neo4j
+ner:
+  batch_size: 16
+  device: auto
+  max_length: 256
+  model_name: NlpHUST/ner-vietnamese-electra-base
+ollama:
+  base_url: http://localhost:11434
+  max_retries: 2
+  max_tokens: 1024
+  model: llama3:latest
+  temperature: 0.1
+  timeout_seconds: 120
+openai:
+  api_key_env: OPENAI_API_KEY
+  base_url: http://171.226.10.154:8080/v1
+  max_retries: 2
+  max_tokens: 2048
+  model: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+  temperature: 0.1
+  timeout_seconds: 180
+rag:
+  graph_context_chars: 12000
+  graph_fallback_to_vector: false
+  graph_top_k: 4
+  hybrid_fallback_to_vector: false
+  hybrid_graph_context_chars: 3500
+  hybrid_graph_top_k: 4
+  hybrid_vector_candidate_k: 15
+  hybrid_vector_chunk_chars: 1200
+  hybrid_vector_top_k: 5
+  max_chunk_chars: 1500
+  max_context_chars: 12000
+  retrieval_candidate_multiplier: 3
+  use_hyde: true
+  vector_fallback_to_graph: false
+reranker:
+  api_url: http://localhost:7997/rerank
+  disable_after_failure: false
+  enabled: true
+  model_name: AITeamVN/Vietnamese_Reranker
+  timeout_seconds: 120.0
+router:
+  classes:
+  - dense_retrieval
+  - graph_traversal
+  - hybrid_reasoning
+  - clarify
+  override_rules:
+    ambiguity_clarify_threshold: 0.8
+    ambiguity_force_stage2_threshold: 0.6
+    dense_skip_max_ambiguity: 0.4
+    high_confidence_dense_skip_threshold: 0.95
+    reasoning_force_confidence_ceiling: 0.9
+    reasoning_force_stage2_enabled: true
+    reasoning_force_stage2_threshold: 0.45
+  scoring:
+    comparison_boost: 0.7
+    cross_doc_boost: 0.9
+    multi_hop_norm_divisor: 3.0
+  stage1:
+    confidence_threshold: 0.5
+    feature_version: v1
+    graph_priority_confidence_floor: 0.55
+    graph_priority_enabled: true
+    graph_priority_threshold: 0.16
+    model_path: data/router_training/phapdien_strict/router_model.pkl
+  stage2:
+    enabled: true
+    max_reasoning_tokens: 512
+task_type: legal_citation
+vector_store: chroma

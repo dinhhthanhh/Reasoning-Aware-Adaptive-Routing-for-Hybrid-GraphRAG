@@ -121,7 +121,48 @@ class AmbiguityDetector:
         "incomplete_context": "Câu hỏi đang phụ thuộc vào ngữ cảnh trước đó. "
                               "Bạn vui lòng nêu rõ văn bản, thủ tục hoặc trường hợp cần hỏi.",
         "general": "Câu hỏi của bạn chưa đủ rõ ràng. "
-                  "Vui lòng cung cấp thêm chi tiết để tôi có thể trả lời chính xác hơn.",
+                   "Vui lòng cung cấp thêm chi tiết để tôi có thể trả lời chính xác hơn.",
+    }
+
+    # ── Ambiguity indicator weights (M8 — ψ_i / w_i table for paper appendix) ──
+    # Each key is an indicator name ψ_i; the value is its contribution weight w_i
+    # in the composite ambiguity score φ_amb.
+    #
+    # Formal definition (see Eq. ambiguity_score in framework.tex):
+    #
+    #   φ_amb = 0                                          if r_H = resolved
+    #   φ_amb = clip(sum_i(w_i * ψ_i), 0, 1)              otherwise
+    #
+    # where r_H is the HistoryResolver resolution status.  The gating to 0
+    # when r_H = 'resolved' prevents confirmed context from being flagged as
+    # ambiguous regardless of surface-level pronoun or vagueness signals.
+    #
+    # Weights are calibrated so that a single strong indicator (w_i = 0.9)
+    # exceeds the default ambiguity_threshold (0.6), while weak indicators
+    # (w_i ≤ 0.3) only trigger after combining with at least two others.
+    INDICATOR_WEIGHTS: dict[str, float] = {
+        # ψ_1 : unresolved pronoun with no history
+        "psi_pronoun_no_history":           0.90,
+        # ψ_2 : unresolved pronoun, conflicting / irrelevant history
+        "psi_pronoun_bad_history":          0.85,
+        # ψ_3 : contextual reference detected (history resolver)
+        "psi_contextual_reference":         0.80,
+        # ψ_4 : vague legal reference (1 match)
+        "psi_vague_reference_single":       0.30,
+        # ψ_5 : vague legal reference (2+ matches)
+        "psi_vague_reference_multi":        0.60,
+        # ψ_6 : missing entity + no legal intent
+        "psi_missing_entity_no_intent":     0.82,
+        # ψ_7 : missing entity + has legal intent (weaker)
+        "psi_missing_entity_with_intent":   0.10,
+        # ψ_8 : broad subject + broad predicate, no domain anchor
+        "psi_multi_interpretation":         0.85,
+        # ψ_9 : short query (<5 words) with no entity
+        "psi_short_no_entity":              0.70,
+        # ψ_10: incomplete context (follow-up, no history)
+        "psi_incomplete_context":           0.90,
+        # ψ_11: entity conflict (same entity type 2+ times)
+        "psi_entity_conflict":              0.50,
     }
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
@@ -331,9 +372,6 @@ class AmbiguityDetector:
         for pronoun in self.custom_pronouns:
             if pronoun.lower() in query.lower() and pronoun not in found_pronouns:
                 found_pronouns.append(pronoun)
-
-        if history_resolution and history_resolution.query_has_contextual_reference and not found_pronouns:
-            found_pronouns.append("tham chiếu ngữ cảnh")
 
         if not found_pronouns:
             return 0.0, ""
@@ -546,3 +584,95 @@ class AmbiguityDetector:
             return self.CLARIFICATION_TEMPLATES["multi_interpretation"]
         else:
             return self.CLARIFICATION_TEMPLATES["general"]
+
+    # ── M8: Formal score export ───────────────────────────────────────────────
+
+    def get_indicator_weights(self) -> dict[str, float]:
+        """Return the ψ_i / w_i indicator weight table for paper appendix.
+
+        This is the authoritative source of the values that should appear in
+        Appendix Table ``tab:ambiguity_features``. Paste the output of::
+
+            import json
+            from router.ambiguity_detector import AmbiguityDetector
+            print(json.dumps(AmbiguityDetector().get_indicator_weights(), indent=2))
+
+        into the appendix LaTeX table.
+
+        Returns:
+            Dict mapping indicator name (ψ_i) → weight (w_i).
+        """
+        return dict(self.INDICATOR_WEIGHTS)
+
+    def compute_formal_phi_amb(
+        self,
+        query: str,
+        history: str | None = None,
+    ) -> float:
+        r"""Compute φ_amb as defined in the paper (Eq. ambiguity_score).
+
+        This is the FORMAL version that maps code behaviour to the paper
+        equation so both stay in sync:
+
+        .. math::
+
+            \phi_{\text{amb}} = \begin{cases}
+              0 & \text{if } r_H = \texttt{resolved} \\\\
+              \operatorname{clip}\!\left(\sum_i w_i \psi_i,\, 0,\, 1\right)
+                & \text{otherwise}
+            \end{cases}
+
+        The returned value matches ``AmbiguityReport.score`` from
+        ``detect()``, which is used as the ``ambiguity_score`` feature
+        consumed by Stage-1 XGBoost.
+
+        Args:
+            query: Vietnamese legal query.
+            history: Optional conversation history.
+
+        Returns:
+            Float in [0, 1] representing the formal φ_amb score.
+        """
+        report = self.detect(query, history=history)
+        # Gate to 0 when resolved (r_H = resolved)
+        if report.history_resolution_status == "resolved":
+            return 0.0
+        return report.score
+
+    @classmethod
+    def export_indicator_table_json(cls) -> str:
+        """Return a JSON string of the indicator weight table for appendix paste.
+
+        Usage::
+
+            python -c "
+            from router.ambiguity_detector import AmbiguityDetector
+            print(AmbiguityDetector.export_indicator_table_json())
+            " > appendix_psi_weights.json
+        """
+        import json
+        rows = [
+            {
+                "indicator": name,
+                "description": _PSI_DESCRIPTIONS.get(name, ""),
+                "weight_w_i": weight,
+            }
+            for name, weight in cls.INDICATOR_WEIGHTS.items()
+        ]
+        return json.dumps(rows, indent=2, ensure_ascii=False)
+
+
+# Human-readable descriptions for each ψ_i (used in export_indicator_table_json)
+_PSI_DESCRIPTIONS: dict[str, str] = {
+    "psi_pronoun_no_history":       "ψ_1: Unresolved pronoun, no conversation history",
+    "psi_pronoun_bad_history":      "ψ_2: Pronoun with conflicting/irrelevant history",
+    "psi_contextual_reference":     "ψ_3: Contextual reference detected (resolver)",
+    "psi_vague_reference_single":   "ψ_4: Single vague legal reference",
+    "psi_vague_reference_multi":    "ψ_5: Multiple vague legal references",
+    "psi_missing_entity_no_intent": "ψ_6: Generic legal need, no specific entity",
+    "psi_missing_entity_with_intent": "ψ_7: Generic need with domain context (weak signal)",
+    "psi_multi_interpretation":     "ψ_8: Broad subject + predicate, no domain anchor",
+    "psi_short_no_entity":          "ψ_9: Query <5 words with no legal entity",
+    "psi_incomplete_context":       "ψ_10: Follow-up with no history context",
+    "psi_entity_conflict":          "ψ_11: Two+ entities of same type (possible conflict)",
+}

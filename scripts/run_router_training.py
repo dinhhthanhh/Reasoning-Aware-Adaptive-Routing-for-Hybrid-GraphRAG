@@ -57,19 +57,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--train_path",
         type=str,
-        default="qa_pipeline/data/final/train.json",
+        default="qa_pipeline/data/phapdien_strict/train.json",
         help="Path to QA training split",
     )
     parser.add_argument(
         "--dev_path",
         type=str,
-        default="qa_pipeline/data/final/dev.json",
+        default="qa_pipeline/data/phapdien_strict/dev.json",
         help="Path to QA dev split",
     )
     parser.add_argument(
         "--test_path",
         type=str,
-        default="qa_pipeline/data/final/test.json",
+        default="qa_pipeline/data/phapdien_strict/test.json",
         help="Path to QA test split",
     )
     parser.add_argument(

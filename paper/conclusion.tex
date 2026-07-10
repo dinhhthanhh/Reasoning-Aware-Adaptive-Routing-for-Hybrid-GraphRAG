@@ -1,0 +1,47 @@
+% ===============================================================
+\section{Conclusion}\label{sec:conclusion}
+% ===============================================================
+
+We presented a reasoning-aware adaptive router for Vietnamese legal Hybrid
+GraphRAG that combines a dense vector index of $68{,}835$ legal text chunks, a
+Neo4j legal knowledge graph of $804{,}322$ nodes and $1{,}968{,}621$ edges
+built from the Pháp~điển codification, an XGBoost Stage~1 classifier, and a
+selective LLM Stage~2 verifier, dispatching each query to dense retrieval,
+graph traversal, hybrid reasoning, or clarification according to its reasoning
+demand and ambiguity level.
+
+The central quantitative findings on the strict $600$-query benchmark, all
+reported with bootstrap $95\%$ confidence intervals, are as follows. The
+Two-stage Hybrid attains Answer~F1~$=0.640$, exceeding the Single-stage
+Router ($0.475$) by $+0.165$ and the Oracle Router with perfect routing
+labels ($0.563$) by $+0.077$, both with non-overlapping intervals. A
+controlled \textit{Oracle~+~Stage~2} ablation that holds routing at gold
+labels while enabling the verifier isolates a causal $+0.074$~F1 contribution
+of Stage~2 reasoning ($0.637$ vs $0.563$), confirming that the second stage
+acts as a chain-of-thought step during answer generation rather than as a
+route corrector---executed-route agreement with the gold labels in fact falls
+while quality rises. On aggregate token-F1 the router is statistically
+indistinguishable from the strongest fixed baseline (Pure Vector, $0.663$),
+while achieving $71\%$ higher exact match and remaining the only compared
+system able to clarify instead of guessing; selective verification at a
+$79.5\%$ trigger rate matches always-on verification in quality while adding
+only $6.3\%$ average latency over a router that never verifies. The Stage~1
+classifier generalises to the paraphrase-hardened strict split at $0.898$
+accuracy and $0.900$ macro-F1 at millisecond latency, far above rule-based
+routers under an identical cross-validation protocol.
+
+On the ambiguity benchmarks, the deployed router intercepts every ambiguous
+query before retrieval---clarify recall $1.000$ at precision $0.945$
+(F1~$=0.972$) on the $234$-query diagnostic---and sustains clarify
+F1~$=0.906$ on the $160$-query multi-turn stress test, detecting even the
+semantically underspecified missing-entity and multi-interpretation scenarios
+perfectly. The remaining weakness is the routing of clearly answerable
+queries embedded in conversation, where contextual trigger signals pull
+self-contained controls off their correct route.
+
+Emitting canonical evidence identifiers at the retrieval stage to complete
+the coverage evaluation, adding the semantic answer metric motivated by the
+observed metric--prompt interaction, implementing a complexity-router
+baseline, improving routing robustness through a three-level cascade, and
+validating the benchmarks with human-reviewed legal queries remain the
+primary directions for future investigation.

@@ -37,12 +37,27 @@ def flatten_phapdien(input_file: Path, output_file: Path):
                     so_dieu = dieu.get("so_dieu", "")
                     tieu_de = dieu.get("tieu_de", "")
                     noi_dung = dieu.get("noi_dung", "")
+                    ghi_chu = dieu.get("ghi_chu", "")
                     
                     # Clean title
                     full_title = f"{so_dieu} {tieu_de}".strip()
                     
+                    # Extract raw law name if present in ghi_chu
+                    source_name = "Pháp Điển"
+                    import re
+                    # Example ghi_chu: "Điều 4 Luật số 57/2020/QH14, có hiệu lực thi hành kể từ ngày 01/01/2021"
+                    m = re.search(r"(Luật[^,]+|Nghị định[^,]+|Bộ luật[^,]+)", ghi_chu)
+                    if m:
+                        source_name = m.group(1).strip()
+                        full_title = f"{full_title} - {source_name}"
+                        
                     # Create a deterministic ID
                     pd_id = f"pd_{cd_idx:03d}_{dm_idx:03d}_{d_idx:04d}"
+                    
+                    content_md = f"### {full_title}\n"
+                    if ghi_chu:
+                        content_md += f"*(Nguồn gốc: {ghi_chu})*\n\n"
+                    content_md += f"{noi_dung}"
                     
                     record = {
                         "doc_id": pd_id,
@@ -50,12 +65,13 @@ def flatten_phapdien(input_file: Path, output_file: Path):
                         "type": "Điều (Pháp điển)",
                         "theme": cd_name,
                         "topic": dm_name,
-                        "content_markdown": f"### {full_title}\n\n{noi_dung}",
-                        "source": "Pháp Điển",
+                        "content_markdown": content_md,
+                        "source": source_name,
                         "raw_metadata": {
                             "chu_de": cd_name,
                             "de_muc": dm_name,
-                            "so_dieu": so_dieu
+                            "so_dieu": so_dieu,
+                            "ghi_chu": ghi_chu
                         }
                     }
                     

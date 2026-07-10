@@ -48,7 +48,22 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-SYSTEMS = ("pure_vector", "pure_graph", "single_stage_router", "two_stage_hybrid")
+SYSTEMS = (
+    "pure_vector", 
+    "pure_graph", 
+    "single_stage_router", 
+    "two_stage_hybrid",
+    "always_hybrid",
+    "graph_text_fallback",
+    "llm_only_router",
+    "w/o ambiguity features",
+    "w/o relation features",
+    "w/o history resolver",
+    "w/o severe-ambiguity override",
+    "w/o clarification sanity check",
+    "w/o fallback guard",
+    "Stage 2 always-on",
+)
 
 
 @dataclass
@@ -77,9 +92,33 @@ class BenchmarkSystem:
         if self._instance is not None:
             return self._instance
 
+        # Parse ablation flags based on name
+        if "w/o" in self.name or "always-on" in self.name:
+            if "Stage 2 always-on" in self.name:
+                self.config.setdefault("router", {}).setdefault("override_rules", {})
+                self.config["router"]["override_rules"]["ambiguity_force_stage2_threshold"] = -1.0
+                self.config["router"]["override_rules"]["reasoning_force_stage2_threshold"] = -1.0
+            
+            ablation_flags = self.config.setdefault("ablation", {})
+            if "w/o ambiguity features" in self.name:
+                ablation_flags["no_ambiguity_features"] = True
+            if "w/o relation features" in self.name:
+                ablation_flags["no_relation_features"] = True
+            if "w/o history resolver" in self.name:
+                ablation_flags["no_history_resolver"] = True
+            if "w/o severe-ambiguity override" in self.name:
+                ablation_flags["no_severe_ambiguity_override"] = True
+            if "w/o clarification sanity check" in self.name:
+                ablation_flags["no_clarify_sanity_check"] = True
+            if "w/o fallback guard" in self.name:
+                self.config.setdefault("rag", {})["vector_fallback_to_graph"] = False
+                self.config.setdefault("rag", {})["graph_fallback_to_vector"] = False
+                self.config.setdefault("rag", {})["hybrid_fallback_to_vector"] = False
+
         if self.name == "pure_vector":
             vector = VectorRAG(self.config)
             vector.load_index()
+            vector.retriever.embedder._load_model()
             self._instance = vector
         elif self.name == "pure_graph":
             self._instance = GraphRAGAdapter(self.config)
@@ -87,10 +126,39 @@ class BenchmarkSystem:
             cfg = copy.deepcopy(self.config)
             cfg.setdefault("router", {}).setdefault("stage2", {})["enabled"] = False
             self._instance = HybridPipeline.from_config(cfg)
-        elif self.name == "two_stage_hybrid":
+            try:
+                _ = self._instance.vector_rag
+                self._instance.vector_rag.retriever.embedder._load_model()
+            except Exception as e:
+                logger.error(f"Error preloading vector_rag: {e}")
+            try:
+                _ = self._instance.graph_rag
+            except Exception as e:
+                logger.error(f"Error preloading graph_rag: {e}")
+        elif self.name == "llm_only_router":
             self._instance = HybridPipeline.from_config(self.config)
+            from llm.openai_client import OpenAIClient
+            self._llm_client = OpenAIClient(self.config.get("openai", self.config.get("ollama", {})))
+            try:
+                _ = self._instance.vector_rag
+                self._instance.vector_rag.retriever.embedder._load_model()
+            except Exception as e:
+                logger.error(f"Error preloading vector_rag: {e}")
+            try:
+                _ = self._instance.graph_rag
+            except Exception as e:
+                logger.error(f"Error preloading graph_rag: {e}")
         else:
-            raise ValueError(f"Unknown benchmark system: {self.name}")
+            self._instance = HybridPipeline.from_config(self.config)
+            try:
+                _ = self._instance.vector_rag
+                self._instance.vector_rag.retriever.embedder._load_model()
+            except Exception as e:
+                logger.error(f"Error preloading vector_rag: {e}")
+            try:
+                _ = self._instance.graph_rag
+            except Exception as e:
+                logger.error(f"Error preloading graph_rag: {e}")
 
         return self._instance
 
@@ -125,6 +193,75 @@ class BenchmarkSystem:
                 sources=result.get("sources", []),
                 context=result.get("context", ""),
                 kg_source=result.get("kg_source", ""),
+            )
+
+        if self.name == "always_hybrid":
+            answer, sources, context, kg_source = instance._handle_hybrid(query, "")
+            actual_pipeline = f"hybrid_reasoning:{kg_source}" if kg_source else "hybrid_reasoning"
+            return EvalResponse(
+                answer=answer,
+                route="hybrid_reasoning",
+                actual_route=actual_pipeline,
+                steps=2,
+                latency_ms=(time.perf_counter() - start) * 1000,
+                sources=sources,
+                context=context,
+                kg_source=kg_source,
+            )
+
+        if self.name == "graph_text_fallback":
+            answer, sources, context, actual_pipeline, kg_source = instance._handle_graph(query, "")
+            if not answer and instance.graph_fallback_to_vector:
+                answer, sources, context = instance._handle_vector(query, "")
+                actual_pipeline = "graph_fallback_to_vector"
+            return EvalResponse(
+                answer=answer,
+                route="graph_traversal",
+                actual_route=actual_pipeline,
+                steps=2,
+                latency_ms=(time.perf_counter() - start) * 1000,
+                sources=sources,
+                context=context,
+                kg_source=kg_source,
+            )
+
+        if self.name == "llm_only_router":
+            prompt = f"Classify the following query into exactly one of these 4 routes: 'dense_retrieval', 'graph_traversal', 'hybrid_reasoning', 'clarify'. Return only the route string.\nQuery: {query}"
+            route = "dense_retrieval"
+            try:
+                response_text = self._llm_client.generate(prompt=prompt, system_prompt="You are a helpful assistant.").strip().lower()
+                for valid_route in ["dense_retrieval", "graph_traversal", "hybrid_reasoning", "clarify"]:
+                    if valid_route in response_text:
+                        route = valid_route
+                        break
+            except Exception:
+                pass
+            
+            kg_source = ""
+            context = ""
+            if route == "dense_retrieval":
+                answer, sources, context = instance._handle_vector(query, "")
+                actual_pipeline = "dense_retrieval"
+            elif route == "graph_traversal":
+                answer, sources, context, actual_pipeline, kg_source = instance._handle_graph(query, "")
+            elif route == "hybrid_reasoning":
+                answer, sources, context, kg_source = instance._handle_hybrid(query, "")
+                actual_pipeline = f"hybrid_reasoning:{kg_source}" if kg_source else "hybrid_reasoning"
+            else:
+                answer = instance._handle_clarify(query, "")
+                sources = []
+                actual_pipeline = "clarify"
+                
+            return EvalResponse(
+                answer=answer,
+                route=route,
+                actual_route=actual_pipeline,
+                steps=_steps_for_route(route),
+                latency_ms=(time.perf_counter() - start) * 1000,
+                stage2_invoked=True,
+                sources=sources,
+                context=context,
+                kg_source=kg_source,
             )
 
         response = instance.query(query, session_id=f"{self.name}_{qid}", verbose=False)
@@ -359,7 +496,8 @@ def evaluate_dataset(
     for system_name in systems:
         logger.info(f"=== Evaluating system: {system_name} ===")
         system = BenchmarkSystem(system_name, config)
-        output_csv = output_dir / f"{dataset}_{system_name}_results.csv"
+        safe_sys_name = system_name.replace("/", "_")
+        output_csv = output_dir / f"{dataset}_{safe_sys_name}_results.csv"
 
         rows: list[dict[str, Any]] = []
         with open(output_csv, "w", encoding="utf-8", newline="") as f_csv:
@@ -389,46 +527,59 @@ def evaluate_dataset(
             )
             writer.writeheader()
 
-            for item in tqdm.tqdm(items, desc=f"Evaluating {system_name}"):
-                qid = item["id"]
-                query = item["query"]
-                ground_truth = item["ground_truth"]
-                expected_route = item.get("expected_route") or ""
+            import concurrent.futures
+            
+            futures = {}
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                for item in items:
+                    qid = item["id"]
+                    query = item["query"]
+                    future = executor.submit(system.evaluate, query, qid)
+                    futures[future] = item
 
-                try:
-                    response = system.evaluate(query, qid)
-                    em, f1, acc = evaluate_prediction(ground_truth, response.answer)
+                for future in tqdm.tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc=f"Evaluating {system_name}"):
+                    item = futures[future]
+                    qid = item["id"]
+                    query = item["query"]
+                    ground_truth = item["ground_truth"]
+                    expected_route = item.get("expected_route") or ""
 
-                    row = {
-                        "ID": qid,
-                        "System": system_name,
-                        "Query": query,
-                        "Ground_Truth": ground_truth,
-                        "Generated_Answer": response.answer,
-                        "Expected_Route": expected_route,
-                        "Route": response.route,
-                        "Actual_Route": response.actual_route,
-                        "KG_Source": response.kg_source,
-                        "Sources": ";".join(response.sources or []),
-                        "Context_Chars": len(response.context or ""),
-                        "Context_Preview": " ".join((response.context or "").split())[:500],
-                        "Steps": response.steps,
-                        "Stage2": response.stage2_invoked,
-                        "Stage2_Override": response.stage2_override,
-                        "Time_ms": round(response.latency_ms, 2),
-                        "EM": em,
-                        "F1": round(f1, 4),
-                        "Acc": acc,
-                    }
-                    writer.writerow(row)
-                    f_csv.flush()
-                    rows.append(row)
+                    try:
+                        response = future.result()
+                        em, f1, acc = evaluate_prediction(ground_truth, response.answer)
 
-                    gc.collect()
-                    if torch and torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                except Exception as e:
-                    logger.error(f"Error evaluating query {qid} on {system_name}: {e}")
+                        row = {
+                            "ID": qid,
+                            "System": system_name,
+                            "Query": query,
+                            "Ground_Truth": ground_truth,
+                            "Generated_Answer": response.answer,
+                            "Expected_Route": expected_route,
+                            "Route": response.route,
+                            "Actual_Route": response.actual_route,
+                            "KG_Source": response.kg_source,
+                            "Sources": ";".join(response.sources or []),
+                            "Context_Chars": len(response.context or ""),
+                            "Context_Preview": " ".join((response.context or "").split())[:500],
+                            "Steps": response.steps,
+                            "Stage2": response.stage2_invoked,
+                            "Stage2_Override": response.stage2_override,
+                            "Time_ms": round(response.latency_ms, 2),
+                            "EM": em,
+                            "F1": round(f1, 4),
+                            "Acc": acc,
+                        }
+                        writer.writerow(row)
+                        f_csv.flush()
+                        rows.append(row)
+
+                    except Exception as e:
+                        logger.error(f"Error evaluating query {qid} on {system_name}: {e}")
+            
+            # Clean up memory after processing all items for a system
+            gc.collect()
+            if torch and torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         summary = _summarize(rows)
         all_summaries[system_name] = summary
@@ -554,7 +705,7 @@ def _old_evaluate_dataset(config_path: str, eval_file: Path, output_csv: Path, l
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="configs/config_hotpot.yaml")
+    parser.add_argument("--config", default="configs/config.yaml")
     parser.add_argument(
         "--dataset",
         default="hotpot",
@@ -594,6 +745,8 @@ def main():
         eval_file = Path("qa_pipeline/data/final/legal_research_eval_600.json")
     elif args.dataset == "legal_strict":
         eval_file = Path("qa_pipeline/data/legal_strict/test.json")
+    elif args.dataset == "phapdien_strict":
+        eval_file = Path("qa_pipeline/data/phapdien_strict/test.json")
     elif args.dataset == "vimqa":
         eval_file = Path(config.get("data", {}).get("processed_dir", "data/vimqa")) / "test.json"
     else:

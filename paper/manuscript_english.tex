@@ -1,0 +1,2039 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Reasoning-aware Adaptive Routing for Hybrid GraphRAG
+%% Target journal: Discover Artificial Intelligence (Springer Nature, #44163)
+%% Article type in Snapp: "Research" (alternatively "Methodology" -- see REVISION_NOTES)
+%%
+%% SINGLE-FILE (flattened) manuscript, per Springer Nature's one-file rule.
+%% English-only version (all Vietnamese surface text translated to English;
+%% prompts reproduced in English only).
+%%
+%% Template: official Springer Nature sn-jnl.cls with sn-mathphys-num.bst.
+%% Download from:
+%% https://www.springernature.com/gp/authors/campaigns/latex-author-support
+%% Place sn-jnl.cls + sn-mathphys-num.bst in this project root.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+
+% ---------------------------------------------------------------
+% Packages (sn-jnl preloads amsmath/graphicx-like essentials; keep minimal)
+% ---------------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[T1]{fontenc}   % standard Latin encoding (manuscript is English-only)
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{url}
+
+% Column types for description tables
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+% Helper to typeset cross-validation confidence half-widths (mean +/- std)
+\newcommand{\ci}[1]{\ensuremath{\scriptstyle\pm #1}}
+
+% Keep submission diagnostics focused on actionable errors.
+\hypersetup{hypertexnames=false,bookmarksdepth=2}
+\hbadness=10000
+\vbadness=10000
+\hfuzz=100pt
+
+% ---------------------------------------------------------------
+\begin{document}
+
+\title[Reasoning-aware Adaptive Routing for Hybrid GraphRAG]{Reasoning-aware Adaptive Routing for Hybrid GraphRAG in Vietnamese Legal Question Answering}
+
+\author[1]{\fnm{Cong} \sur{Tran}}\email{congtran@ptit.edu.vn}
+
+\author*[2]{\fnm{Nguyen Dinh} \sur{Thanh}}\email{thanh.nd225670@sis.hust.edu.vn}
+
+\author[2]{\fnm{Pham Van} \sur{Hai}}\email{haipv@soict.hust.edu.vn}
+
+\affil[1]{\orgname{Posts and Telecommunications Institute of Technology (PTIT)}, \city{Hanoi}, \country{Vietnam}}
+
+\affil[2]{\orgdiv{School of Information and Communication Technology}, \orgname{Hanoi University of Science and Technology}, \city{Hanoi}, \country{Vietnam}}
+
+% ---------------------------------------------------------------
+% Abstract: MUST be < 250 words (Discover AI requirement).
+% ---------------------------------------------------------------
+\abstract{Retrieval-augmented generation for legal question answering commonly
+commits to a single retrieval strategy, yet legal questions are heterogeneous:
+some require only direct textual lookup, others demand reasoning over
+structural relations such as amendment and cross-reference, and still others
+are ambiguous and should be clarified rather than answered. Since applying one
+fixed strategy to all of them is inherently suboptimal, we propose a
+reasoning-aware adaptive router for a Hybrid GraphRAG system that, before any
+evidence is retrieved, dispatches each query to dense retrieval, graph
+traversal, hybrid reasoning, or clarification. Our router performs two stages:
+a lightweight classifier resolves clear cases at negligible cost, while a
+selective large language model verifier reasons over the uncertain, ambiguous,
+and relation-heavy ones; a deterministic history resolver settles
+conversational references beforehand. Through experimental evaluation on a
+Vietnamese legal corpus, we demonstrate a) the routing accuracy of the
+classifier, b) the causal contribution of the verifier as a chain-of-thought
+step, c) the safety of clarification under ambiguity, d) the cost--accuracy
+trade-off of selective verification, and e) the behaviour under multi-turn
+conversation. A live demonstration of the deployed system is available at
+\url{https://naturals-suggested-annex-clothing.trycloudflare.com}, and the
+dataset and source code are released at
+\url{https://REPLACE-WITH-YOUR-DATA-URL}.}
+
+\keywords{Retrieval-Augmented Generation, GraphRAG, Hybrid RAG, Adaptive
+Routing, Vietnamese Legal QA, Knowledge Graphs, Multi-hop Reasoning,
+Ambiguity Detection}
+
+\maketitle
+
+% ---------------------------------------------------------------
+%% ===== introduction ====================================================
+\section{Introduction}\label{sec:intro}
+% ===============================================================
+
+\subsection{Background and Motivation}\label{subsec:background}
+
+Retrieval-augmented generation (RAG) has become a standard means of grounding
+large language models in external evidence, improving factual reliability
+without costly retraining~\cite{lewis2020rag,guu2020realm}. In its most widely
+adopted form, RAG relies on dense passage retrieval, embedding the query and
+the corpus into a shared vector space and returning the most semantically
+similar chunks~\cite{karpukhin2020dpr}. This design is effective for factoid
+questions whose answer lies in a single passage, and much of the recent
+progress in question answering has been built upon it.
+
+In practice and despite its popularity, however, the assumption that a single
+dense retriever suffices tends to be overly simplistic, as the information
+need behind a query cannot be served by one fixed strategy in many real-world
+settings. When the answer depends on relations among legal provisions, on
+document structure, or on chains of evidence spanning several documents, dense
+retrieval cannot follow those connections, because the relations are absent
+from the vector space~\cite{trivedi2023interleaving}. Graph-based retrieval
+was introduced precisely to address this gap by organising the corpus as a
+knowledge graph and traversing explicit, typed
+relationships~\cite{edge2024graphrag,wang2024kgp,gutierrez2024hipporag}; yet
+graph traversal is more expensive than dense lookup, and applying it to every
+query wastes computation on the many questions that a single article already
+answers. Vietnamese legal question answering exposes this tension sharply: one
+system must serve both simple article-level definitions and multi-document
+questions involving amendment, replacement, and cross-document
+reference~\cite{chalkidis2020legalbert,zhong2020nlp_law,sovrano2020legalkg},
+while some questions are ambiguous and admit no safe answer at all until the
+user is asked to clarify.
+
+When confronted with such heterogeneous queries, a naturally arising question
+is therefore how to decide \emph{which} retrieval strategy a given query
+requires, and to do so \emph{before} any evidence is retrieved. Recent studies
+have addressed a related question by routing among model sizes or retrieval
+depths according to query complexity~\cite{jeong2024adaptive,chen2023frugalgpt,ong2024routellm};
+however, they select \emph{how much} to retrieve rather than \emph{which
+evidence mechanism} to use, and the prior decision of whether a query needs
+relational traversal at all is left unaddressed. A separate and
+safety-critical gap concerns ambiguity: when a conversational referent cannot
+be resolved, forcing retrieval grounds the answer in an arbitrary document and
+returns a confidently wrong answer~\cite{min2020ambigqa,elgohary2019canard},
+so the option to clarify must itself be part of the routing decision. This
+motivates us to design a router that predicts the appropriate evidence action
+directly from the query and its conversational context, treating the strategy
+as a property of the query rather than a fixed pipeline setting.
+
+\subsection{Main Contributions}\label{subsec:contributions}
+
+In this paper, we propose a reasoning-aware adaptive router for a Hybrid
+GraphRAG system that, before retrieval, dispatches each Vietnamese legal query
+to one of four evidence actions---dense retrieval, graph traversal, hybrid
+reasoning, or clarification. Rather than running all strategies and merging
+their outputs, the router decides upstream through two stages: a lightweight
+feature-based classifier resolves the majority of clear cases as a real-time
+gateway, and a selective large language model (LLM) verifier is invoked only
+for uncertain, ambiguous, or relation-heavy queries, following a cost-aware
+cascade principle~\cite{chen2023frugalgpt,ong2024routellm}. A deterministic
+history resolver precedes both stages, distinguishing resolved, irrelevant,
+and conflicting conversational references so that clarification is triggered
+only when the legal target is genuinely underspecified.
+
+Our contributions are four-fold, as summarised below.
+\begin{itemize}
+\item \textbf{Reasoning-aware routing formulation.} We formulate retrieval
+routing for Vietnamese legal question answering as a four-class decision made
+\emph{before} evidence retrieval, unifying evidence-mechanism selection and
+ambiguity handling---including clarification as a first-class routing
+action---within a single framework~\cite{jeong2024adaptive,min2020ambigqa}.
+\item \textbf{Two-stage router with a verifier that reasons.} We design a
+two-stage router that couples a lightweight classifier with a selectively
+invoked LLM verifier, and we identify that this verifier serves not merely as
+a route corrector but as an explicit chain-of-thought step that improves the
+generated answer, a property we isolate through a controlled oracle-routing
+ablation~\cite{chen2023frugalgpt}.
+\item \textbf{Deterministic conversational history resolution.} We introduce a
+history resolver that classifies a conversational referent as resolved,
+irrelevant, or conflicting, enabling the router to unblock retrieval when a
+referent is available and to force clarification when it is
+absent~\cite{elgohary2019canard}.
+\item \textbf{Comprehensive empirical validation.} Through experimental
+evaluation on a Vietnamese legal corpus, we demonstrate 1)~the routing
+accuracy of the classifier, 2)~the causal contribution of the verifier, 3)~the
+safety of clarification under ambiguity, and 4)~the cost--accuracy trade-off
+of selective verification, against fixed-strategy, oracle, and rule-based
+baselines.
+\end{itemize}
+
+To the best of our knowledge, this is the first framework to treat
+clarification as a first-class routing action alongside dense, graph, and
+hybrid retrieval in a Hybrid GraphRAG pipeline for Vietnamese legal question
+answering~\cite{sovrano2020legalkg,zhong2020nlp_law}.
+
+\subsection{Organisation}\label{subsec:organisation}
+
+The remainder of this paper is organised as follows.
+Section~\ref{sec:related_work} reviews related work.
+Section~\ref{sec:methodology} defines the routing problem, the dataset, and
+the overall pipeline. Section~\ref{sec:routing_framework} details the routing
+framework. Sections~\ref{sec:eval} and~\ref{sec:results} present the
+experimental setup and results. Section~\ref{sec:limitations} discusses
+limitations, and Section~\ref{sec:conclusion} concludes.
+
+%% ===== related_work ====================================================
+\section{Related Work}\label{sec:related_work}
+% ===============================================================
+
+\noindent\textbf{Retrieval-Augmented Generation.}
+RAG combines parametric knowledge from neural language models with
+non-parametric knowledge retrieved from an external
+corpus~\cite{lewis2020rag,guu2020realm}. Dense retrieval is effective for
+open-domain factoid QA but degrades on multi-hop evidence
+chains~\cite{karpukhin2020dpr,trivedi2023interleaving}. A line of advanced
+variants improves retrieval control---Self-RAG through
+self-reflection~\cite{asai2023selfrag}, FLARE through active
+retrieval~\cite{jiang2023flare}, RAPTOR through hierarchical
+summaries~\cite{sarthi2024raptor}, and CRAG through corrective
+re-retrieval~\cite{yan2024corrective}. These methods refine \emph{how} dense
+retrieval is performed, but they operate within a single evidence mechanism
+and do not decide whether a query requires relational traversal or
+clarification.
+
+\noindent\textbf{Graph Retrieval and GraphRAG.}
+Graph-based retrieval lets evidence follow explicit
+relationships~\cite{sun2019pullnet,wang2024kgp}. GraphRAG builds entity
+graphs for query-focused summarisation~\cite{edge2024graphrag}; HippoRAG
+introduces a neurobiologically inspired graph memory for associative
+retrieval~\cite{gutierrez2024hipporag}; LightRAG uses dual-level retrieval
+over entity and community knowledge~\cite{he2024lightrag}; and
+agent-style methods such as Think-on-Graph~\cite{sun2024thinkongraph} and
+GraphReader~\cite{li2024graphreader} let a language model iteratively explore
+the graph during reasoning. For legal QA, graph retrieval is especially
+relevant because legal documents encode structured relations such as
+amendment, replacement, and jurisdiction~\cite{sovrano2020legalkg}. However,
+these systems assume graph traversal is always applied; none decides
+\emph{when} traversal is warranted versus when a dense lookup would suffice at
+lower cost.
+
+\noindent\textbf{Adaptive Routing and Cost-aware Inference.}
+Adaptive-RAG selects a retrieval strategy according to question
+complexity~\cite{jeong2024adaptive}, while FrugalGPT and RouteLLM route
+queries across models of different
+cost~\cite{chen2023frugalgpt,ong2024routellm}. These works establish the
+cost-aware cascade principle that motivates our design. Their routing target,
+however, is the \emph{model} or \emph{retrieval depth}; they do not route
+among qualitatively different evidence mechanisms, and they do not treat
+clarification as a routable action. Adaptive-RAG is the closest method in
+spirit, but it was developed for English open-domain QA and routes among
+zero-, single-, and multi-step retrieval over a single dense index, so it is
+not directly transferable to a Vietnamese legal corpus that must additionally
+choose between dense and graph evidence; we discuss this comparability gap in
+Section~\ref{sec:limitations}.
+
+\noindent\textbf{Ambiguity Handling.}
+CANARD studies question rewriting for context-dependent
+questions~\cite{elgohary2019canard}, and AmbigQA shows that open-domain
+questions often admit multiple valid interpretations~\cite{min2020ambigqa}.
+These studies treat ambiguity resolution as a stand-alone task applied before
+or after retrieval, rather than as one possible outcome of a unified routing
+decision.
+
+\noindent\textbf{Vietnamese NLP and Legal QA.}
+VnCoreNLP provides Vietnamese word segmentation and
+NER~\cite{vu2018vncorenlp}, and PhoBERT provides pretrained Vietnamese
+representations~\cite{nguyen2020phobert}. Legal NLP more broadly requires
+reasoning over regulatory
+relations~\cite{chalkidis2020legalbert,zhong2020nlp_law,guha2023legalbench,louis2024interpretable}.
+This body of work supplies the linguistic and legal-domain foundations our
+system builds on, but does not address adaptive retrieval routing.
+
+Table~\ref{tab:related_comparison} summarises where the proposed framework
+stands relative to these lines of work along the capabilities most relevant to
+heterogeneous legal question answering: whether a method selects among
+distinct evidence mechanisms rather than a single fixed one, whether that
+selection is made \emph{before} retrieval, whether relational (graph) evidence
+is supported, whether clarification is a routing option, and whether
+conversational context is resolved. No prior line offers all five.
+
+\begin{table}[!htbp]
+\centering
+\caption{Capabilities of representative retrieval paradigms versus the
+proposed framework. \textsf{Mech.}: selects among distinct evidence
+mechanisms; \textsf{Pre-ret.}: decides before retrieval; \textsf{Graph}:
+supports relational traversal; \textsf{Clarify}: clarification as a routing
+option; \textsf{Conv.}: resolves conversational context}\label{tab:related_comparison}
+\small
+\begin{tabularx}{\columnwidth}{Y ccccc}
+\toprule
+\textbf{Paradigm} & \textbf{Mech.} & \textbf{Pre-ret.} & \textbf{Graph} & \textbf{Clarify} & \textbf{Conv.} \\
+\midrule
+Dense RAG~\cite{lewis2020rag,karpukhin2020dpr}          &            &            &            &            &            \\
+Advanced RAG~\cite{asai2023selfrag,jiang2023flare}      &            &            &            &            &            \\
+GraphRAG~\cite{edge2024graphrag,he2024lightrag}         &            &            & \checkmark &            &            \\
+Hybrid RAG~\cite{gao2023modularrag,wang2024kgp}         & \checkmark &            & \checkmark &            &            \\
+Adaptive routing~\cite{jeong2024adaptive,ong2024routellm} & \checkmark & \checkmark &          &            &            \\
+Ambiguity handling~\cite{min2020ambigqa,elgohary2019canard} &        &            &            & \checkmark & \checkmark \\
+\midrule
+\textbf{This work} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+In summary, despite substantial progress along each of these lines, no prior
+system decides among dense retrieval, graph traversal, hybrid reasoning, and
+clarification \emph{before} retrieval in a single framework. Advanced RAG
+methods improve a single mechanism; GraphRAG methods assume traversal is
+always needed; cost-aware routers select models rather than evidence
+mechanisms; and ambiguity-handling methods treat clarification in isolation.
+Our work differs in placing an explicit, reasoning-aware routing decision at
+the centre of the pipeline, and in treating clarification as a first-class
+route backed by deterministic conversational context resolution.
+
+%% ===== methodology =====================================================
+\section{Methodology}\label{sec:methodology}
+% ===============================================================
+
+\subsection{Problem Definition}\label{subsec:problem_definition}
+
+Let $\mathcal{C}=\{D_1,\ldots,D_N\}$ denote the Vietnamese legal corpus of
+$N$ documents. From $\mathcal{C}$, the system builds two complementary
+knowledge sources: a dense vector index
+$\mathcal{I}_v=\{(c_j,\mathbf{e}_j)\}_{j=1}^{M}$ of $M$ legal text chunks,
+where $c_j$ is the $j$-th chunk and $\mathbf{e}_j\in\mathbb{R}^d$ is its
+$d$-dimensional embedding; and a legal knowledge graph
+$\mathcal{G}=(\mathcal{V},\mathcal{E})$ where a node $v\in\mathcal{V}$
+represents a legal document, article, semantic concept, agency, or other
+entity, and an edge $(u,r,v)\in\mathcal{E}$ represents a typed relation $r$
+from source node $u$ to target node $v$, such as \textsc{HAS\_ARTICLE},
+\textsc{MENTIONS}, \textsc{AMENDS}, or \textsc{REPLACES}. Table~\ref{tab:notation}
+summarises the notation used throughout.
+
+\begin{table}[!htbp]
+\centering
+\caption{Summary of notation}\label{tab:notation}
+\begin{tabularx}{\columnwidth}{L{3cm}Y}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$\mathcal{C},\,\mathcal{I}_v,\,\mathcal{G}$ & legal corpus, dense index, knowledge graph \\
+$q_t,\,H$ & query at turn $t$ and conversation history $H=\{(q_i,a_i)\}_{i=1}^{t-1}$ \\
+$\mathcal{D}=\{d_v,d_g,d_h,d_c\}$ & route set: dense, graph, hybrid, clarify \\
+$\rho$ & routing function $\rho(q_t,H)\!\to\! d^*\!\in\!\mathcal{D}$ \\
+$E_{d^*},E_v,E_g$ & evidence set for route $d^*$; dense and graph evidence \\
+$k,\,h$ & dense retrieval depth; maximum traversal depth \\
+$\mathbf{f}(q_t,H,r_H)$ & feature vector, $\mathbf{f}\in\mathbb{R}^{n_f}$ \\
+$\phi_{\mathrm{amb}}(q_t,H,r_H)$ & ambiguity score, $\in[0,1]$ \\
+$\xi(q_t)$ & multi-hop score, $\in\{0,1,2\}$ \\
+$r_H$ & history-resolution status (Eq.~\ref{eq:history_states}) \\
+$f_1$ & Stage-1 classifier, outputs $(d_1,s_1)$ \\
+$s_1$ & Stage-1 confidence (max softmax probability) \\
+$\gamma_{\mathrm{conf}},\gamma_{\mathrm{amb}},\gamma_{\mathrm{hop}}$ & binary Stage-2 trigger indicators \\
+$\Gamma$ & composite Stage-2 trigger \\
+$\tau_{\mathrm{conf}},\tau_{\mathrm{force}},\tau_{\mathrm{clar}}$ & confidence, forcing, and clarify-override thresholds \\
+$f_2$ & Stage-2 LLM verifier \\
+$a_t,\,c_t$ & generated answer; clarification question \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+At inference time, the input is the current query $q_t$ at turn $t\geq 1$,
+together with optional conversation history $H=\{(q_i,a_i)\}_{i=1}^{t-1}$
+(empty when $t=1$). The router selects one action from the route set
+\begin{equation}
+\mathcal{D}=\{d_v,\,d_g,\,d_h,\,d_c\},
+\label{eq:route_set}
+\end{equation}
+where $d_v$, $d_g$, $d_h$, $d_c$ denote \texttt{dense\_retrieval},
+\texttt{graph\_traversal}, \texttt{hybrid\_reasoning}, and \texttt{clarify},
+respectively. The router is modelled as a function $\rho$ mapping the input
+pair to a route:
+\begin{equation}
+d^* = \rho(q_t,H),\qquad d^*\in\mathcal{D}.
+\label{eq:routing_function}
+\end{equation}
+For the three retrieval routes, the evidence set $E_{d^*}$ is determined by
+the selected route $d^*$:
+\begin{equation}
+E_{d^*}=
+\begin{cases}
+\mathrm{TopK}(q_t,\mathcal{I}_v,k) & \text{if } d^*=d_v,\\[3pt]
+\mathrm{Traverse}(q_t,\mathcal{G},h) & \text{if } d^*=d_g,\\[3pt]
+E_v\cup E_g & \text{if } d^*=d_h,
+\end{cases}
+\label{eq:evidence_set}
+\end{equation}
+where $E_v\triangleq\mathrm{TopK}(q_t,\mathcal{I}_v,k)$ is the set of the $k$
+chunks most similar to $q_t$ in $\mathcal{I}_v$;
+$E_g\triangleq\mathrm{Traverse}(q_t,\mathcal{G},h)$ is the evidence obtained
+by linking entities in $q_t$ to nodes of $\mathcal{G}$ and traversing up to a
+maximum depth $h$; $k\in\mathbb{N}^{*}$ is the dense retrieval depth (number
+of top-$k$ chunks returned) and $h\in\mathbb{N}^{*}$ is the maximum traversal
+depth. The clarify route $d_c$ produces no evidence set and therefore does
+not appear in~\eqref{eq:evidence_set}. The generator then produces
+$a_t=\mathrm{Generate}(q_t,H,E_{d^*})$. If $d^*=d_c$, no evidence is
+retrieved; instead the system returns a clarification question
+$c_t=\mathrm{Clarify}(q_t,H)$.
+
+\subsection{Dataset}\label{subsec:dataset}
+
+The evaluation uses a self-constructed Vietnamese legal QA routing dataset
+derived from a single source: the Vietnamese electronic legal codification
+system (the ``Vietnamese Legal Code Portal''), flattened into article-level
+records.
+Question--answer pairs were generated from sampled legal articles using the
+Gemini API. For each text snippet, the model was prompted with templates
+specific to the three evidence structures to synthesize realistic user
+queries, and the exact corresponding span in the article was extracted as the
+ground-truth answer. A subset of the generated pairs was then manually
+reviewed to ensure legal soundness and prevent hallucinated facts.
+QA pairs are linked to supporting articles through an \texttt{article\_key}
+(format \texttt{DOC::ARTICLE\_ID}) and assigned routing labels based on
+evidence structure: \texttt{dense\_retrieval} for single-article questions,
+\texttt{graph\_traversal} for multi-article reasoning within one document,
+and \texttt{hybrid\_reasoning} for evidence spanning multiple documents.
+Low-quality samples are removed by deduplication, length filtering, and
+placeholder-answer filtering. To reduce template-induced lexical leakage in
+the routing features, the surface forms of the generated queries are
+additionally paraphrased while preserving their underlying evidence
+structure, so that the routing classifier must rely on genuine structural
+signals rather than memorised template wording.
+
+Table~\ref{tab:dataset} summarises the dataset splits. The dataset remains
+skewed toward dense retrieval, which accounts for half of the samples
+($50\%$; Fig.~\ref{fig:dataset_bar} shows the test-split distribution),
+motivating Macro-F1 reporting alongside accuracy. The strict split
+is used for retrieval-route evaluation; the \texttt{clarify} route is
+evaluated separately on a $234$-query ambiguity benchmark ($156$ ambiguous,
+$78$ answerable controls) and a $160$-query conversation stress test.
+The $234$-query ambiguity dataset was constructed by systematically dropping
+essential context (such as subjects or conditions) from well-posed queries to
+form $156$ ambiguous samples, which were paired with $78$ unambiguous
+controls authored by legal experts. The $160$-query conversation set was
+synthesized to simulate realistic multi-turn dialogues encompassing topic
+shifts and contextual references, followed by a human validation pass to
+guarantee contextual coherence.
+
+\begin{table}[!htbp]
+\centering
+\caption{Vietnamese legal QA routing dataset split}\label{tab:dataset}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Split} & \textbf{Dense} & \textbf{Graph} & \textbf{Hybrid} & \textbf{Total} \\
+\midrule
+Train & 400 & 200 & 200 & 800 \\
+Dev   & 50  & 25  & 25  & 100 \\
+Test  & 300 & 150 & 150 & 600 \\
+\midrule
+\textbf{Total} & 750 & 375 & 375 & 1{,}500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.77\columnwidth]{dataset_bar.pdf}
+\caption{Route-label distribution of the strict $600$-query evaluation set:
+$300$ dense-retrieval, $150$ graph-traversal, and $150$ hybrid-reasoning
+queries}\label{fig:dataset_bar}
+\end{figure}
+
+\subsection{System Overview}\label{subsec:system_overview}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{system_architecture.pdf}
+\caption{High-level data flow of the proposed Hybrid GraphRAG system. The
+Vietnamese legal corpus $\mathcal{C}$ is processed offline into a dense
+vector index $\mathcal{I}_v$ (ChromaDB) and a legal knowledge graph
+$\mathcal{G}$ (Neo4j). At query time the two-stage adaptive router selects
+evidence from $\mathcal{I}_v$, $\mathcal{G}$, or both, or returns a
+clarification question $c_t$. Box colours denote input, processing, storage,
+routing, and output stages}\label{fig:system_architecture}
+\end{figure}
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{system_pipeline.pdf}
+\caption{Reasoning-aware adaptive routing pipeline and illustrative routing
+outcomes. \textbf{a} The pipeline processes $(q_t,H)$ through feature
+extraction, Stage~1 routing, trigger checking, optional Stage~2 LLM
+verification, and route-controlled retrieval or clarification. \textbf{b}
+Concrete examples for the four routing actions: dense ($d_v$) for direct
+lookup, graph ($d_g$) for amendment relations, hybrid ($d_h$) for
+cross-document synthesis, and clarify ($d_c$) for an underspecified
+referent}\label{fig:system_pipeline}
+\end{figure*}
+
+Figure~\ref{fig:system_architecture} shows the overall data flow. In the
+offline phase, $\mathcal{C}$ is indexed once into $\mathcal{I}_v$ and
+$\mathcal{G}$. In the online phase, every $(q_t,H)$ is routed against these
+fixed sources. Figure~\ref{fig:system_pipeline} illustrates both the routing
+pipeline and representative examples of the four routing actions. The final
+route $d^*$ controls evidence retrieval, graph reasoning, hybrid evidence
+aggregation, or clarification generation.
+
+\subsection{Implementation Details}\label{subsec:implementation}
+
+The Chroma vector store is persisted with chunks embedded by
+\texttt{microsoft/Harrier-OSS-v1-0.6B} ($256$-token chunks, $32$-token
+overlap, top-$k=8$). The graph backend uses Neo4j with full-text indexes over
+legal documents, articles, and vector chunks; graph retrieval uses
+Text-to-Cypher querying via an OpenAI-compatible endpoint that generates
+Cypher queries against $\mathcal{G}$. Answer generation and the Stage-2
+verifier are served by the same local vLLM endpoint running a
+\texttt{Qwen3-32B-AWQ} model; decoding uses greedy search (temperature~$0$)
+with a fixed seed, so that answers are deterministic and any run-to-run
+variation in the reported metrics comes only from resampling queries
+(Section~\ref{subsec:metrics}).
+Answers are generated with a citation-constrained prompt that
+requires verbatim quotation of only the clause or point directly answering
+the question (quoting an entire article when unnecessary is treated as an
+error), permits a short direct answer before the supporting quotation, and
+prescribes a single fixed sentence when the retrieved evidence contains no
+relevant provision; the full system prompt is reproduced in
+Appendix~\ref{app:repro}. Stage~2 is prompted for a structured JSON route
+prediction (route decision, confidence, an optional clarification question,
+and a reasoning trace).
+Vietnamese named-entity recognition uses
+\texttt{NlpHUST/ner-vietnamese-electra-base}~\cite{clark2020electra}. The
+Stage~1 router checkpoint is stored separately from the service layer, so
+that the router can be retrained without redeploying the whole system. Full
+hyperparameters, the complete feature list, the ambiguity-score definition,
+the history-resolver rules, and the Stage-2 prompt are given in
+Appendix~\ref{app:repro}.
+
+%% ===== framework =======================================================
+\section{Reasoning-aware Adaptive Routing Framework}\label{sec:routing_framework}
+% ===============================================================
+
+\subsection{Legal Knowledge Base}\label{subsec:legal_kb}
+
+The vector index $\mathcal{I}_v$ contains $68{,}835$ embedded chunks
+appropriate for direct questions whose answers are stated in legal text. The
+graph $\mathcal{G}$ stores explicit typed relations among legal documents,
+articles, and concepts. Tables~\ref{tab:graph_stats}
+and~\ref{tab:graph_relations} report the statistics of the graph built from
+the national legal codification, in which article nodes are promoted to
+\textsc{LegalArticle} to enable article-level evidence retrieval.
+
+\begin{table}[!htbp]
+\centering
+\caption{Vietnamese legal graph $\mathcal{G}$ statistics}\label{tab:graph_stats}
+\begin{tabular}{lr}
+\toprule
+\textbf{Graph item} & \textbf{Count} \\
+\midrule
+Nodes $|\mathcal{V}|$ & 804{,}322 \\
+Edges $|\mathcal{E}|$ & 1{,}968{,}621 \\
+Legal documents & 4{,}598 \\
+Legal articles (\textsc{LegalArticle}) & 68{,}570 \\
+Semantic concepts & 392{,}592 \\
+Other entities & 338{,}562 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Main relation types in the legal graph, ordered by count}\label{tab:graph_relations}
+\begin{tabular}{lr}
+\toprule
+\textbf{Relation type} & \textbf{Count} \\
+\midrule
+\textsc{MENTIONS} & 1{,}033{,}341 \\
+\textsc{HAS\_CONDITION} & 202{,}298 \\
+\textsc{OBLIGATES} & 128{,}768 \\
+\textsc{PART\_OF\_PROCEDURE} & 102{,}004 \\
+\textsc{REGULATES} & 75{,}137 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The graph is large and densely linked at the semantic level through relations
+such as \textsc{MENTIONS} ($1{,}033{,}341$ edges) and \textsc{HAS\_CONDITION}
+($202{,}298$), whereas explicit cross-document legal-effect relations such as
+\textsc{AMENDS} ($5{,}944$ edges) and \textsc{REPLACES} ($4{,}189$) remain
+comparatively sparse. This asymmetry directly motivates adaptive routing:
+graph traversal is valuable for relation-heavy queries but unnecessarily
+costly for simple article-level lookups.
+
+\subsection{Reasoning-aware Feature Extraction}\label{subsec:features}
+
+For each input $(q_t,H)$, the router first runs the history resolver
+(Eq.~\ref{eq:history_resolver}) and then extracts a feature vector
+$\mathbf{f}(q_t,H,r_H)\in\mathbb{R}^{n_f}$ that blends lexical signals with
+reasoning-aware metrics, together with two auxiliary scores: the ambiguity
+score $\phi_{\mathrm{amb}}(q_t,H,r_H)\in[0,1]$ and the multi-hop score
+$\xi(q_t)\in\{0,1,2\}$.
+Here $n_f=27$, comprising $16$ lexical surface features produced by a
+Vietnamese legal feature extractor and $11$ reasoning-aware complexity
+features produced by a query-complexity analyser; the complete list, in the
+canonical vector order used for both training and inference, is given in
+Appendix~\ref{app:repro}, Table~\ref{tab:features}. Using an explicit feature
+vector rather than a hidden query embedding keeps Stage~1 both interpretable
+and cheap to evaluate.
+The Stage~1 classifier relies most heavily on a small set of structural
+features: the \textbf{legal reference count}, which tracks how many distinct
+legal documents are mentioned; the \textbf{query length in words}, as
+cross-document synthesis questions tend to be longer;
+\textbf{cross-document signals}, reflecting explicit synthesis indicators;
+and the \textbf{article reference count}. Additional reasoning
+metrics---multi-hop connectors, sub-question count, procedural depth, and a
+discrete complexity level---provide finer-grained separation for harder
+cases, while question-type cues (``what'', ``when'', ``how much'') and
+legal-relation cues (``amend'', ``replace'', ``takes effect from'') further
+inform the decision.
+
+\paragraph{Multi-hop score.}
+Let $\mathcal{K}_{\mathrm{rel}}$ be the fixed lexicon of legal-relation cue
+phrases (e.g.\ ``amend'', ``replace'', ``repeal'', ``provide guidance'',
+``pursuant to''), listed in full in Appendix~\ref{app:repro}. The multi-hop
+score counts how many distinct cues occur in the query, capped at two:
+\begin{equation}
+\xi(q_t)=\min\!\Bigl(2,\;\bigl|\{\,\kappa\in\mathcal{K}_{\mathrm{rel}} : \kappa\ \text{occurs in}\ q_t\,\}\bigr|\Bigr).
+\label{eq:multihop_score}
+\end{equation}
+Thus $\xi(q_t)=0$ means no relation signal (likely a direct lookup),
+$\xi(q_t)=1$ means a single relation cue, and $\xi(q_t)=2$ means two or more
+co-occurring cues, indicating the strongest multi-hop demand.
+
+\paragraph{Ambiguity score.}
+The ambiguity score is produced by a deterministic detector that evaluates a
+set of $m=11$ binary ambiguity indicators
+$\{\psi_1(q_t,H,r_H),\ldots,\psi_m(q_t,H,r_H)\}$---for example, an
+unresolved demonstrative or pronoun (e.g.\ ``that'', ``this'', ``it'')
+whose referent is not fixed by $r_H$, a generic legal need with no concrete
+legal-object anchor, or an elliptical follow-up with no usable history---each
+carrying a calibrated weight $w_i\in[0,1]$. The score is the strongest
+triggered signal, gated by the history-resolution status:
+\begin{equation}
+\phi_{\mathrm{amb}}(q_t,H,r_H)=
+\begin{cases}
+0 & \text{if } r_H=\texttt{resolved},\\[3pt]
+\displaystyle\max_{1\le i\le m}\; w_i\,\psi_i(q_t,H,r_H) & \text{otherwise},
+\end{cases}
+\label{eq:ambiguity_score}
+\end{equation}
+so that a referent recovered from history suppresses the ambiguity signal
+regardless of surface cues. Taking the maximum rather than a sum reflects the
+weight calibration: a single strong indicator (e.g.\ an unresolved pronoun
+with empty history, $w=0.90$) is sufficient to exceed the trigger threshold
+$\tau_{\mathrm{force}}=0.60$, whereas weak indicators ($w\le 0.30$) cannot
+force verification on their own. The full indicator set and weights
+$\{(\psi_i,w_i)\}$, including two graded indicator families whose scores
+scale with match counts, are specified in Appendix~\ref{app:repro},
+Table~\ref{tab:ambiguity_features}.
+
+\paragraph{History resolver.}
+A deterministic history resolver runs before ambiguity scoring,
+\begin{equation}
+r_H = \mathrm{Resolve}(q_t,H),
+\label{eq:history_resolver}
+\end{equation}
+returning a referent-resolution status
+\begin{equation}
+r_H\in\{\texttt{resolved},\,\texttt{no\_history},\,\texttt{irrelevant\_history},\,\texttt{conflicting\_history},\,\texttt{not\_needed}\}.
+\label{eq:history_states}
+\end{equation}
+If a phrase such as ``that document'' has a unique document referent in
+$H$, the resolved referent can unblock graph traversal; otherwise the same
+surface form remains ambiguous. The status $r_H$ is used both as a Stage~1
+input feature and as one of the Stage~2 trigger conditions; the resolution
+rules are listed in Appendix~\ref{app:repro}.
+
+\subsection{Stage~1: XGBoost Router}\label{subsec:stage1}
+
+Stage~1 is an XGBoost multi-class classifier~\cite{chen2016xgboost} trained on
+the $800$ routing-labelled training queries augmented with $60$ synthetic
+\texttt{clarify} samples drawn from ambiguous-query templates, since the QA
+dataset itself contains no gold \texttt{clarify} label:
+\begin{equation}
+(d_1,s_1) = f_1\bigl(\mathbf{f}(q_t,H,r_H)\bigr),
+\label{eq:stage1}
+\end{equation}
+where $d_1\in\mathcal{D}=\{d_v,d_g,d_h,d_c\}$ is the initial route and
+$s_1\in[0,1]$ is the confidence, taken as the maximum class probability of
+the softmax output. Because the \texttt{clarify} class is only weakly
+supervised by synthetic templates, a Stage~1 prediction $d_1=d_c$ is treated
+as a proposal rather than a decision: whenever $d_1=d_c$, Stage~2 is invoked
+to adjudicate, so clarification is never emitted on the strength of the
+weakly supervised class alone.
+XGBoost is chosen for three reasons: its
+features are mostly discrete counts and binary indicators that
+gradient-boosted trees handle without elaborate normalisation; inference over
+$n_f$ features is orders of magnitude cheaper than one LLM pass, meeting the
+latency-aware requirement of a stage that processes all traffic; and tree
+models expose feature importances that support interpretability, which is
+valuable in the legal domain. Empirically, the classifier forward pass takes
+$\approx\!8.9$~ms per query on CPU (the full Stage~1 path, including feature
+extraction and history resolution, is $\approx\!33.7$~ms; see
+Section~\ref{subsec:rq5}), versus $\approx\!53.3$~ms for a
+PhoBERT~\cite{nguyen2020phobert} classifier on GPU, making Stage~1 suitable as
+a real-time gateway and motivating a future three-level cascade
+XGBoost~$\rightarrow$~PhoBERT~$\rightarrow$~LLM following
+FrugalGPT~\cite{chen2023frugalgpt}.
+
+\subsection{Stage~2: Selective LLM Verifier}\label{subsec:stage2}
+
+Stage~2 is an LLM verifier invoked selectively. Three binary trigger
+indicators, each taking values in $\{0,1\}$, are defined as
+\begin{align}
+\gamma_{\mathrm{conf}} &= \mathbb{I}[\,s_1 < \tau_{\mathrm{conf}}\,],
+    \label{eq:gamma_conf}\\
+\gamma_{\mathrm{amb}}  &= \mathbb{I}[\,\phi_{\mathrm{amb}}(q_t,H,r_H) \geq \tau_{\mathrm{force}}\,],
+    \label{eq:gamma_amb}\\
+\gamma_{\mathrm{hop}}  &= \mathbb{I}[\,\xi(q_t) \geq 2\,],
+    \label{eq:gamma_hop}
+\end{align}
+where $\mathbb{I}[\cdot]$ is the indicator function (equal to $1$ when its
+argument is true and $0$ otherwise). Thus $\gamma_{\mathrm{conf}}$ fires when
+Stage~1 confidence is below $\tau_{\mathrm{conf}}$, $\gamma_{\mathrm{amb}}$
+fires when the ambiguity score reaches the forcing threshold
+$\tau_{\mathrm{force}}$, and $\gamma_{\mathrm{hop}}$ fires at the strongest
+multi-hop level ($\xi=2$). With the convention $a\vee b=\max(a,b)$ on
+$\{0,1\}$, the composite trigger is the logical disjunction of the three
+indicators together with the conflicting-history condition,
+\begin{equation}
+\Gamma(q_t,H,r_H) = \gamma_{\mathrm{conf}}\vee\gamma_{\mathrm{amb}}\vee\gamma_{\mathrm{hop}}\vee\mathbb{I}[\,r_H=\texttt{conflicting\_history}\,]\;\in\;\{0,1\},
+\label{eq:trigger_function}
+\end{equation}
+so that $r_H$ enters the trigger explicitly.
+
+When $\Gamma=0$, Stage~1 is trusted and $d^*=d_1$. When $\Gamma=1$, the
+verifier is queried and returns a proposed route $\tilde{d}\in\mathcal{D}$
+together with, when $\tilde{d}=d_c$, a clarify confidence
+$p_c\in[0,1]$ (the model's estimated probability that the query cannot be
+safely grounded as posed). A clarification is emitted only if the verifier is
+sufficiently confident; otherwise the proposed retrieval route is kept. The
+clarify-override threshold $\tau_{\mathrm{clar}}$ therefore acts on the
+verifier output, and the final route is
+\begin{equation}
+d^* =
+\begin{cases}
+d_1 & \text{if } \Gamma(q_t,H,r_H)=0,\\[3pt]
+d_c & \text{if } \Gamma=1,\ \tilde{d}=d_c,\ \text{and } p_c\ge\tau_{\mathrm{clar}},\\[3pt]
+\tilde{d} & \text{otherwise } (\Gamma=1,\ \tilde{d}\in\{d_v,d_g,d_h\}\ \text{or } p_c<\tau_{\mathrm{clar}}),
+\end{cases}
+\label{eq:final_route}
+\end{equation}
+where in the last case a below-threshold clarify proposal is demoted to the
+verifier's best retrieval route. Default thresholds are
+$\tau_{\mathrm{conf}}=0.50$, $\tau_{\mathrm{force}}=0.60$, and
+$\tau_{\mathrm{clar}}=0.80$; their effect is analysed in
+Section~\ref{subsec:rq4}. In words, Stage~2 is invoked on low-confidence
+Stage~1 decisions, on high ambiguity risk, on strong multi-hop signals, or on
+conflicting history; a \texttt{resolved} history unblocks retrieval and
+suppresses false clarification, whereas missing, irrelevant, or conflicting
+history forces verification or clarification.
+
+Algorithm~\ref{alg:router} summarises the procedure. The deployed
+implementation additionally uses two heuristics: a dense fast path that skips
+Stage~2 for high-confidence, low-ambiguity dense queries, and a
+reasoning-signal check that escalates queries with strong legal features even
+at moderate Stage~1 confidence.
+
+\begin{algorithm}[!htbp]
+\caption{Two-stage adaptive router}\label{alg:router}
+\begin{algorithmic}[1]
+\Require query $q_t$, history $H$, thresholds $\tau_{\mathrm{conf}},\tau_{\mathrm{force}},\tau_{\mathrm{clar}}$
+\Ensure final route $d^*\in\mathcal{D}$
+\State $r_H \gets \mathrm{Resolve}(q_t,H)$
+\State $(\mathbf{f},\phi_{\mathrm{amb}},\xi) \gets \mathrm{ExtractFeatures}(q_t,H,r_H)$
+\State $(d_1,s_1) \gets f_1(\mathbf{f})$
+\State $\gamma_{\mathrm{conf}}\gets\mathbb{I}[s_1<\tau_{\mathrm{conf}}]$;\ \ $\gamma_{\mathrm{amb}}\gets\mathbb{I}[\phi_{\mathrm{amb}}\ge\tau_{\mathrm{force}}]$;\ \ $\gamma_{\mathrm{hop}}\gets\mathbb{I}[\xi\ge 2]$
+\State $\Gamma \gets \gamma_{\mathrm{conf}}\vee\gamma_{\mathrm{amb}}\vee\gamma_{\mathrm{hop}}\vee\mathbb{I}[r_H=\texttt{conflicting\_history}]$
+\If{$\Gamma=0$}
+  \State \Return $d_1$
+\EndIf
+\State $(\tilde{d},p_c) \gets f_2(q_t,H,d_1,s_1,\mathbf{f})$
+\If{$\tilde{d}=d_c$ \textbf{and} $p_c\ge\tau_{\mathrm{clar}}$}
+  \State \Return $d_c$
+\Else
+  \State \Return $\tilde{d}$ \Comment{demote below-threshold clarify to best retrieval route}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\textbf{Running example.}
+For $q_1=$ ``What are the conditions for issuing a building permit?'',
+$\xi(q_1)=0$ and Stage~1 predicts $d_v$ with high confidence; Stage~2 is
+bypassed. For $q_2=$ ``Which decree amends the administrative-penalty rules
+on land?'', the amendment cue (``amend'') raises relational signals, so the
+router selects $d_g$ or $d_h$. For $q_3=$ ``Is that document still in
+effect?'' with $H=\emptyset$, the referent is unresolved,
+$\phi_{\mathrm{amb}}$ is high, $\Gamma=1$, and the verifier returns
+$\tilde{d}=d_c$ with $p_c\ge\tau_{\mathrm{clar}}$.
+
+\subsection{Route Execution and Fallback Policy}\label{subsec:route_execution}
+
+For $d_v$, the system retrieves top-$k$ chunks from $\mathcal{I}_v$. For
+$d_g$, it links query entities to graph nodes and traverses $\mathcal{G}$. For
+$d_h$, it constructs $E_{d^*}=E_v\cup E_g$. For $d_c$, it returns a
+clarification question without retrieval. A defensive fallback policy applies
+when primary retrieval is uninformative: a failed graph traversal or hybrid
+synthesis falls back to dense retrieval; an uninformative dense lookup expands
+$k$ once and retries; and a clarify route, if unanswered, keeps the
+conversation in a waiting state rather than guessing the referent.
+
+%% ===== experimental_setup ==============================================
+\section{Experimental Setup}\label{sec:eval}
+% ===============================================================
+
+\subsection{Research Questions}\label{subsec:rqs}
+
+We organise the evaluation around five research questions that separate the
+two claims of the paper---that routing among evidence mechanisms is both
+learnable and useful, and that a selective second stage adds value beyond
+route correction.
+
+\begin{description}
+\item[RQ1 (End-to-end quality).] Does adaptive routing improve answer quality
+over fixed-strategy and oracle baselines, and does Stage~2 contribute beyond
+mere routing correction?
+\item[RQ2 (Routing accuracy).] How accurately does the Stage~1 classifier
+select routes under cross-validation, compared with rule-based and learned
+baselines?
+\item[RQ3 (Ambiguity handling).] Can the system avoid unsafe retrieval by
+clarifying when the legal target is underspecified?
+\item[RQ4 (Threshold ablation).] How do the key thresholds affect routing
+accuracy and the Stage~2 trigger rate?
+\item[RQ5 (Cost--quality).] Does selective Stage~2 invocation provide a better
+trade-off than always-on or always-off verification?
+\end{description}
+
+\subsection{Systems and Baselines}\label{subsec:systems}
+
+Table~\ref{tab:systems} defines all compared systems. All end-to-end
+experiments run on the \texttt{phapdien\_strict} test set of $600$ queries,
+using the single national codification corpus with one shared retrieval and
+generation configuration, so that any observed difference reflects routing
+decisions rather than infrastructure. The Oracle Router dispatches every query
+using its gold route label under identical retrieval and generation settings;
+comparing the oracle against the Two-stage Hybrid therefore quantifies how
+much answer quality is attributable to Stage~2 reasoning beyond correct
+routing.
+
+\begin{table}[!htbp]
+\centering
+\caption{Systems compared in this work}\label{tab:systems}
+\begin{tabularx}{\columnwidth}{L{2.7cm}Y}
+\toprule
+\textbf{System} & \textbf{Description} \\
+\midrule
+Pure Vector & Always dense retrieval from Chroma \\
+Pure Graph & Always graph traversal in Neo4j (Text-to-Cypher) \\
+Pure Hybrid & Always combines dense and graph evidence \\
+Single-stage Router & XGBoost Stage~1 only; no LLM verifier \\
+Two-stage Hybrid & Stage~1 + selective Stage~2 (full system) \\
+Always-on Stage~2 & Stage~1 + unconditional Stage~2 verification (trigger-policy ablation) \\
+Oracle Router & Gold route labels; retrieval only, no Stage~2 \\
+Oracle + Stage~2 & Gold route labels \emph{with} Stage~2 reasoning (CoT-isolation ablation) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Evaluation Metrics}\label{subsec:metrics}
+
+\paragraph{Answer quality.}
+For answer quality we report Exact Match (EM) and token-level F1 computed by a
+single \texttt{evaluate\_prediction(gold\_context, answer)} routine shared by
+all systems; by convention F1$\,=0$ when precision and recall are both zero.
+Because token-F1 against a gold context rewards lexical overlap and can
+penalise a correct answer phrased differently from the reference---a bias that
+disadvantages systems whose evidence is assembled from structured graph
+context rather than copied from a passage---we additionally report a semantic
+metric to complement lexical F1.
+We report BERTScore-F1~\cite{zhang2020bertscore} computed with the
+Vietnamese encoder \texttt{vinai/phobert-base}~\cite{nguyen2020phobert} (first
+$12$ layers, \texttt{lang="vi"}) as this semantic complement, so that answers
+scored as semantically faithful but lexically divergent from the gold span
+are credited rather than penalised.
+Hit@$k$ measures retrieval coverage (the gold source
+appears within the top $k$ results) over the source-labelled queries. Because
+the dense index, the graph store, and the gold annotations historically used
+four incompatible identifier formats, both retrieved and gold references are
+first mapped to a canonical \texttt{law::\allowbreak document::\allowbreak
+article::\allowbreak number} form by a deterministic normaliser before
+matching (strict mode: document code \emph{and} article number must agree);
+references the normaliser cannot resolve are counted as misses and flagged,
+rather than silently matched (Appendix~\ref{app:repro}).
+
+\paragraph{Route classification.}
+For route classification we report accuracy, per-class F1, and Macro-F1 over
+the class set $\mathcal{R}=\{d_v,d_g,d_h\}$; Macro-F1 is emphasised because the
+dataset is dominated by the dense class~\cite{powers2011evaluation}. To avoid
+reporting an over-optimistic single-split figure, the headline routing result
+is obtained by \emph{stratified five-fold cross-validation}, and we report the
+mean and standard deviation across folds.
+
+\paragraph{Clarification.}
+For clarification we report precision, recall, and F1 of the \texttt{clarify}
+decision on the ambiguity benchmarks, computed against the binary
+ambiguous/answerable gold label.
+
+\paragraph{Cost.}
+For cost we report average and 95th-percentile (p95) latency, the Stage~2
+trigger rate, and the graph-to-dense fallback rate. To attribute latency to its
+sources rather than to the pipeline as a whole, we additionally decompose
+end-to-end latency into a routing component (Stage~1, optional Stage~2) and a
+retrieval-plus-generation component (Section~\ref{subsec:rq5}).
+
+\paragraph{Statistical reporting.}
+Because all end-to-end scores are means over a finite test set ($N=600$),
+point estimates alone can overstate the separation between systems. We
+therefore accompany the headline F1 and Hit@$1$ figures with $95\%$
+confidence intervals obtained by bootstrap resampling of the per-query scores
+($B=1000$ resamples, fixed seed~$42$), and we regard two systems as
+distinguishable only when their intervals do not overlap.
+
+%% ===== results =========================================================
+\section{Results and Discussion}\label{sec:results}
+% ===============================================================
+
+\subsection{RQ1: End-to-end Answer Quality}\label{subsec:rq1}
+
+Since the ultimate purpose of routing is to produce better answers, we first
+ask whether adaptive routing improves end-to-end quality over fixed-strategy
+baselines, and whether Stage~2 contributes beyond correcting route selection.
+Two ablations isolate the mechanisms: an Oracle Router that dispatches every
+query using its gold route label without Stage~2, and an
+\textit{Oracle~+~Stage~2} configuration that holds routing at gold labels
+while enabling the verifier, so that any difference between the two is
+attributable to Stage~2 reasoning alone. The trigger policy is examined
+through its two endpoints: the selective Two-stage system and an Always-on
+variant that invokes the verifier on every query.
+Table~\ref{tab:end_to_end} reports results on the strict $600$-query
+benchmark with bootstrap $95\%$ confidence intervals ($B=1000$, seed~$42$),
+now including the semantic BERT-F1 complement and canonical Hit@$1$ after the
+retrieval-stage identifier fix; Fig.~\ref{fig:f1_bar} visualises Answer~F1.
+
+\begin{table*}[!htbp]
+\centering
+\caption{End-to-end results on the strict $600$-query Vietnamese legal QA
+benchmark. Route~Acc is the agreement between the \emph{executed} route and
+the gold label, measured after Stage-2 overrides, clarification decisions,
+and execution-time fallbacks. F1 and EM are token-level scores from
+\texttt{evaluate\_prediction}, with bootstrap $95\%$ confidence intervals in
+brackets; BERT-F1 is the semantic complement
+(Section~\ref{subsec:metrics}). Hit@$1$ uses canonical identifier matching in
+strict mode. S2 is the Stage~2 trigger rate. Bold marks the best value per
+column, excluding the two oracle rows}\label{tab:end_to_end}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrlrcrrr}
+\toprule
+\textbf{System} & \textbf{Route Acc} & \textbf{F1 {\scriptsize[95\% CI]}} & \textbf{EM} & \textbf{BERT-F1} & \textbf{Hit@1} & \textbf{Lat (ms)} & \textbf{S2} \\
+\midrule
+Pure Vector  & 0.500 & 0.663 {\scriptsize[0.635, 0.690]} & 0.152 & 0.836 & \textbf{0.727} & 10{,}914 & -- \\
+Pure Graph   & 0.250 & 0.633 {\scriptsize[0.607, 0.659]} & \textbf{0.335} & 0.835 & 0.545 & \textbf{6{,}034} & -- \\
+Pure Hybrid  & 0.250 & 0.647 {\scriptsize[0.623, 0.671]} & 0.153 & \textbf{0.865} & 0.523 & 7{,}375 & -- \\
+Single-stage & \textbf{0.737} & 0.457 {\scriptsize[0.430, 0.486]} & 0.130 & 0.735 & 0.215 & 7{,}262 & 0.0\% \\
+Two-stage (ours) & 0.623 & 0.602 {\scriptsize[0.576, 0.628]} & 0.243 & 0.815 & 0.508 & 9{,}799 & 79.2\% \\
+Always-on Stage~2 & 0.455 & \textbf{0.682} {\scriptsize[0.656, 0.706]} & \textbf{0.335} & 0.861 & 0.588 & 10{,}270 & 100.0\% \\
+\midrule
+Oracle       & 1.000 & 0.524 {\scriptsize[0.497, 0.550]} & 0.113 & 0.771 & 0.415 & 7{,}548 & -- \\
+Oracle + Stage~2 & 0.637 & 0.615 {\scriptsize[0.589, 0.641]} & 0.257 & 0.823 & 0.510 & 9{,}920 & 79.2\% \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{f1_bar.pdf}
+\caption{Answer~F1 on the strict $600$-query benchmark with bootstrap $95\%$
+confidence intervals. Always-on Stage~2 attains the highest F1 ($0.682$),
+statistically indistinguishable from the strongest fixed-strategy baseline
+(Pure Vector, $0.663$); the selective Two-stage Router reaches $0.602$ and
+outperforms the Oracle ($0.524$), while the Single-stage Router ($0.457$) is
+the weakest, underscoring the role of Stage~2}\label{fig:f1_bar}
+\end{figure}
+
+We make the following observations.
+
+\noindent\textbf{Stage~2 reasoning causally improves answers, on both
+metrics.} The \textit{Oracle~+~Stage~2} configuration reaches F1~$=0.615$
+{\scriptsize[$0.589, 0.641$]} against F1~$=0.524$
+{\scriptsize[$0.497, 0.550$]} for the plain Oracle---a $+0.091$ gain with
+\emph{non-overlapping} confidence intervals under \emph{identical} gold
+routing---and lifts the semantic BERT-F1 by $+0.052$ ($0.823$ vs $0.771$).
+Because routing is held fixed, both differences are attributable to
+Stage~2's explicit reasoning over query intent and legal constraints during
+verification and generation, confirming the chain-of-thought interpretation
+that the Two-stage$\,>\,$Oracle contrast ($0.602$ vs $0.524$, $+0.078$, also
+CI-separated) could only suggest.
+
+\noindent\textbf{Stage~2 accounts for the routing-to-quality gain.} The gap
+between the Single-stage Router (F1~$=0.457$) and the Two-stage Hybrid
+(F1~$=0.602$) is $+0.145$ with non-overlapping intervals, and grows to
+$+0.225$ for the Always-on variant. Because all three systems share an
+identical Stage~1, these gaps are attributable entirely to Stage~2
+verification and reasoning.
+
+\noindent\textbf{Better answers, not better route agreement.} Executed-route
+accuracy \emph{falls} monotonically as the verifier intervenes more: from
+$0.737$ (Single-stage) to $0.623$ (selective) to $0.455$
+(Always-on)---and even Oracle~+~Stage~2 retains only $0.637$ agreement with
+the gold labels because the verifier overrides them---yet F1 rises at every
+step, peaking exactly where agreement is lowest. Stage~2's value therefore
+lies in reasoning during answer generation rather than in reproducing the
+gold routing taxonomy, which is precisely the chain-of-thought behaviour
+claimed.
+
+\noindent\textbf{Always-on verification is the quality-optimal operating
+point.} Applied to every query, the framework reaches F1~$=0.682$
+{\scriptsize[$0.656, 0.706$]}: statistically indistinguishable from the
+strongest fixed baseline (Pure Vector, $0.663$
+{\scriptsize[$0.635, 0.690$]}) and nominally above it, tied with Pure Graph
+for the best exact match ($0.335$, $2.2\times$ Pure Vector's $0.152$), and
+within $0.004$ of the best semantic score ($0.861$ vs Pure Hybrid's
+$0.865$). No fixed strategy matches this profile across all three answer
+metrics simultaneously, and only the routed systems can additionally refuse
+to guess by clarifying (Section~\ref{subsec:rq3}).
+
+\noindent\textbf{Selective triggering trades measurable quality for a small
+latency saving.} The selective Two-stage system ($0.602$
+{\scriptsize[$0.576, 0.628$]}) sits \emph{significantly below} both the
+Always-on variant ($-0.080$, non-overlapping intervals) and Pure Vector
+($-0.061$, non-overlapping) on aggregate token-F1, while saving only
+$471$~ms ($4.6\%$) of average latency relative to Always-on
+(Section~\ref{subsec:rq5}). On this generation-dominated deployment the
+verifier should therefore run on every query; the selective policy becomes
+attractive only when verifier cost dominates, as quantified in RQ4/RQ5. The
+selective system still exceeds Pure Vector's exact match by $60\%$ ($0.243$
+vs $0.152$).
+
+\noindent\textbf{The semantic metric completes the quality picture.} The
+BERT-F1 ordering differs from the token-F1 ordering: Pure Hybrid is
+semantically strongest ($0.865$) despite a mid-pack token-F1, Always-on is
+second ($0.861$), and the Single-stage Router and the plain Oracle are
+weakest ($0.735$, $0.771$). Combined evidence---mid EM, top BERT-F1---
+indicates that hybrid evidence produces answers that are semantically
+faithful but lexically divergent from the gold span, exactly the behaviour
+token-F1 under-credits (Section~\ref{subsec:metrics}).
+
+\noindent\textbf{Retrieval coverage now measures a genuine mechanism gap.}
+After canonical identifiers are emitted at the retrieval stage, Hit@$1$ is
+comparable across all systems: always-dense coverage remains the highest
+($0.727$), the routed systems reach $0.508$--$0.588$, and the Single-stage
+Router collapses to $0.215$---it often selects a defensible route yet
+retrieves the wrong article, another symptom of operating without the
+verifier. Closing the coverage gap of graph-mediated retrieval (e.g.\ by
+cross-encoder re-ranking) is a concrete direction for future work.
+
+\noindent\textbf{Pure Graph trades fluency for relational precision.} It
+ties the best EM ($0.335$) but posts a lower F1 ($0.633$), reflecting
+concise answers generated from highly structured graph context.
+
+To locate \emph{where} each system earns its score,
+Table~\ref{tab:per_class_f1} reports Answer~F1 separately by gold routing
+class.
+
+\begin{table}[!htbp]
+\centering
+\caption{Answer~F1 broken down by gold routing class on the strict benchmark
+($300$ dense / $150$ graph / $150$ hybrid queries). Class-weighted means
+reproduce the aggregate F1 of Table~\ref{tab:end_to_end}. Bold marks the best
+value per column, excluding the two oracle rows}\label{tab:per_class_f1}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{System} & \textbf{Dense F1} & \textbf{Graph F1} & \textbf{Hybrid F1} \\
+\midrule
+Pure Vector      & 0.549 & \textbf{0.888} & \textbf{0.667} \\
+Pure Graph       & \textbf{0.810} & 0.499 & 0.415 \\
+Pure Hybrid      & 0.574 & 0.790 & 0.649 \\
+Single-stage     & 0.560 & 0.377 & 0.331 \\
+Two-stage (ours) & 0.646 & 0.509 & 0.607 \\
+Always-on Stage~2 & 0.806 & 0.481 & 0.633 \\
+\midrule
+Oracle           & 0.466 & 0.515 & 0.649 \\
+Oracle + Stage~2 & 0.661 & 0.499 & 0.640 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two fixed single-mechanism rows exhibit a striking and initially
+counter-intuitive pattern: \emph{each pure mechanism scores highest on the
+other mechanism's class}. Pure Graph attains the best F1 on dense-class
+queries ($0.810$) while Pure Vector attains the best F1 on graph-class
+queries ($0.888$); both rows are unchanged from the pre-fix run (their
+outputs are deterministic and identical), so the inversion is a stable
+property of the measurements, not a tabulation error. We interpret it as a
+metric--prompt interaction rather than as evidence about mechanism
+appropriateness: token-F1 is computed against a gold context, and the
+citation-constrained generator quotes legal text verbatim, so a system
+scores highly on a class whenever it happens to quote text with high lexical
+overlap with that class's gold contexts---graph-class gold contexts are
+article passages that dense retrieval reproduces nearly verbatim whenever
+the target article is findable by embedding similarity, while concise
+dense-class factoid questions penalise over-quotation. Exact match, which is
+insensitive to quotation length, and BERT-F1, which is insensitive to
+lexical form, both show the expected mechanism alignment. The consequence is
+methodological: \emph{per-class token-F1 cannot adjudicate which retrieval
+mechanism suits which query class}, which is why the semantic column of
+Table~\ref{tab:end_to_end} is a required complement rather than an optional
+extra (Section~\ref{subsec:metrics}). The adaptive rows nonetheless carry a
+clear signal: the selective Two-stage router has the most even non-oracle
+profile ($0.646/0.509/0.607$), and its gains over the Single-stage Router
+concentrate exactly on the graph-class ($+0.132$) and hybrid-class
+($+0.276$) queries where Stage~1 alone collapses ($0.377$, $0.331$), whereas
+the always-on variant buys its aggregate lead mainly on the dense majority
+class ($0.806$) at a slight cost on the graph class.
+
+\subsection{RQ2: Routing Accuracy}\label{subsec:rq2}
+
+A router is useful only if it selects the correct retrieval mechanism. We
+evaluate routing from two complementary angles: the generalisation of the
+deployed router on the paraphrase-hardened strict test split, and a
+controlled comparison of classifier families under one identical
+cross-validation protocol on the training data.
+
+\paragraph{Generalisation on the strict split.}
+Table~\ref{tab:routing_strict} reports the routing decision of the deployed
+two-stage router on the $600$ strict test queries, whose surface templates
+were paraphrased away from the training distribution. The router attains
+$0.898$ overall accuracy and $0.900$ macro-F1 over the three retrieval
+classes, with its weakest precision on the graph class ($0.790$), where
+dense-class queries occasionally carry incidental relation cues. It
+additionally emitted nine clarification requests ($1.5\%$) on answerable
+queries---the only clarify false positives observed on this split.
+
+\begin{table}[!htbp]
+\centering
+\caption{Deployed router on the strict $600$-query split: per-class recall
+(R), precision (P), and F1 over the three retrieval classes. Overall accuracy
+$0.898$; macro-F1 $0.900$. Nine clarify decisions ($1.5\%$) were emitted on
+answerable queries}\label{tab:routing_strict}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Gold class} & \textbf{N} & \textbf{R} & \textbf{P} & \textbf{F1} \\
+\midrule
+Dense retrieval  & 300 & 0.890 & 0.964 & 0.926 \\
+Graph traversal  & 150 & 0.853 & 0.790 & 0.820 \\
+Hybrid reasoning & 150 & 0.960 & 0.947 & 0.953 \\
+\midrule
+\textbf{Overall / macro} & 600 & 0.901 & 0.900 & 0.900 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Route~Acc in Table~\ref{tab:end_to_end} is lower ($0.623$ for the selective
+system) because it scores the \emph{executed} route after Stage~2 overrides,
+clarification decisions, and execution-time fallbacks, whereas
+Table~\ref{tab:routing_strict} scores the routing \emph{decision}; the gap
+between the two quantifies how often the verifier deliberately departs from
+the gold taxonomy---departures that RQ1 shows to be quality-improving.
+
+\paragraph{Classifier comparison under identical cross-validation.}
+Table~\ref{tab:routing_cv} compares six classifiers under one stratified
+five-fold protocol (identical folds, seed~$42$) over the $860$ training
+samples ($800$ routing-labelled queries plus $60$ synthetic \texttt{clarify}
+samples). Learned classifiers dominate the heuristic baselines by a wide
+margin---at least $0.37$ accuracy and $0.44$ macro-F1 separate the weakest
+learned model from the strongest rule-based one---confirming that routing
+among evidence mechanisms cannot be reduced to a handful of surface rules.
+
+\begin{table}[!htbp]
+\centering
+\caption{Routing classifiers under identical stratified five-fold
+cross-validation on the training data (mean\,$\pm$\,std across folds).
+Absolute values for the learned models are optimistic due to pre-split
+paraphrase leakage (see text); the deployment-relevant figure is the
+strict-split result of Table~\ref{tab:routing_strict}}\label{tab:routing_cv}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Classifier} & \textbf{CV Acc.} & \textbf{CV Macro-F1} \\
+\midrule
+Majority Route        & $0.4651\ \ci{0.0000}$ & $0.1587\ \ci{0.0000}$ \\
+Keyword Rule Router   & $0.6081\ \ci{0.0182}$ & $0.3866\ \ci{0.0263}$ \\
+Simple 3-Rule Router  & $0.6209\ \ci{0.0222}$ & $0.5422\ \ci{0.0308}$ \\
+Logistic Regression   & $0.9953\ \ci{0.0044}$ & $0.9953\ \ci{0.0042}$ \\
+Random Forest         & $0.9965\ \ci{0.0028}$ & $0.9966\ \ci{0.0029}$ \\
+XGBoost (Stage~1, deployed) & $0.9942\ \ci{0.0037}$ & $0.9944\ \ci{0.0035}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Leakage analysis: reconciling the routing figures.}
+All three learned models exceed $0.99$ under cross-validation, which a
+quantitative leakage analysis shows to be optimistic: because paraphrase
+augmentation was applied \emph{before} splitting, $33.2\%$ of highly similar
+query pairs (token Jaccard $\ge 0.7$) straddle the fold boundary, and the
+mean Jaccard similarity of cross-fold pairs ($0.192$) is essentially equal to
+that of within-fold pairs ($0.190$)---the folds do not isolate query
+templates, so every learned model partially recognises test templates from
+training. This resolves the apparent conflict between the routing figures
+reported at different points of this project: the single-split and
+cross-validated results ($\approx 0.99$) share the same template leakage and
+should be read as upper bounds on separability given the features, whereas
+the strict-split accuracy of $0.898$
+(Table~\ref{tab:routing_strict})---measured on paraphrase-hardened queries
+disjoint from training---is the honest generalisation estimate and the figure
+we headline. Constructing template-grouped folds is left as an evaluation
+improvement for future work.
+
+\noindent\textbf{Feature reliance and efficiency.} The decision is driven
+mainly by structural signals---the legal reference count, query length,
+cross-document signals, and article reference count---rather than by spurious
+lexical artefacts (Section~\ref{subsec:features};
+Appendix~\ref{app:repro}, Table~\ref{tab:features}). The classifier forward
+pass takes $\approx\!8.9$~ms on CPU versus $\approx\!53.3$~ms on GPU for a
+PhoBERT classifier, making Stage~1 well suited to gating the expensive
+Stage~2 verifier; the decisive evidence for the design, however, is the
+end-to-end quality and latency trade-off of RQ1 and RQ5.
+
+\subsection{RQ3: Ambiguity and Clarification Handling}\label{subsec:rq3}
+
+Routing is safety-critical when the legal target is underspecified: retrieving
+against an arbitrary document yields a confidently wrong answer. We evaluate
+the deployed system on the $234$-query ambiguity benchmark ($156$ ambiguous
+queries, $78$ answerable controls) and on the $160$-query multi-turn
+conversation stress test ($8$ scenario types $\times$ $20$ dialogues).
+Table~\ref{tab:ambiguity} summarises both benchmarks;
+Table~\ref{tab:ambiguity_type} breaks the conversation results down by
+scenario type.
+
+\begin{table}[!htbp]
+\centering
+\caption{Clarification performance of the deployed router. P, R, and F1 are
+computed over the \texttt{clarify} decision against the binary
+ambiguous/answerable gold label; Overr.\ is the rate at which Stage~2
+overrides the Stage~1 proposal}\label{tab:ambiguity}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Benchmark} & \textbf{Route Acc.} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{S2 Trig.} & \textbf{S2 Overr.} \\
+\midrule
+Ambiguity ($N{=}234$)    & 0.761 & 0.945 & \textbf{1.000} & \textbf{0.972} & 85.0\% & 5.5\% \\
+Conversation ($N{=}160$) & 0.725 & 0.857 & 0.960 & 0.906 & 91.9\% & 13.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Conversation stress test by scenario type ($20$ dialogues each).
+Clarify F1 is $0.000$ by construction for scenario types whose gold label is
+a retrieval route rather than \texttt{clarify}}\label{tab:ambiguity_type}
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Scenario type} & \textbf{Route Acc.} & \textbf{Clarify F1} & \textbf{S2 Trig.} \\
+\midrule
+Clarify, no history          & 1.000 & 1.000 & 1.00 \\
+Missing entity               & 1.000 & 1.000 & 1.00 \\
+Multi-interpretation         & 1.000 & 1.000 & 1.00 \\
+Irrelevant history           & 0.950 & 0.974 & 0.95 \\
+Conflicting history          & 0.850 & 0.919 & 0.90 \\
+Answerable with history      & 0.500 & 0.000 & 0.85 \\
+Clear graph/hybrid (control) & 0.400 & 0.000 & 0.75 \\
+Clear dense (control)        & 0.100 & 0.000 & 0.90 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We make the following observations.
+
+\noindent\textbf{Every ambiguous query is intercepted.} On the ambiguity
+benchmark the router attains clarify recall $1.000$ at precision $0.945$
+(F1~$=0.972$): none of the $156$ ambiguous queries reaches retrieval, at the
+cost of spuriously clarifying roughly nine of the $78$ answerable controls
+($11.5\%$). For a legal assistant this operating point is the safer side of
+the trade---a missed ambiguity produces a confidently wrong answer grounded
+in the wrong document, whereas a spurious clarification costs a single
+dialogue turn. The contrast between the $11.5\%$ false-positive rate on the
+diagnostic's controls and the $1.5\%$ clarify rate on the ambiguity-free
+strict split (Section~\ref{subsec:rq2}) shows, however, that precision
+degrades as the ambiguity base rate of the surrounding traffic rises.
+
+\noindent\textbf{Semantic underspecification is detected, not just surface
+cues.} The two scenario types that carry no surface marker of
+ambiguity---missing entity and multi-interpretation, where the query is
+grammatically complete but legally underdetermined---are detected perfectly
+(clarify F1~$=1.000$, trigger rate $100\%$). The indicator families targeting
+generic legal needs without a concrete anchor ($\psi_6$) and broad
+subject--predicate combinations without a domain anchor ($\psi_8$), combined
+with the weakly supervised Stage~1 clarify class, therefore capture semantic
+underspecification rather than merely pronoun surface cues.
+
+\noindent\textbf{History conditions are handled asymmetrically.} Dialogues
+whose history is irrelevant or conflicting are clarified near-perfectly
+(F1~$=0.974$ and $0.919$), and clarification without history is perfect. The
+weak case is \emph{answerable with history}: only half of the queries whose
+referent the resolver can recover are subsequently routed to the correct
+retrieval mechanism, the remainder being either spuriously clarified or
+dispatched to the wrong route.
+
+\noindent\textbf{Clear queries embedded in conversation are misrouted.} The
+two control scenario types expose the principal remaining weakness:
+self-contained dense queries inside a dialogue are routed correctly only
+$10\%$ of the time (graph/hybrid controls: $40\%$), even though Stage~2 is
+triggered on $75$--$90\%$ of them. Conversational context evidently inflates
+the ambiguity and trigger signals of queries that need no context at all,
+dragging them off their correct route; overall conversation route accuracy
+($0.725$) is therefore bounded by control misrouting, not by clarify
+detection (F1~$=0.906$). Suppressing conversational features whenever the
+resolver returns \texttt{not\_needed}---that is, when the query is
+self-contained---is the natural mitigation and is left to future work.
+
+\noindent\textbf{The verifier mostly confirms Stage~1.} Stage~2 overrides its
+Stage~1 proposal on only $5.5\%$ of ambiguity-benchmark queries and $13.6\%$
+of conversation queries, concentrating its interventions where history must
+be adjudicated. As a concrete example, given history mentioning
+Decree ``100/2019/ND-CP'', the follow-up ``Is that document still in
+effect?'' is resolved and routed to graph traversal, whereas with empty
+history the same query is routed to \texttt{clarify}.
+
+\subsection{RQ4: Threshold Ablation}\label{subsec:rq4}
+
+The router exposes two key thresholds: the confidence threshold
+$\tau_{\mathrm{conf}}$ that gates Stage~2, and the clarification override
+threshold $\tau_{\mathrm{clar}}$. We study their effect on the development set
+in Table~\ref{tab:threshold_ablation}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Threshold ablation on the development set}\label{tab:threshold_ablation}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Acc.} & \textbf{S2 rate} \\
+\midrule
+$\tau_{\mathrm{conf}}$ & 0.50 & 0.5200 & 0.8600 \\
+$\tau_{\mathrm{conf}}$ & 0.70 & 0.5200 & 0.8600 \\
+$\tau_{\mathrm{conf}}$ & 0.95 & 0.5200 & 0.8600 \\
+$\tau_{\mathrm{conf}}$ & 0.99 & 0.5200 & 0.8600 \\
+\midrule
+$\tau_{\mathrm{clar}}$ & 0.50 & 0.1400 & 0.8600 \\
+$\tau_{\mathrm{clar}}$ & 0.70 & 0.5200 & 0.8600 \\
+$\tau_{\mathrm{clar}}$ & 0.95 & 0.6700 & 0.8600 \\
+$\tau_{\mathrm{clar}}$ & 0.99 & 0.6700 & 0.8600 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We make the following observations.
+
+\noindent\textbf{$\tau_{\mathrm{conf}}$ is inert on this development set.}
+Sweeping $\tau_{\mathrm{conf}}$ from $0.50$ to $0.99$ changes neither
+accuracy ($0.5200$) nor the Stage~2 trigger rate ($0.8600$): the trigger is
+saturated by the confidence-independent conditions---the ambiguity forcing
+rule ($\phi_{\mathrm{amb}}\ge\tau_{\mathrm{force}}$), the multi-hop
+condition, and the mandatory adjudication of Stage~1 clarify
+proposals---which already fire on $86\%$ of development queries. Cost
+control on ambiguity-heavy traffic must therefore come from those
+conditions, not from the confidence gate alone; on the cleaner strict split
+the effective trigger rate is lower ($79.2\%$), indicating that the
+confidence gate matters only when the other conditions are quiet.
+
+\noindent\textbf{$\tau_{\mathrm{clar}}$ has a strong, monotone accuracy
+effect.} A permissive override of $0.50$ collapses development accuracy to
+$0.1400$ by over-clarifying answerable queries; tightening to $0.70$ recovers
+$0.5200$, and $0.95$ plateaus at $0.6700$ (unchanged at $0.99$). The default
+$\tau_{\mathrm{clar}}=0.80$ sits on the rising part of this curve,
+reflecting the opposing pull of the two objectives: the value that maximises
+routing accuracy on answerable queries is not the one that maximises clarify
+recall on the ambiguity benchmark, so the two must be jointly calibrated
+rather than tuned in isolation.
+
+To connect this ablation to the RQ5 cost argument,
+Table~\ref{tab:trigger_policy} contrasts the three verification
+policies---always-off, selective (ours), and always-on---on the strict
+benchmark. The three policies now separate cleanly: always-off is cheapest
+and weakest, always-on is the quality endpoint, and the selective policy
+recovers $471$~ms ($4.6\%$) of latency at a statistically significant cost
+of $0.080$~F1. On this deployment, where a local verifier call is cheap
+relative to generation, always-on is the preferable operating point; the
+selective policy is the right choice when verifier invocations carry a
+dominant marginal cost (remote APIs, per-token pricing, or higher traffic),
+as quantified by the $119\times$ routing-stage cost ratio of RQ5.
+
+\begin{table}[!htbp]
+\centering
+\caption{Verification-policy comparison on the strict
+benchmark}\label{tab:trigger_policy}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Policy} & \textbf{S2 rate} & \textbf{F1} & \textbf{Avg lat (ms)} \\
+\midrule
+Always-off (Single-stage) & 0.0\%   & 0.457 & 7{,}262 \\
+Selective (Two-stage, ours) & 79.2\% & 0.602 & 9{,}799 \\
+Always-on & 100.0\% & \textbf{0.682} & 10{,}270 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{RQ5: Cost--Quality Trade-off}\label{subsec:rq5}
+
+Stage~2 is powerful but expensive, so the central design question is how much
+verification to buy. Table~\ref{tab:cost} reports the latency--quality
+analysis for the post-fix run.
+
+\begin{table}[!htbp]
+\centering
+\caption{Cost--quality trade-off on the post-fix run. S2 is the Stage~2
+trigger rate; the Oracle latency reflects gold-label routing without Stage~2
+overhead}\label{tab:cost}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{System} & \textbf{F1} & \textbf{Mean (ms)} & \textbf{p50 (ms)} & \textbf{p95 (ms)} & \textbf{S2} \\
+\midrule
+Pure Vector  & 0.663 & 10{,}914 & 11{,}542 & 33{,}776 & -- \\
+Pure Graph   & 0.633 & \textbf{6{,}034} & \textbf{4{,}206} & \textbf{19{,}383} & -- \\
+Pure Hybrid  & 0.647 & 7{,}375 & 5{,}719 & 20{,}511 & -- \\
+Single-stage & 0.457 & 7{,}262 & 6{,}117 & 19{,}896 & 0.0\% \\
+Two-stage (ours) & 0.602 & 9{,}799 & 8{,}159 & 21{,}758 & 79.2\% \\
+Always-on Stage~2 & \textbf{0.682} & 10{,}270 & 8{,}950 & 20{,}881 & 100.0\% \\
+\midrule
+Oracle       & 0.524 & 7{,}548 & 5{,}851 & 19{,}505 & -- \\
+Oracle + Stage~2 & 0.615 & 9{,}920 & 8{,}325 & 20{,}529 & 79.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We make the following observations.
+
+\noindent\textbf{Always-off verification is cheap but weak.} The Single-stage
+Router skips Stage~2 entirely and runs at $7{,}262$~ms on average, but pays
+the largest quality penalty (F1~$=0.457$); Stage~2 is the sole source of the
+$+0.145$ (selective) and $+0.225$ (always-on) F1 gaps.
+
+\noindent\textbf{At the routing stage, Stage~2 is two orders of magnitude more
+expensive than Stage~1.} A routing-stage microbenchmark, measured separately
+from the end-to-end runs, puts one Stage~2 verifier call at
+$\approx\!4{,}017$~ms against $\approx\!34$~ms for the full Stage~1
+path---roughly a $119\times$ ratio. When the verifier is served remotely or
+priced per token, this ratio makes selective triggering the principled
+design; on the present local deployment the ratio is absorbed by the
+generation-dominated budget analysed next.
+
+\noindent\textbf{End-to-end, verification costs seconds and buys tenths of
+F1.} Selective verification adds $2{,}537$~ms ($+35\%$) over the
+Single-stage Router for $+0.145$~F1; going from selective to always-on adds
+only a further $471$~ms ($+4.6\%$) for another $+0.080$~F1, because $79.2\%$
+of queries already pay the verifier. The marginal quality per millisecond
+therefore \emph{improves} at the always-on end of the dial, which is why RQ4
+recommends always-on for this deployment.
+
+\noindent\textbf{Latency is dominated by generation, not by routing.}
+Table~\ref{tab:latency_decomp} decomposes the Two-stage average: Stage~1
+contributes $\approx\!34$~ms and the amortised verifier
+$\approx\!3{,}181$~ms ($4{,}017$~ms per triggered call at a $79.2\%$ rate),
+against $\approx\!2{,}500$~ms of retrieval and $\approx\!4{,}084$~ms of
+answer generation. The routing-efficiency argument for Stage~1 is therefore
+that routing adds negligible overhead, not that it dominates latency.
+
+\begin{table}[!htbp]
+\centering
+\caption{Latency decomposition (ms) for the Two-stage system, separating
+routing overhead from retrieval and generation}\label{tab:latency_decomp}
+\begin{tabular}{lr}
+\toprule
+\textbf{Component} & \textbf{Avg (ms)} \\
+\midrule
+Stage~1 routing            & $\approx 34$ \\
+Stage~2 verification (amortised at $79.2\%$; $\approx 4{,}017$ per call) & $\approx 3{,}181$ \\
+Retrieval (dense / graph / hybrid) & $\approx 2{,}500$ \\
+Answer generation          & $\approx 4{,}084$ \\
+\midrule
+End-to-end (measured)      & 9{,}799 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{The trigger conditions, not the confidence gate, are the
+cost dial.} Because $\tau_{\mathrm{conf}}$ is saturated by the ambiguity and
+relational conditions (Section~\ref{subsec:rq4}), tuning the trigger rate on
+ambiguity-heavy traffic requires adjusting those conditions
+($\tau_{\mathrm{force}}$, the multi-hop rule, and the clarify-proposal
+policy); the always-off and always-on endpoints in
+Table~\ref{tab:trigger_policy} bracket the achievable operating points.
+
+\subsection{Overall Discussion}\label{subsec:discussion}
+
+The experiments support the central thesis that Vietnamese legal QA should
+not use a single fixed retrieval strategy, and the post-fix run sharpens
+where the benefit lies. First, the cleanest quantitative result is causal:
+holding routing at gold labels and toggling only the verifier isolates a
+$+0.091$ token-F1 and $+0.052$ BERT-F1 contribution of Stage~2 reasoning
+with non-overlapping confidence intervals, confirming that the verifier
+functions as a chain-of-thought step during answer generation rather than as
+a route corrector---indeed, executed-route agreement falls monotonically
+($0.737\!\to\!0.623\!\to\!0.455$) while quality rises, peaking exactly where
+agreement is lowest. Second, the framework's quality-optimal operating point
+is always-on verification: F1~$=0.682$, statistically indistinguishable from
+and nominally above the strongest fixed baseline ($0.663$), tied for the
+best exact match ($0.335$, $2.2\times$ always-dense), and within $0.004$ of
+the best semantic score---no fixed strategy matches this profile, and only
+the routed systems can refuse to guess. The selective policy sits
+significantly below that point on token-F1 ($0.602$) while saving only
+$4.6\%$ latency here; its case rests on deployments where verifier cost
+dominates, per the $119\times$ routing-stage ratio. Third, the per-class
+analysis exposes a metric--prompt interaction---each pure mechanism scores
+highest on the other mechanism's class under token-F1---which cautions
+against reading cross-system token-F1 differences as mechanism quality; the
+semantic column shows a different ordering (hybrid evidence strongest) and
+the causal ablation replicates on it. Fourth, the clarification analysis
+remains the cleanest behavioural result: ambiguous queries---including the
+semantically underspecified missing-entity and multi-interpretation
+types---are intercepted with perfect recall, while the misrouting of clear
+queries embedded in conversation is now the principal open weakness,
+motivating context-gated suppression of conversational features for
+self-contained queries.
+
+%% ===== limitations =====================================================
+\section{Limitations and Future Work}\label{sec:limitations}
+% ===============================================================
+
+Several limitations qualify the results above and define the agenda for future
+work.
+
+\noindent\textbf{Synthetic, metadata-derived benchmark.} Route labels are
+derived from hop-count and cross-document structure rather than annotated by
+legal experts, and the benchmark---including the ambiguity and conversation
+stress tests---is machine-generated. Although paraphrasing mitigated
+template-based label leakage on the strict split, the distribution remains
+synthetic and should be validated against a human-authored set before strong
+external-validity claims are made.
+
+\noindent\textbf{Weakly supervised clarify class.} The strict split contains
+no gold \texttt{clarify} label, so the Stage~1 clarify class is trained on
+only $60$ synthetic templates and is deliberately treated as a proposal that
+Stage~2 must confirm. End-to-end clarify routing therefore rests on the
+verifier and the ambiguity detector rather than on strongly supervised
+classification.
+
+\noindent\textbf{In-conversation routing of self-contained queries.} On the
+conversation stress test, clearly answerable control queries embedded in a
+dialogue are routed correctly only $10\%$ (dense) and $40\%$ (graph/hybrid)
+of the time: conversational context inflates the ambiguity and trigger
+signals of queries that need no context, and the resolver's
+\texttt{not\_needed} status does not yet suppress those signals. Conversation
+route accuracy ($0.725$) is bounded by this misrouting rather than by
+clarify detection, and the clarify false-positive rate rises from $1.5\%$ on
+the ambiguity-free strict split to $11.5\%$ on the diagnostic's answerable
+controls as the ambiguity base rate of the surrounding traffic increases.
+
+\noindent\textbf{Sparse legal-effect relations and explicit-only hybrids.}
+Cross-document legal-effect relations (\textsc{AMENDS}, \textsc{REPLACES})
+remain comparatively sparse in the graph, and the benchmark covers only
+\emph{explicit} hybrid questions that name the documents to combine, not
+\emph{implicit} ones that require discovering the link first.
+
+\noindent\textbf{Retrieval coverage of graph-mediated evidence.} With
+canonical \texttt{law::document::article} identifiers now emitted at the
+retrieval stage and matched strictly at evaluation, Hit@$1$ is comparable
+across all systems and reveals a genuine coverage gap: the routed
+configurations reach $0.508$--$0.588$ against $0.727$ for always-dense
+retrieval, and the Single-stage Router falls to $0.215$. Graph and hybrid
+evidence paths therefore locate the gold article less reliably than dense
+search even when the route is appropriate; cross-encoder re-ranking of graph
+candidates is the natural remedy. Mean reciprocal rank, now computable from
+the full ranking logs, remains to be extracted.
+
+\noindent\textbf{Aggregate token-F1 depends on the trigger policy.} On the
+dense-dominated benchmark the selective router ($0.602$) is
+\emph{significantly below} the Pure Vector baseline ($0.663$) on aggregate
+token-F1, with non-overlapping bootstrap intervals; statistical parity with
+(and nominal superiority over) the strongest fixed baseline is achieved only
+at the always-on operating point ($0.682$). The framework's contribution is
+therefore argued on the causal Stage~2 ablation, on exact match
+($2.2\times$ always-dense at the always-on point), on the semantic metric,
+and on clarification safety---and any claim about the selective policy must
+carry its measured quality cost.
+
+\noindent\textbf{Metric validity.} Token-F1 against a gold context rewards
+lexical overlap, and the citation-constrained generator quotes legal text
+verbatim; the combination produces the class-wise inversion of
+Table~\ref{tab:per_class_f1}, in which each pure mechanism scores highest on
+the \emph{other} mechanism's query class. Cross-system token-F1 differences
+therefore partly measure quotation overlap rather than answer correctness,
+and per-class token-F1 cannot adjudicate mechanism appropriateness. The
+aggregate BERT-F1 column mitigates this at the system level---its ordering
+differs from token-F1's, and the causal ablation replicates on it---but
+per-class semantic scores have not been extracted, so the class-level
+analysis still rests on the biased lexical metric.
+
+\noindent\textbf{Scope of the chain-of-thought claim.} The
+\textit{Oracle~+~Stage~2} ablation isolates a causal $+0.091$ token-F1 and
+$+0.052$ BERT-F1 contribution of Stage~2 reasoning under fixed gold routing,
+but the estimate derives from a single generator (\texttt{Qwen3-32B-AWQ}), a
+single prompt family, and deterministic decoding on one benchmark; its
+magnitude may not transfer across models, prompts, or legal domains.
+
+\noindent\textbf{Statistical reporting gaps.} Headline F1 comparisons carry
+bootstrap $95\%$ confidence intervals ($B=1000$), but no paired significance
+tests are reported. We report retrieval coverage through Hit@$1$ rather than
+mean reciprocal rank: an auxiliary MRR computation was consistent with Hit@$1$
+for the router-mediated systems but produced values below Hit@$1$ for two
+fixed baselines---a violation of the identity $\mathrm{MRR}\ge\mathrm{Hit@1}$
+that traces to a separate rank-logging path for those baselines---so we omit
+MRR pending a unified ranking log rather than report an inconsistent column.
+
+\noindent\textbf{Routing-accuracy evaluation under template leakage.} Because
+paraphrase augmentation preceded splitting, $33.2\%$ of highly similar query
+pairs cross the cross-validation fold boundary, inflating the absolute CV
+scores of all learned routers to $\approx 0.99$. We therefore headline the
+paraphrase-hardened strict-split accuracy ($0.898$) instead, and leave
+template-grouped fold construction as an evaluation improvement for future
+work.
+
+\noindent\textbf{No empirical comparison to complexity-based adaptive
+retrieval.} Adaptive-RAG~\cite{jeong2024adaptive} is the closest prior method
+but is not compared empirically, because it routes among reasoning depths for
+general-domain English QA rather than among evidence mechanisms for Vietnamese
+legal QA. A faithful re-implementation of its complexity router as an
+additional baseline---or an explicit statement of why the settings are not
+directly comparable---would strengthen the positioning.
+
+\noindent\textbf{Efficiency and hardware dependence.} A Stage~2 verifier call
+is roughly $119\times$ the cost of the full Stage~1 routing path in the
+routing-stage microbenchmark, and all latencies depend on local vLLM
+hardware; end-to-end latency is dominated by generation rather than by
+routing, so the efficiency argument is about negligible routing overhead
+rather than end-to-end speed.
+
+Future directions include: a three-level cascade
+XGBoost~$\rightarrow$~PhoBERT~$\rightarrow$~LLM to preserve routing accuracy
+under the linguistic diversity of naturally phrased queries; cross-encoder
+re-ranking of graph and hybrid candidates to close the retrieval-coverage
+gap to dense search;
+integration of manually reviewed \texttt{clarify} samples and implicit hybrid
+questions into the training set; context-gated suppression of conversational
+features whenever the history resolver marks a query as self-contained;
+stronger legal-relation extraction for
+\textsc{AMENDS} and \textsc{REPLACES}; a complexity-router baseline in the
+spirit of Adaptive-RAG; semantic and human evaluation of legal answer
+correctness and citation faithfulness; and template-grouped cross-validation
+for leakage-free router comparison.
+
+%% ===== conclusion ======================================================
+\section{Conclusion}\label{sec:conclusion}
+% ===============================================================
+
+We presented a reasoning-aware adaptive router for Vietnamese legal Hybrid
+GraphRAG that combines a dense vector index of $68{,}835$ legal text chunks, a
+Neo4j legal knowledge graph of $804{,}322$ nodes and $1{,}968{,}621$ edges
+built from the national legal codification, an XGBoost Stage~1 classifier, and
+a selective LLM Stage~2 verifier, dispatching each query to dense retrieval,
+graph traversal, hybrid reasoning, or clarification according to its reasoning
+demand and ambiguity level.
+
+The central quantitative findings on the strict $600$-query benchmark, all
+reported with bootstrap $95\%$ confidence intervals, are as follows. A
+controlled \textit{Oracle~+~Stage~2} ablation that holds routing at gold
+labels while enabling the verifier isolates a causal $+0.091$ token-F1 and
+$+0.052$ BERT-F1 contribution of Stage~2 reasoning ($0.615$ vs $0.524$
+token-F1), confirming that the second stage acts as a chain-of-thought step
+during answer generation rather than as a route corrector---executed-route
+agreement with the gold labels falls monotonically as the verifier
+intervenes more ($0.737\!\to\!0.623\!\to\!0.455$) while quality rises at
+every step. At its always-on operating point the framework reaches
+F1~$=0.682$, statistically indistinguishable from and nominally above the
+strongest fixed baseline (Pure Vector, $0.663$), tied for the best exact
+match ($0.335$, $2.2\times$ always-dense), and within $0.004$ of the best
+semantic BERT-F1; no fixed strategy matches this profile across all three
+answer metrics. The selective policy at a $79.2\%$ trigger rate trades
+$0.080$~F1 for a $4.6\%$ latency saving, exceeding the Single-stage Router
+by $+0.145$~F1 and the plain Oracle by $+0.078$. The Stage~1 classifier
+generalises to the paraphrase-hardened strict split at $0.898$ accuracy and
+$0.900$ macro-F1 at millisecond latency, far above rule-based routers under
+an identical cross-validation protocol.
+
+On the ambiguity benchmarks, the deployed router intercepts every ambiguous
+query before retrieval---clarify recall $1.000$ at precision $0.945$
+(F1~$=0.972$) on the $234$-query diagnostic---and sustains clarify
+F1~$=0.906$ on the $160$-query multi-turn stress test, detecting even the
+semantically underspecified missing-entity and multi-interpretation scenarios
+perfectly. The remaining weakness is the routing of clearly answerable
+queries embedded in conversation, where contextual trigger signals pull
+self-contained controls off their correct route.
+
+Closing the retrieval-coverage gap of graph-mediated evidence through
+cross-encoder re-ranking, suppressing conversational features for
+self-contained queries, implementing a complexity-router baseline, improving
+routing robustness through a three-level cascade, and validating the
+benchmarks with human-reviewed legal queries remain the primary directions
+for future investigation.
+
+
+% Back matter, declarations, appendix
+%% ===== declarations ====================================================
+\backmatter
+
+\bmhead{Acknowledgements}
+The authors thank the supervising faculty at the School of Information and
+Communication Technology, Hanoi University of Science and Technology, for their
+guidance throughout this work.
+
+\section*{Declarations}
+
+
+\noindent\textbf{Funding.} This research received no specific grant from any
+funding agency in the public, commercial, or not-for-profit sectors.
+
+\noindent\textbf{Competing interests.} The authors declare that they have no
+competing interests.
+
+\noindent\textbf{Ethics approval and consent to participate.} Not applicable.
+This study does not involve human participants, their identifiable data, or
+biological material. The corpus consists solely of publicly available
+Vietnamese legal documents from the official electronic legal codification.
+
+\noindent\textbf{Consent for publication.} Not applicable.
+
+\noindent\textbf{Data availability.} The Vietnamese legal QA routing dataset,
+the ambiguity and conversation benchmarks, and the derived routing labels are
+publicly available at \url{https://REPLACE-WITH-YOUR-DATA-URL}.
+
+\noindent\textbf{Code availability.} The routing pipeline, feature extractor,
+Stage~1 training scripts, Stage~2 verifier prompts, and evaluation harness are
+publicly available at \url{https://REPLACE-WITH-YOUR-CODE-URL}.
+
+\noindent\textbf{Author contributions.} N.D.T.\ designed and implemented the
+system, conducted all experiments, and drafted the manuscript. P.V.H.\ and
+C.T.\ supervised the research, reviewed the experimental design, and revised
+the manuscript. All authors read and approved the final version.
+
+%% ===== appendix ========================================================
+\appendix
+
+\section{Reproducibility Details}\label{app:repro}
+
+This appendix documents the exact feature set, the ambiguity indicators and
+their weights, the deterministic history-resolution rules, the evidence
+identifier normalisation used for retrieval metrics, the generation and
+clarification prompts, and the Stage~1 training configuration, so that the
+router can be reproduced from the corpus alone.
+
+\subsection{Stage~1 Feature Set}\label{app:features}
+
+Table~\ref{tab:features} enumerates the $n_f=27$ features consumed by the
+Stage~1 classifier of Eq.~\eqref{eq:stage1}, in the canonical vector order
+shared by training and inference: features $0$--$15$ are lexical surface
+features from the Vietnamese legal feature extractor, and features
+$16$--$26$ are reasoning-aware metrics from the query-complexity analyser.
+Cue lists are abbreviated; the four count features that drive routing use the
+following patterns, verified against the feature-extractor source.
+\texttt{graph\_keyword\_count} matches multi-hop relation cues glossed as
+``related to'', ``between'', ``affects'', ``impacts'', ``relation'',
+``leads to'', and ``compare''. \texttt{legal\_reference\_count} matches the
+numbered document form \texttt{NN/YYYY/CODE} together with the document-type
+nouns glossed as ``Decree'', ``Circular'', ``Law'', and ``Code''.
+\texttt{dieu\_reference\_count} matches article and clause references
+(``Article~N'', ``Clause~N''). \texttt{cross\_doc\_signal\_count} matches
+cross-document cues glossed as ``the documents'', ``multiple laws'',
+``simultaneously'', ``combine'', and ``both''.
+
+\begin{table}[!htbp]
+\centering
+\caption{Stage~1 feature vector ($n_f=27$) in canonical order. Type ``bin''
+denotes a binary indicator. Cue bases are given as English glosses of the
+Vietnamese surface forms the extractor matches against}\label{tab:features}
+\footnotesize
+\begin{tabularx}{\columnwidth}{r l l Y}
+\toprule
+\# & \textbf{Feature} & \textbf{Type} & \textbf{Definition / cue basis} \\
+\midrule
+\multicolumn{4}{l}{\emph{Lexical features (Vietnamese legal feature extractor)}}\\
+0 & \texttt{query\_length\_chars} & int & character count of the query \\
+1 & \texttt{query\_length\_words} & int & whitespace token count \\
+2 & \texttt{graph\_keyword\_count} & int & multi-hop relation cues (``related to'', ``between'', ``affects'', ``impacts'', ``leads to'', ``compare'') \\
+3 & \texttt{legal\_reference\_count} & int & document references: numbered form \textit{NN/YYYY/CODE} and type nouns (``Decree'', ``Circular'', ``Law'', ``Code'') \\
+4 & \texttt{dieu\_reference\_count} & int & article/clause references (``Article~N'', ``Clause~N'') \\
+5 & \texttt{multi\_article\_ref} & bin & $1$ iff \texttt{dieu\_reference\_count} $\ge 2$ \\
+6 & \texttt{is\_yes\_no\_question} & bin & yes/no interrogative endings (``\ldots or not'', ``is it true'', ``right?'') \\
+7 & \texttt{is\_factoid\_question} & bin & factoid interrogatives (``when'', ``who'', ``how much'', ``where'') \\
+8 & \texttt{cross\_doc\_signal\_count} & int & cross-document cues (``the documents'', ``multiple laws'', ``simultaneously'', ``combine'', ``both'') \\
+9 & \texttt{has\_conditional\_structure} & bin & conditionals (``if'', ``in case'', ``provided that'', ``unless'') \\
+10 & \texttt{has\_negation} & bin & negation (``not'', ``not yet'', ``no'', ``prohibit'') \\
+11 & \texttt{has\_comparison} & bin & comparison/contrast (``compare'', ``differ'', ``same'', ``more'', ``less'') \\
+12 & \texttt{has\_enumeration} & bin & enumeration markers (``include'', ``comprise'', ``list'') \\
+13 & \texttt{has\_procedure\_marker} & bin & procedure markers (``procedure'', ``dossier'', ``process'', ``submit'', ``register'') \\
+14 & \texttt{ambiguity\_score} & float & $\phi_{\mathrm{amb}}$ from the ambiguity detector, Eq.~\eqref{eq:ambiguity_score} \\
+15 & \texttt{has\_multi\_hop\_connector} & bin & temporal/causal connectors (``after'', ``before'', ``leads to'', ``therefore'') \\
+\midrule
+\multicolumn{4}{l}{\emph{Reasoning features (query-complexity analyser)}}\\
+16 & \texttt{complexity\_level} & int & overall complexity, $1$ (simple) to $3$ (complex) \\
+17 & \texttt{sub\_question\_count} & int & decomposable sub-questions (clause and conjunction breaks) \\
+18 & \texttt{law\_specificity} & float & specificity of law references, $0$ (vague) to $1$ (fully specified) \\
+19 & \texttt{conditional\_depth} & int & nesting depth of conditional clauses \\
+20 & \texttt{multi\_hop\_verb\_count} & int & verbs signalling multi-hop traversal \\
+21 & \texttt{comparative\_depth} & int & depth/count of comparison operations \\
+22 & \texttt{authority\_chain\_count} & int & authority-delegation patterns (``assign to'', ``authorise'', ``delegate'') \\
+23 & \texttt{legal\_effect\_count} & int & legal-effect terms (``effect'', ``repeal'', ``amend'', ``replace'') \\
+24 & \texttt{procedural\_count} & int & procedural step markers (``step'', ``stage'', ``approve'') \\
+25 & \texttt{multi\_entity\_relation\_count} & int & multi-entity relation expressions \\
+26 & \texttt{entity\_count} & int & legal entity mentions (legal-entity pattern) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Ambiguity Indicators and Weights}\label{app:ambiguity}
+
+Table~\ref{tab:ambiguity_features} lists the $m=11$ indicators
+$\psi_i(q_t,H,r_H)$ and weights $w_i$ that define the ambiguity score of
+Eq.~\eqref{eq:ambiguity_score},
+\[
+\phi_{\mathrm{amb}}=0 \ \text{if}\ r_H=\texttt{resolved};\qquad
+\phi_{\mathrm{amb}}=\max_i\, w_i\,\psi_i \ \text{otherwise},
+\]
+so that a single strong indicator suffices to cross the Stage~2 trigger
+threshold $\tau_{\mathrm{force}}=0.60$ while weak indicators cannot. Two
+indicator families are \emph{graded} rather than binary: vague legal
+references contribute $\min(1.0,\,0.30\cdot n_{\mathrm{vague}})$ (rows
+$\psi_4$/$\psi_5$ show the one- and two-match values), and same-type entity
+conflicts contribute $\min(0.5,\,0.15\cdot n_{\mathrm{conf}})$. The values
+below are extracted directly from the detector's weight table.
+
+\begin{table}[!htbp]
+\centering
+\caption{Ambiguity indicators $\psi_i$ and weights $w_i$ (extracted from the
+ambiguity-detector source)}\label{tab:ambiguity_features}
+\footnotesize
+\begin{tabularx}{\columnwidth}{r l Y r}
+\toprule
+$i$ & \textbf{Indicator} & \textbf{Condition} & $w_i$ \\
+\midrule
+1 & \texttt{pronoun\_no\_history} & unresolved pronoun/demonstrative, empty history & 0.90 \\
+2 & \texttt{pronoun\_bad\_history} & pronoun with conflicting or irrelevant history & 0.85 \\
+3 & \texttt{contextual\_reference} & contextual reference flagged by the history resolver & 0.80 \\
+4 & \texttt{vague\_reference\_single} & one vague legal reference (e.g.\ ``regulation'', ``that law'') & 0.30 \\
+5 & \texttt{vague\_reference\_multi} & two or more vague legal references (graded) & 0.60 \\
+6 & \texttt{missing\_entity\_no\_intent} & generic legal need with no concrete legal anchor & 0.82 \\
+7 & \texttt{missing\_entity\_with\_intent} & generic need but domain context present (weak) & 0.10 \\
+8 & \texttt{multi\_interpretation} & broad subject and broad predicate, no domain anchor & 0.85 \\
+9 & \texttt{short\_no\_entity} & query under five words with no legal entity & 0.70 \\
+10 & \texttt{incomplete\_context} & contextual follow-up with no usable history & 0.90 \\
+11 & \texttt{entity\_conflict} & two or more entities of the same type (graded) & 0.50 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{History-Resolution Rules}\label{app:resolver}
+
+The deterministic resolver $\mathrm{Resolve}(q_t,H)$ of
+Eq.~\eqref{eq:history_resolver} is intentionally conservative: any outcome
+other than \texttt{resolved} or \texttt{not\_needed} forces Stage~2, so the
+resolver never silently binds an uncertain referent. It assigns the status
+$r_H$ by the following ordered rules, returning the first that matches:
+\begin{enumerate}
+\item If $q_t$ contains no contextual-reference pattern (no demonstrative,
+      pronoun, or elliptical reference), return \texttt{not\_needed}: the
+      query is self-contained and history is not consulted.
+\item Otherwise, if $H=\emptyset$, return \texttt{no\_history}.
+\item Otherwise, if $H$ yields no legal referent whose type matches the
+      reference in $q_t$, return \texttt{irrelevant\_history}.
+\item Otherwise, if two or more candidate referents of the same type carry
+      comparably high confidence while $q_t$ uses a singular demonstrative,
+      return \texttt{conflicting\_history}.
+\item Otherwise, bind the single highest-confidence referent and return
+      \texttt{resolved}.
+\end{enumerate}
+The \texttt{no\_history}, \texttt{irrelevant\_history}, and
+\texttt{conflicting\_history} outcomes each raise the ambiguity signal and
+route through Stage~2 to clarification, whereas \texttt{resolved} unblocks the
+retrieval route implied by the bound referent.
+
+\subsection{Evidence Identifier Normalisation}\label{app:idnorm}
+
+Retrieval metrics compare identifiers from four historically incompatible
+schemes: national document numbers (e.g.\ \texttt{77/2026/ND-CP}), short
+decision and consolidated-document codes (\texttt{QD-}, \texttt{VBHN-}
+prefixes), composite \texttt{law::article} strings, and codification
+structural codes (e.g.\ \texttt{19.2.TT.10.15}). A deterministic normaliser
+maps every retrieved and gold reference to the canonical form
+\texttt{law::<document\_code>::article::<number>} after Unicode NFC
+normalisation and homoglyph repair, extracting the document code and the
+article number independently. Matching supports three modes: \emph{strict}
+(document code and article number must both agree; used for all reported
+Hit@$k$), \emph{article-only}, and \emph{document-only}. References the
+normaliser cannot resolve to the gold scheme are counted as misses and
+flagged as unresolvable rather than fuzzily matched. During development this
+flagging exposed that the hybrid evidence handler logged document codes
+without article numbers---unlike the dense path, which extracted
+both---collapsing strict-mode Hit@$1$ for every configuration touching the
+hybrid path; porting the article-extraction step into the hybrid handler
+restored comparable coverage measurement across all systems
+(Table~\ref{tab:end_to_end}).
+
+\subsection{Generation, Clarification, and Verifier Prompts}\label{app:prompt}
+
+\paragraph{Answer-generation system prompt.}
+Answers are generated under the following citation-constrained system prompt
+(translated into English), which scopes verbatim quotation to the clause or
+point directly answering the question, permits a short direct answer before
+the supporting quotation, and fixes a single not-found sentence.
+
+\begin{verbatim}
+You are a legal assistant specialising in Vietnamese
+law. Your task is to answer the question by QUOTING
+VERBATIM the directly relevant statutory provision in
+[LEGAL DOCUMENTS]. Do NOT paraphrase and do NOT
+summarise the legal content in your own words.
+
+MANDATORY RULES:
+1. Quote ONLY verbatim from [LEGAL DOCUMENTS] below.
+   Do not fabricate and do not infer legal content
+   beyond the documents provided.
+2. QUOTATION SCOPE: quote only the clause/point/passage
+   that DIRECTLY answers the question. If an Article has
+   many clauses but only 1-2 are relevant, quote exactly
+   those clauses. Quoting a whole Article unnecessarily
+   counts as a WRONG ANSWER (rambling, unfocused).
+3. Cite the source as: According to [Document name],
+   [Article/Clause]: "[verbatim relevant text]".
+4. If the question can be answered directly by a short
+   phrase (Yes/No, a number, a date, an authority name,
+   a document name...), state that short answer FIRST,
+   then quote the verbatim legal basis immediately after
+   as evidence.
+5. If [LEGAL DOCUMENTS] contains no provision relevant
+   to the question, answer with exactly ONE sentence and
+   nothing else: "No relevant provision was found in the
+   documents provided."
+\end{verbatim}
+
+The user message concatenates the last three conversation turns (if any), the
+formatted evidence block under the \texttt{[LEGAL DOCUMENTS]} header---with
+internal article labels cleaned to the standard ``\textit{Article~N.\
+<title>}'' form to avoid echoing internal identifiers into the
+answer---followed by \texttt{[QUESTION]} and \texttt{[ANSWER]} markers.
+
+\paragraph{Clarification prompt.}
+When the final route is \texttt{clarify}, the clarification question is
+generated under the following system prompt (translated into English), which
+requires exactly one question and two to four concrete options:
+
+\begin{verbatim}
+You are a legal assistant. The user's question does not
+yet specify a concrete legal document. Ask ONE short
+clarifying question; do not ask more than once. MANDATORY:
+you must suggest 2 to 4 concrete options for the user to
+choose from. Each option must be on its own line, starting
+with the exact format '- [Option] '.
+\end{verbatim}
+
+\paragraph{Stage~2 verifier contract.}
+The Stage~2 verifier is prompted with the following system message and must
+emit a single JSON object matching the schema; the \texttt{confidence}
+attached to a \texttt{clarify} decision is the $p_c$ compared against
+$\tau_{\mathrm{clar}}$ in Eq.~\eqref{eq:final_route}, and
+\texttt{override\_stage1} records whether the verifier departed from the
+Stage~1 proposal (the override rates of Table~\ref{tab:ambiguity}).
+
+\begin{verbatim}
+You are a Vietnamese legal-question analysis system.
+Task: verify and refine the routing decision from
+Stage 1.
+You MUST return valid JSON in the schema below, with
+no other text:
+{
+  "final_route":
+    "<dense_retrieval|graph_traversal|
+      hybrid_reasoning|clarify>",
+  "confidence": <0.0-1.0>,
+  "override_stage1": <true|false>,
+  "override_reason": "<reason if override,
+      null otherwise>",
+  "complexity_level":
+    "<simple|moderate|complex|ambiguous>",
+  "reasoning_steps": [
+    "<short analysis step 1>",
+    "<short analysis step 2>"
+  ],
+  "sub_questions":
+    ["<sub-question if multi-hop, [] otherwise>"],
+  "ambiguity_flags": {
+    "missing_entity": <true|false>,
+    "pronoun_reference": <true|false>,
+    "multi_interpretation": <true|false>,
+    "incomplete_context": <true|false>
+  },
+  "clarify_question":
+    "<clarifying question if final_route=clarify,
+      null otherwise>",
+  "resolved_referent":
+    "<resolved referent if any, null otherwise>",
+  "candidate_referents":
+    [{"text": "<candidate>", "type": "<type>",
+      "confidence": <0.0-1.0>}],
+  "history_resolution_status":
+    "<resolved|no_history|irrelevant_history|
+      conflicting_history|not_needed>",
+  "clarification_reason_type":
+    "<missing_entity|multi_interpretation|
+      incomplete_context|unresolved_history|
+      conflicting_history|null>",
+  "suggested_resolved_query":
+    "<query with the referent replaced by the
+      concrete entity if any, null otherwise>"
+}
+\end{verbatim}
+
+\subsection{Training and Evaluation Configuration}\label{app:hyperparams}
+
+Table~\ref{tab:hyperparams} lists the Stage~1 XGBoost configuration and the
+baseline settings used in the cross-validated comparison of
+Table~\ref{tab:routing_cv}; all classifiers share the same stratified folds
+and balanced sample weights. Bootstrap confidence intervals use $B=1000$
+percentile resamples with seed~$42$.
+
+\begin{table}[!htbp]
+\centering
+\caption{Stage~1 training configuration and evaluation
+protocol}\label{tab:hyperparams}
+\footnotesize
+\begin{tabular}{ll}
+\toprule
+\textbf{Setting} & \textbf{Value} \\
+\midrule
+\multicolumn{2}{l}{\emph{XGBoost (Stage~1, deployed)}}\\
+\texttt{objective} & \texttt{multi:softprob} \\
+\texttt{num\_class} & 4 (dense, graph, hybrid, clarify) \\
+\texttt{n\_estimators} & 200 \\
+\texttt{max\_depth} & 6 \\
+\texttt{learning\_rate} & 0.05 \\
+\texttt{subsample} & 0.8 \\
+\texttt{colsample\_bytree} & 0.8 \\
+\texttt{eval\_metric} & \texttt{mlogloss} \\
+Sample weights & balanced per class \\
+\midrule
+\multicolumn{2}{l}{\emph{Baselines (identical folds)}}\\
+Logistic Regression & $C=1.0$, \texttt{max\_iter}$=500$ \\
+Random Forest & $200$ trees, balanced class weights \\
+\midrule
+\multicolumn{2}{l}{\emph{Protocol}}\\
+Cross-validation & stratified 5-fold, shuffled, seed 42 \\
+Training data & $800$ routing-labelled + $60$ synthetic clarify \\
+Bootstrap CIs & $B=1000$, percentile, seed 42 \\
+BERTScore encoder & \texttt{vinai/phobert-base}, \texttt{lang="vi"} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------
+\bibliography{biblio}
+
+\end{document}

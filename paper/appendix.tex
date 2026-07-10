@@ -1,0 +1,271 @@
+% ===============================================================
+% Appendix: reproducibility details
+% Uses \appendix so cross-references resolve to "Appendix A" and tables to
+% A1, A2, ... (Springer sn-jnl convention). Referenced from the framework,
+% methodology, and results sections via \ref{app:repro}, \ref{tab:features},
+% \ref{tab:ambiguity_features}.
+% ===============================================================
+\appendix
+
+\section{Reproducibility Details}\label{app:repro}
+
+This appendix documents the exact feature set, the ambiguity indicators and
+their weights, the deterministic history-resolution rules, the evidence
+identifier normalisation used for retrieval metrics, the generation and
+clarification prompts, and the Stage~1 training configuration, so that the
+router can be reproduced from the corpus alone.
+
+\subsection{Stage~1 Feature Set}\label{app:features}
+
+Table~\ref{tab:features} enumerates the $n_f=27$ features consumed by the
+Stage~1 classifier of Eq.~\eqref{eq:stage1}, in the canonical vector order
+shared by training and inference: features $0$--$15$ are lexical surface
+features from the Vietnamese legal feature extractor, and features
+$16$--$26$ are reasoning-aware metrics from the query-complexity analyser.
+Cue lists are abbreviated; the exact regular expressions live in the feature
+extractor source. Rows marked \textcolor{red}{$^{\star}$} carry patterns that
+were repaired once during development and must be re-verified against the
+current source before publication.
+
+\begin{table}[!htbp]
+\centering
+\caption{Stage~1 feature vector ($n_f=27$) in canonical order. Type ``bin''
+denotes a binary indicator. \textcolor{red}{$^{\star}$}: verify the regular
+expression against the feature-extractor source before
+submission}\label{tab:features}
+\footnotesize
+\begin{tabularx}{\columnwidth}{r l l Y}
+\toprule
+\# & \textbf{Feature} & \textbf{Type} & \textbf{Definition / cue basis} \\
+\midrule
+\multicolumn{4}{l}{\emph{Lexical features (Vietnamese legal feature extractor)}}\\
+0 & \texttt{query\_length\_chars} & int & character count of the query \\
+1 & \texttt{query\_length\_words} & int & whitespace token count \\
+2 & \texttt{graph\_keyword\_count}\textcolor{red}{$^{\star}$} & int & multi-hop relation cues (\textit{liên quan}, \textit{giữa}, \textit{ảnh hưởng}, \textit{tác động}, \textit{dẫn đến}, \textit{so sánh}) \\
+3 & \texttt{legal\_reference\_count}\textcolor{red}{$^{\star}$} & int & document references: numbered form \textit{NN/YYYY/CODE} and type nouns (\textit{Nghị định}, \textit{Thông tư}, \textit{Luật}, \textit{Bộ luật}) \\
+4 & \texttt{dieu\_reference\_count}\textcolor{red}{$^{\star}$} & int & article/clause references (\textit{Điều~N}, \textit{Khoản~N}) \\
+5 & \texttt{multi\_article\_ref} & bin & $1$ iff \texttt{dieu\_reference\_count} $\ge 2$ \\
+6 & \texttt{is\_yes\_no\_question} & bin & yes/no interrogative ending (\textit{có không}, \textit{có phải}, \textit{phải không}) \\
+7 & \texttt{is\_factoid\_question} & bin & factoid interrogatives (\textit{khi nào}, \textit{ai}, \textit{bao nhiêu}, \textit{ở đâu}) \\
+8 & \texttt{cross\_doc\_signal\_count}\textcolor{red}{$^{\star}$} & int & cross-document cues (\textit{các văn bản}, \textit{nhiều luật}, \textit{đồng thời}, \textit{kết hợp}, \textit{cả hai}) \\
+9 & \texttt{has\_conditional\_structure} & bin & conditionals (\textit{nếu}, \textit{trong trường hợp}, \textit{miễn là}, \textit{trừ khi}) \\
+10 & \texttt{has\_negation} & bin & negation (\textit{không}, \textit{chưa}, \textit{chẳng}, \textit{cấm}) \\
+11 & \texttt{has\_comparison} & bin & comparison/contrast (\textit{so sánh}, \textit{khác nhau}, \textit{giống nhau}, \textit{hơn}, \textit{kém}) \\
+12 & \texttt{has\_enumeration} & bin & enumeration markers (\textit{gồm}, \textit{bao gồm}, \textit{liệt kê}) \\
+13 & \texttt{has\_procedure\_marker} & bin & procedure markers (\textit{thủ tục}, \textit{hồ sơ}, \textit{quy trình}, \textit{nộp}, \textit{đăng ký}) \\
+14 & \texttt{ambiguity\_score}\textcolor{red}{$^{\star}$} & float & $\phi_{\mathrm{amb}}$ from the ambiguity detector, Eq.~\eqref{eq:ambiguity_score} \\
+15 & \texttt{has\_multi\_hop\_connector} & bin & temporal/causal connectors (\textit{sau khi}, \textit{trước khi}, \textit{dẫn đến}, \textit{do đó}) \\
+\midrule
+\multicolumn{4}{l}{\emph{Reasoning features (query-complexity analyser)}}\\
+16 & \texttt{complexity\_level} & int & overall complexity, $1$ (simple) to $3$ (complex) \\
+17 & \texttt{sub\_question\_count} & int & decomposable sub-questions (clause and conjunction breaks) \\
+18 & \texttt{law\_specificity} & float & specificity of law references, $0$ (vague) to $1$ (fully specified) \\
+19 & \texttt{conditional\_depth} & int & nesting depth of conditional clauses \\
+20 & \texttt{multi\_hop\_verb\_count} & int & verbs signalling multi-hop traversal \\
+21 & \texttt{comparative\_depth} & int & depth/count of comparison operations \\
+22 & \texttt{authority\_chain\_count} & int & authority-delegation patterns (\textit{giao cho}, \textit{ủy quyền}, \textit{phân công}) \\
+23 & \texttt{legal\_effect\_count} & int & legal-effect terms (\textit{hiệu lực}, \textit{bãi bỏ}, \textit{sửa đổi}, \textit{thay thế}) \\
+24 & \texttt{procedural\_count} & int & procedural step markers (\textit{bước}, \textit{giai đoạn}, \textit{phê duyệt}) \\
+25 & \texttt{multi\_entity\_relation\_count} & int & multi-entity relation expressions \\
+26 & \texttt{entity\_count} & int & legal entity mentions (legal-entity pattern) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Ambiguity Indicators and Weights}\label{app:ambiguity}
+
+Table~\ref{tab:ambiguity_features} lists the $m=11$ indicators
+$\psi_i(q_t,H,r_H)$ and weights $w_i$ that define the ambiguity score of
+Eq.~\eqref{eq:ambiguity_score},
+\[
+\phi_{\mathrm{amb}}=0 \ \text{if}\ r_H=\texttt{resolved};\qquad
+\phi_{\mathrm{amb}}=\max_i\, w_i\,\psi_i \ \text{otherwise},
+\]
+so that a single strong indicator suffices to cross the Stage~2 trigger
+threshold $\tau_{\mathrm{force}}=0.60$ while weak indicators cannot. Two
+indicator families are \emph{graded} rather than binary: vague legal
+references contribute $\min(1.0,\,0.30\cdot n_{\mathrm{vague}})$ (rows
+$\psi_4$/$\psi_5$ show the one- and two-match values), and same-type entity
+conflicts contribute $\min(0.5,\,0.15\cdot n_{\mathrm{conf}})$. The values
+below are extracted directly from the detector's weight table.
+
+\begin{table}[!htbp]
+\centering
+\caption{Ambiguity indicators $\psi_i$ and weights $w_i$ (extracted from the
+ambiguity-detector source)}\label{tab:ambiguity_features}
+\footnotesize
+\begin{tabularx}{\columnwidth}{r l Y r}
+\toprule
+$i$ & \textbf{Indicator} & \textbf{Condition} & $w_i$ \\
+\midrule
+1 & \texttt{pronoun\_no\_history} & unresolved pronoun/demonstrative, empty history & 0.90 \\
+2 & \texttt{pronoun\_bad\_history} & pronoun with conflicting or irrelevant history & 0.85 \\
+3 & \texttt{contextual\_reference} & contextual reference flagged by the history resolver & 0.80 \\
+4 & \texttt{vague\_reference\_single} & one vague legal reference (\textit{quy định}, \textit{luật đó}) & 0.30 \\
+5 & \texttt{vague\_reference\_multi} & two or more vague legal references (graded) & 0.60 \\
+6 & \texttt{missing\_entity\_no\_intent} & generic legal need with no concrete legal anchor & 0.82 \\
+7 & \texttt{missing\_entity\_with\_intent} & generic need but domain context present (weak) & 0.10 \\
+8 & \texttt{multi\_interpretation} & broad subject and broad predicate, no domain anchor & 0.85 \\
+9 & \texttt{short\_no\_entity} & query under five words with no legal entity & 0.70 \\
+10 & \texttt{incomplete\_context} & contextual follow-up with no usable history & 0.90 \\
+11 & \texttt{entity\_conflict} & two or more entities of the same type (graded) & 0.50 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{History-Resolution Rules}\label{app:resolver}
+
+The deterministic resolver $\mathrm{Resolve}(q_t,H)$ of
+Eq.~\eqref{eq:history_resolver} assigns the status $r_H$ by the following
+ordered rules, returning the first that matches:
+\begin{enumerate}
+\item If $H=\emptyset$, return \texttt{no\_history}.
+\item If $q_t$ contains no demonstrative/pronoun and no elliptical reference,
+      return \texttt{not\_needed} (the query is self-contained).
+\item If a demonstrative/pronoun in $q_t$ maps to exactly one legal-document
+      entity mentioned in $H$, bind that referent and return \texttt{resolved}.
+\item If two or more distinct legal-document entities in $H$ are compatible
+      with the reference, return \texttt{conflicting\_history}.
+\item If $H$ contains no legal-document entity compatible with the reference,
+      return \texttt{irrelevant\_history}.
+\end{enumerate}
+% TODO: confirm this ordering and the entity-matching criterion against
+% router/history_resolver.py (resolve_history_referents), which was not part
+% of the supplied sources; adjust if the code uses different precedence.
+
+\subsection{Evidence Identifier Normalisation}\label{app:idnorm}
+
+Retrieval metrics compare identifiers from four historically incompatible
+schemes: VBPL document numbers (e.g.\ \texttt{77/2026/NĐ-CP}), short decision
+and consolidated-document codes (\texttt{QĐ-}, \texttt{VBHN-} prefixes),
+composite \texttt{law::article} strings, and Pháp~Điển structural codes
+(e.g.\ \texttt{19.2.TT.10.15}). A deterministic normaliser maps every
+retrieved and gold reference to the canonical form
+\texttt{law::<document\_code>::article::<number>} after Unicode NFC
+normalisation and homoglyph repair, extracting the document code and the
+article number independently. Matching supports three modes: \emph{strict}
+(document code and article number must both agree; used for all reported
+Hit@$k$), \emph{article-only}, and \emph{document-only}. References the
+normaliser cannot resolve to the gold scheme are counted as misses and
+flagged as unresolvable rather than fuzzily matched, which is why the
+Hit@$1$ entries of configurations whose logging still emits unresolvable
+identifiers appear as annotated zeros in Table~\ref{tab:end_to_end}.
+
+\subsection{Generation, Clarification, and Verifier Prompts}\label{app:prompt}
+
+\paragraph{Answer-generation system prompt.}
+Answers are generated under the following citation-constrained Vietnamese
+system prompt (reproduced verbatim), which scopes verbatim quotation to the
+clause or point directly answering the question, permits a short direct
+answer before the supporting quotation, and fixes a single not-found
+sentence:
+
+\begin{verbatim}
+Bạn là trợ lý pháp lý chuyên về pháp luật Việt Nam.
+Nhiệm vụ của bạn là trả lời câu hỏi bằng cách TRÍCH DẪN
+NGUYÊN VĂN phần quy định pháp luật trực tiếp liên quan
+trong [TÀI LIỆU PHÁP LÝ]. KHÔNG paraphrase, KHÔNG tóm tắt
+lại nội dung quy phạm pháp luật bằng lời của bạn.
+
+QUY TẮC BẮT BUỘC:
+1. CHỈ trích nguyên văn từ [TÀI LIỆU PHÁP LÝ] bên dưới.
+   Không bịa đặt, không suy luận thêm nội dung pháp lý
+   ngoài tài liệu được cấp.
+2. PHẠM VI TRÍCH DẪN: chỉ trích khoản/điểm/đoạn TRỰC TIẾP
+   trả lời câu hỏi. Nếu một Điều có nhiều khoản nhưng chỉ
+   1-2 khoản liên quan, CHỈ trích đúng các khoản đó. Trích
+   toàn bộ Điều khi không cần thiết bị coi là TRẢ LỜI SAI
+   (lan man, không tập trung).
+3. Ghi nguồn theo định dạng: Theo [Tên văn bản],
+   [Điều/Khoản]: "[nguyên văn phần liên quan]"
+4. Nếu câu hỏi có thể trả lời trực tiếp bằng một câu/cụm
+   từ ngắn (Có/Không, một con số, một mốc thời gian, tên
+   cơ quan, tên văn bản...), hãy nêu câu trả lời ngắn đó
+   TRƯỚC TIÊN, sau đó trích dẫn căn cứ pháp lý nguyên văn
+   ngay tiếp theo để chứng minh.
+5. Nếu [TÀI LIỆU PHÁP LÝ] không chứa quy định liên quan
+   đến câu hỏi, trả lời đúng MỘT câu duy nhất, không thêm
+   gì khác: "Không tìm thấy quy định liên quan trong các
+   văn bản được cung cấp."
+\end{verbatim}
+
+The user message concatenates the last three conversation turns (if any), the
+formatted evidence block under the \texttt{[TÀI LIỆU PHÁP LÝ]} header---with
+internal Pháp~Điển article labels cleaned to the standard
+``\textit{Điều~N.\ <title>}'' form to avoid echoing internal identifiers into
+the answer---followed by \texttt{[CÂU HỎI]} and \texttt{[TRẢ LỜI]} markers.
+
+\paragraph{Clarification prompt.}
+When the final route is \texttt{clarify}, the clarification question is
+generated under the following system prompt, which requires exactly one
+question and two to four concrete options:
+
+\begin{verbatim}
+Bạn là trợ lý pháp lý. Câu hỏi của người dùng chưa rõ đối
+tượng văn bản pháp lý cụ thể. Hãy đặt MỘT câu hỏi ngắn gọn
+để làm rõ, không hỏi nhiều hơn một lần. BẮT BUỘC: Bạn phải
+gợi ý từ 2 đến 4 đáp án cụ thể để người dùng chọn. Mỗi đáp
+án phải nằm trên một dòng riêng biệt, bắt đầu bằng định
+dạng chính xác '- [Option] '.
+\end{verbatim}
+
+\paragraph{Stage~2 verifier contract.}
+The Stage~2 verifier is prompted to emit a single JSON object constrained to
+the schema below; the \texttt{confidence} attached to a \texttt{clarify}
+decision is the $p_c$ compared against $\tau_{\mathrm{clar}}$ in
+Eq.~\eqref{eq:final_route}.
+% TODO: replace this schema description with the EXACT verifier system-prompt
+% string from two_stage_router.py (not among the supplied sources) so the
+% JSON contract is reproducible verbatim.
+
+\begin{verbatim}
+{
+  "route": "dense" | "graph" | "hybrid" | "clarify",
+  "confidence": <float in [0,1]>,
+  "clarification_question": <string or null>,
+  "reasoning": <short string>
+}
+\end{verbatim}
+
+\subsection{Training and Evaluation Configuration}\label{app:hyperparams}
+
+Table~\ref{tab:hyperparams} lists the Stage~1 XGBoost configuration and the
+baseline settings used in the cross-validated comparison of
+Table~\ref{tab:routing_cv}; all classifiers share the same stratified folds
+and balanced sample weights. Bootstrap confidence intervals use $B=1000$
+percentile resamples with seed~$42$.
+
+\begin{table}[!htbp]
+\centering
+\caption{Stage~1 training configuration and evaluation
+protocol}\label{tab:hyperparams}
+\footnotesize
+\begin{tabular}{ll}
+\toprule
+\textbf{Setting} & \textbf{Value} \\
+\midrule
+\multicolumn{2}{l}{\emph{XGBoost (Stage~1, deployed)}}\\
+\texttt{objective} & \texttt{multi:softprob} \\
+\texttt{num\_class} & 4 (dense, graph, hybrid, clarify) \\
+\texttt{n\_estimators} & 200 \\
+\texttt{max\_depth} & 6 \\
+\texttt{learning\_rate} & 0.05 \\
+\texttt{subsample} & 0.8 \\
+\texttt{colsample\_bytree} & 0.8 \\
+\texttt{eval\_metric} & \texttt{mlogloss} \\
+Sample weights & balanced per class \\
+\midrule
+\multicolumn{2}{l}{\emph{Baselines (identical folds)}}\\
+Logistic Regression & $C=1.0$, \texttt{max\_iter}$=500$ \\
+Random Forest & $200$ trees, balanced class weights \\
+\midrule
+\multicolumn{2}{l}{\emph{Protocol}}\\
+Cross-validation & stratified 5-fold, shuffled, seed 42 \\
+Training data & $800$ routing-labelled + $60$ synthetic clarify \\
+Bootstrap CIs & $B=1000$, percentile, seed 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% NOTE: the Logistic Regression run emitted a convergence warning at
+% max_iter=500; re-run with max_iter=1000 or the saga solver and refresh its
+% row in Table~\ref{tab:routing_cv} (values expected to change negligibly).

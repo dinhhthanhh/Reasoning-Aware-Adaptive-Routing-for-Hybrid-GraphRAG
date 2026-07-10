@@ -7,6 +7,7 @@ for the Vector RAG pipeline.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,23 @@ from loguru import logger
 
 from vector_store.embedder import Embedder
 from vector_store.faiss_store import FAISSStore, SearchResult
+
+# Pháp Điển benchmark template: "Nội dung Điều 56 của văn bản 102/2016/QH13 ..."
+_PD_ARTICLE_QUERY_RE = re.compile(
+    r"Điều\s+(\d+[a-zđ]?)\s+của\s+văn bản\s+"
+    r"(\d+\s*/\s*\d{4}\s*/\s*[A-ZĐ0-9\-]+)",
+    re.IGNORECASE,
+)
+
+
+def parse_canonical_id_from_query(query: str) -> str | None:
+    """Extract ``law_number::article`` from structured Pháp Điển QA questions."""
+    match = _PD_ARTICLE_QUERY_RE.search(query or "")
+    if not match:
+        return None
+    article = match.group(1).lower()
+    law = re.sub(r"\s+", "", match.group(2)).upper()
+    return f"{law}::{article}"
 
 
 class VectorRetriever:
@@ -80,9 +98,10 @@ class VectorRetriever:
             chunk_text = " ".join(chunk_words)
 
             chunks.append({
-                "doc_id": doc_id,
+                "doc_id": f"{doc_id}_chunk_{chunk_idx}",
                 "chunk_text": chunk_text,
                 "chunk_idx": chunk_idx,
+                "parent_article_id": doc_id,  # Parent-Child Indexing link
             })
             chunk_idx += 1
             start += self.chunk_size - self.chunk_overlap
@@ -152,18 +171,34 @@ class VectorRetriever:
         logger.info("Indexed {} chunks from {} documents", len(all_chunks), len(json_files))
         return len(all_chunks)
 
-    def retrieve(self, query: str, top_k: int | None = None) -> list[SearchResult]:
+    def retrieve(self, query: str, top_k: int | None = None, where: dict[str, Any] | None = None) -> list[SearchResult]:
         """Retrieve top-k most relevant chunks for a query.
 
         Args:
             query: Search query text.
             top_k: Number of results. Defaults to config top_k.
+            where: Optional metadata filters.
 
         Returns:
             List of SearchResult with chunks and scores.
         """
         query_emb = self.embedder.encode_single(query)
-        results = self.store.search(query_emb, top_k=top_k or self.top_k)
+        k = top_k or self.top_k
+        exact: SearchResult | None = None
+        if self.vector_store_type == "chroma" and hasattr(self.store, "get_by_canonical_id"):
+            canonical_id = parse_canonical_id_from_query(query)
+            if canonical_id:
+                exact = self.store.get_by_canonical_id(canonical_id)
+
+        if hasattr(self.store, "search") and "where" in self.store.search.__code__.co_varnames:
+            results = self.store.search(query_emb, top_k=k, where=where)
+        else:
+            # Fallback for FAISSStore which might not support where directly
+            results = self.store.search(query_emb, top_k=k)
+
+        if exact is not None:
+            results = [r for r in results if r.doc_id != exact.doc_id]
+            results = [exact, *results][:k]
         logger.debug(
             "Retrieved {} chunks for query: {}",
             len(results),

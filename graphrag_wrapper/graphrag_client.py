@@ -96,14 +96,14 @@ class GraphRAGClient:
         try:
             result = subprocess.run(
                 [
-                    sys.executable, "-m", "graphrag.query",
+                    sys.executable, "-m", "graphrag", "query",
                     "--root", str(self.working_dir),
                     "--method", self.query_type,
                     "--query", full_query,
                 ],
                 capture_output=True,
                 text=True,
-                timeout=180,
+                timeout=600,
                 cwd=str(self.working_dir),
             )
             if result.returncode != 0:
@@ -116,7 +116,7 @@ class GraphRAGClient:
 
         except subprocess.TimeoutExpired:
             logger.error("GraphRAG query timed out")
-            raise RuntimeError("GraphRAG query timed out after 180s")
+            raise RuntimeError("GraphRAG query timed out after 600s")
 
     def index_documents(self, doc_dir: str | Path) -> None:
         """Trigger GraphRAG indexing on a directory of documents.
@@ -156,7 +156,7 @@ class GraphRAGClient:
         try:
             result = subprocess.run(
                 [
-                    sys.executable, "-m", "graphrag.index",
+                    sys.executable, "-m", "graphrag", "index",
                     "--root", str(self.working_dir),
                 ],
                 capture_output=True,

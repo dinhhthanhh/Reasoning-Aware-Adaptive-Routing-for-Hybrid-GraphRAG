@@ -62,14 +62,18 @@ class ChromaStore:
         
         logger.info("ChromaStore initialized | path={} | collection={}", self.path, self.collection_name)
 
-    def search(self, query: Any, top_k: int = 5) -> list[SearchResult]:
+    def search(self, query: Any, top_k: int = 5, where: dict[str, Any] | None = None) -> list[SearchResult]:
         """Search ChromaDB. Accepts string query or embedding vector."""
         
+        query_kwargs = {"n_results": top_k}
+        if where:
+            query_kwargs["where"] = where
+            
         if isinstance(query, str):
             # Chroma automatically uses the collection's embedding_function for string queries
             results = self.collection.query(
                 query_texts=[query],
-                n_results=top_k
+                **query_kwargs
             )
         else:
             # Handle vector input
@@ -81,7 +85,7 @@ class ChromaStore:
                 
             results = self.collection.query(
                 query_embeddings=query_embeddings,
-                n_results=top_k
+                **query_kwargs
             )
         
         search_results = []
@@ -95,13 +99,38 @@ class ChromaStore:
             score = 1.0 - dist # approximate cosine similarity from distance
             
             search_results.append(SearchResult(
-                doc_id=meta.get("doc_id") or meta.get("article_id") or meta.get("title", ""),
+                doc_id=results['ids'][0][i],
                 chunk_text=doc,
                 score=float(score),
                 metadata=meta
             ))
             
         return search_results
+
+    def get_by_canonical_id(self, canonical_id: str) -> SearchResult | None:
+        """Fetch one chunk by Pháp Điển canonical id (law_number::article_num)."""
+        if not canonical_id or "::" not in canonical_id:
+            return None
+        try:
+            got = self.collection.get(ids=[canonical_id])
+        except Exception:
+            return None
+        if not got or not got.get("ids"):
+            # Metadata filter fallback when id was deduplicated (e.g. cid_2)
+            try:
+                got = self.collection.get(where={"canonical_id": canonical_id}, limit=1)
+            except Exception:
+                return None
+        if not got or not got.get("ids"):
+            return None
+        doc = got["documents"][0]
+        meta = got["metadatas"][0] if got.get("metadatas") else {}
+        return SearchResult(
+            doc_id=got["ids"][0],
+            chunk_text=doc,
+            score=1.0,
+            metadata=meta or {},
+        )
 
     def load(self) -> bool:
         """Dummy load for compatibility with VectorRetriever.

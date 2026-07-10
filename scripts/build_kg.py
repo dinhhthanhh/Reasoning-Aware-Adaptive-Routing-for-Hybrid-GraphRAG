@@ -131,8 +131,7 @@ class Neo4jIngestor:
                         item = json.loads(line)
                         doc_id = item.get("doc_id")
                         if doc_id is None: continue
-                        
-                        content = item.get("content", item.get("chunk_text", ""))
+                        content = item.get("content", item.get("content_markdown", item.get("chunk_text", "")))
                         
                         # Ingest Document Node
                         doc_data = {
@@ -253,8 +252,8 @@ def main():
         is_en = "config_en" in str(args.config)
         data_dir = config.get("data", {}).get("processed_dir", "data/processed")
         
-        # Pass NER config for entity extraction if it's English
-        ner_config = config.get("ner") if is_en else None
+        # Pass NER config for entity extraction for both English and Vietnamese
+        ner_config = config.get("ner")
         ingestor = Neo4jIngestor(config["neo4j"], ner_config=ner_config)
 
         try:
@@ -267,7 +266,8 @@ def main():
                 # English benchmark datasets
                 ingestor.ingest_documents(Path(data_dir) / "hotpot_full.jsonl", sub_label="HotpotQA")
             else:
-                # Ingest HF + Phap Dien 
+                # Ingest Core Laws, HF, Phap Dien 
+                ingestor.ingest_documents(Path(data_dir) / "core_laws_processed.jsonl", sub_label="CoreLaws")
                 ingestor.ingest_documents(Path(data_dir) / "hf_processed.jsonl", sub_label="HF")
                 ingestor.ingest_documents(Path(data_dir) / "phapdien_processed.jsonl", sub_label="PD")
             

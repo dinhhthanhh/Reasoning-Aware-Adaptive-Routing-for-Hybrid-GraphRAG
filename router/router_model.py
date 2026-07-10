@@ -24,6 +24,7 @@ from loguru import logger
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_sample_weight
 
 from router.features import QueryFeatures
@@ -118,7 +119,13 @@ class RouterModel:
         )
 
         self._model: CalibratedClassifierCV | xgb.XGBClassifier | None = None
+        self._label_encoder: LabelEncoder | None = None
         self._feature_names: list[str] = QueryFeatures.feature_names()
+        # Feature schema the loaded model was actually trained on (read from the
+        # sibling feature_names.json). Lets an enriched QueryFeatures superset
+        # serve both the legacy 16-feature model and the enriched model without
+        # a shape mismatch. None until a model is loaded.
+        self._train_feature_names: list[str] | None = None
 
         logger.info(
             "RouterModel initialized | model_path={} | threshold={} | classes={}",
@@ -141,20 +148,26 @@ class RouterModel:
                 logger.warning("Model not loaded, using rule-based fallback")
                 return self._rule_based_fallback(features)
 
-        # Convert to feature vector
-        feature_vec = np.array([features.to_vector()], dtype=np.float32)
+        # Convert to feature vector. If the model declares its training feature
+        # schema, build the vector in THAT order/subset so an enriched
+        # QueryFeatures superset stays compatible with older models.
+        if self._train_feature_names:
+            vec = features.to_named_vector(self._train_feature_names)
+        else:
+            vec = features.to_vector()
+        feature_vec = np.array([vec], dtype=np.float32)
 
         # Predict probabilities (calibrated)
         probas = self._model.predict_proba(feature_vec)[0]
         predicted_idx = int(np.argmax(probas))
         confidence = float(probas[predicted_idx])
 
-        # Map predicted index back to label
+        # Map predicted index back to global label string
         model_classes = getattr(self._model, "classes_", None)
         if model_classes is not None and len(model_classes) == len(probas):
-            route = self.CLASS_LABELS[int(model_classes[predicted_idx])]
+            route = self._route_from_class_idx(int(model_classes[predicted_idx]))
         else:
-            route = self.CLASS_LABELS[min(predicted_idx, len(self.CLASS_LABELS) - 1)]
+            route = self._route_from_class_idx(predicted_idx)
 
         graph_confidence = self._class_probability(probas, model_classes, "graph_traversal")
         if self._should_prioritize_graph(route, graph_confidence, features):
@@ -202,6 +215,15 @@ class RouterModel:
             feature_importances=importances,
         )
 
+    def _route_from_class_idx(self, class_idx: int) -> str:
+        """Map a classifier class index to a routing label string."""
+        if self._label_encoder is not None:
+            global_idx = int(self._label_encoder.inverse_transform([class_idx])[0])
+            return self.CLASS_LABELS[global_idx]
+        if 0 <= class_idx < len(self.CLASS_LABELS):
+            return self.CLASS_LABELS[class_idx]
+        return self.CLASS_LABELS[-1]
+
     def _class_probability(
         self,
         probas: np.ndarray,
@@ -212,7 +234,12 @@ class RouterModel:
         label_idx = self.LABEL_TO_IDX[label]
         if model_classes is not None and len(model_classes) == len(probas):
             for pos, class_idx in enumerate(model_classes):
-                if int(class_idx) == label_idx:
+                global_idx = (
+                    int(self._label_encoder.inverse_transform([int(class_idx)])[0])
+                    if self._label_encoder is not None
+                    else int(class_idx)
+                )
+                if global_idx == label_idx:
                     return float(probas[pos])
             return 0.0
         if label_idx < len(probas):
@@ -287,6 +314,10 @@ class RouterModel:
             TrainingReport with accuracy, F1, confusion matrix, CV scores.
         """
         report = TrainingReport()
+
+        # XGBoost expects contiguous class ids 0..n-1
+        self._label_encoder = LabelEncoder()
+        y = self._label_encoder.fit_transform(y).astype(np.int32)
 
         # Compute balanced sample weights
         sample_weights = compute_sample_weight(class_weight="balanced", y=y)
@@ -378,7 +409,13 @@ class RouterModel:
 
         # Get the unique classes actually present in validation
         present_classes = sorted(np.unique(np.concatenate([y_val, val_preds])))
-        target_names = [self.CLASS_LABELS[i] for i in present_classes if i < len(self.CLASS_LABELS)]
+        global_class_ids = [
+            int(self._label_encoder.inverse_transform([int(i)])[0])
+            for i in present_classes
+        ]
+        target_names = [
+            self.CLASS_LABELS[i] for i in global_class_ids if i < len(self.CLASS_LABELS)
+        ]
 
         # Classification report (full)
         cls_report_str = classification_report(
@@ -443,8 +480,12 @@ class RouterModel:
         save_path = Path(path) if path else self.model_path
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
+        payload = {
+            "model": self._model,
+            "label_encoder": self._label_encoder,
+        }
         with open(save_path, "wb") as f:
-            pickle.dump(self._model, f)
+            pickle.dump(payload, f)
 
         logger.info("Model saved to {}", save_path)
 
@@ -457,6 +498,7 @@ class RouterModel:
         Returns:
             True if loading succeeded.
         """
+        import json
         load_path = Path(path) if path else self.model_path
         if not load_path.exists():
             logger.warning("Model file not found: {}", load_path)
@@ -464,8 +506,45 @@ class RouterModel:
 
         try:
             with open(load_path, "rb") as f:
-                self._model = pickle.load(f)
-            logger.info("Model loaded from {}", load_path)
+                payload = pickle.load(f)
+            if isinstance(payload, dict) and "model" in payload:
+                self._model = payload["model"]
+                self._label_encoder = payload.get("label_encoder")
+            else:
+                self._model = payload
+                self._label_encoder = None
+
+            # Load the feature schema this model was trained on, if present.
+            self._train_feature_names = None
+            fn_path = load_path.parent / "feature_names.json"
+            if fn_path.exists():
+                try:
+                    import json
+                    with open(fn_path, "r", encoding="utf-8") as ff:
+                        self._train_feature_names = json.load(ff)
+                    self._feature_names = list(self._train_feature_names)
+                except Exception as exc:
+                    logger.warning("Failed to read feature_names.json: {}", exc)
+
+            # Sanity-check the schema against the model's expected input width.
+            n_expected = getattr(self._model, "n_features_in_", None)
+            if (
+                self._train_feature_names
+                and n_expected
+                and len(self._train_feature_names) != n_expected
+            ):
+                logger.warning(
+                    "feature_names.json width ({}) != model n_features_in_ ({}); "
+                    "predictions may be unreliable — retrain to align.",
+                    len(self._train_feature_names),
+                    n_expected,
+                )
+
+            logger.info(
+                "Model loaded from {} | feature_schema={} features",
+                load_path,
+                len(self._train_feature_names) if self._train_feature_names else "unknown",
+            )
             return True
         except Exception as exc:
             logger.error("Failed to load model: {}", exc)

@@ -58,9 +58,14 @@ class Embedder:
             self._model = SafeEmbeddingFunction._model_cache[cache_key]
             logger.info("Embedder using cached model: {}", self.model_name)
         else:
-            logger.info("Loading embedding model: {}", self.model_name)
-            self._model = load_sentence_transformer(self.model_name, self.device)
-            SafeEmbeddingFunction._model_cache[cache_key] = self._model
+            with SafeEmbeddingFunction._cache_lock:
+                if cache_key in SafeEmbeddingFunction._model_cache:
+                    self._model = SafeEmbeddingFunction._model_cache[cache_key]
+                    logger.info("Embedder using cached model (post-lock): {}", self.model_name)
+                else:
+                    logger.info("Loading embedding model: {}", self.model_name)
+                    self._model = load_sentence_transformer(self.model_name, self.device)
+                    SafeEmbeddingFunction._model_cache[cache_key] = self._model
             
         self._model.max_seq_length = self.max_length
         self._embedding_dim = self._model.get_sentence_embedding_dimension()

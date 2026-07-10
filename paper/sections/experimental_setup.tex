@@ -1,0 +1,113 @@
+% ===============================================================
+\section{Experimental Setup}\label{sec:eval}
+% ===============================================================
+
+\subsection{Research Questions}\label{subsec:rqs}
+
+We organise the evaluation around five research questions that separate the
+two claims of the paper---that routing among evidence mechanisms is both
+learnable and useful, and that a selective second stage adds value beyond
+route correction.
+
+\begin{description}
+\item[RQ1 (End-to-end quality).] Does adaptive routing improve answer quality
+over fixed-strategy and oracle baselines, and does Stage~2 contribute beyond
+mere routing correction?
+\item[RQ2 (Routing accuracy).] How accurately does the Stage~1 classifier
+select routes under cross-validation, compared with rule-based and learned
+baselines?
+\item[RQ3 (Ambiguity handling).] Can the system avoid unsafe retrieval by
+clarifying when the legal target is underspecified?
+\item[RQ4 (Threshold ablation).] How do the key thresholds affect routing
+accuracy and the Stage~2 trigger rate?
+\item[RQ5 (Cost--quality).] Does selective Stage~2 invocation provide a better
+trade-off than always-on or always-off verification?
+\end{description}
+
+\subsection{Systems and Baselines}\label{subsec:systems}
+
+Table~\ref{tab:systems} defines all compared systems. All end-to-end
+experiments run on the \texttt{phapdien\_strict} test set of $600$ queries,
+using the single Pháp~điển corpus with one shared retrieval and generation
+configuration, so that any observed difference reflects routing decisions
+rather than infrastructure. The Oracle Router dispatches every query using its
+gold route label under identical retrieval and generation settings; comparing
+the oracle against the Two-stage Hybrid therefore quantifies how much answer
+quality is attributable to Stage~2 reasoning beyond correct routing.
+
+% NOTE(M4): the "Oracle + Stage 2" and "Always-on Stage 2" rows isolate the
+% chain-of-thought contribution and the value of SELECTIVE triggering,
+% respectively. Both have now been run (see Table~\ref{tab:end_to_end}).
+\begin{table}[!htbp]
+\centering
+\caption{Systems compared in this work}\label{tab:systems}
+\begin{tabularx}{\columnwidth}{L{2.7cm}Y}
+\toprule
+\textbf{System} & \textbf{Description} \\
+\midrule
+Pure Vector & Always dense retrieval from Chroma \\
+Pure Graph & Always graph traversal in Neo4j (Text-to-Cypher) \\
+Pure Hybrid & Always combines dense and graph evidence \\
+Single-stage Router & XGBoost Stage~1 only; no LLM verifier \\
+Two-stage Hybrid & Stage~1 + selective Stage~2 (full system) \\
+Always-on Stage~2 & Stage~1 + unconditional Stage~2 verification (trigger-policy ablation) \\
+Oracle Router & Gold route labels; retrieval only, no Stage~2 \\
+Oracle + Stage~2 & Gold route labels \emph{with} Stage~2 reasoning (CoT-isolation ablation) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Evaluation Metrics}\label{subsec:metrics}
+
+\paragraph{Answer quality.}
+For answer quality we report Exact Match (EM) and token-level F1 computed by a
+single \texttt{evaluate\_prediction(gold\_context, answer)} routine shared by
+all systems; by convention F1$\,=0$ when precision and recall are both zero.
+Because token-F1 against a gold context rewards lexical overlap and can
+penalise a correct answer phrased differently from the reference---a bias that
+disadvantages systems whose evidence is assembled from structured graph
+context rather than copied from a passage---we additionally report a semantic
+metric to complement lexical F1.
+% TODO(M6): choose ONE semantic metric and report it alongside EM/F1 for every
+% system in Table~\ref{tab:end_to_end}. Options: (i) BERTScore-F1 with a
+% Vietnamese encoder (bib entry zhang2020bertscore is already in biblio.bib but
+% currently uncited -- citing it here makes it used); or (ii) an LLM-as-judge
+% correctness score with a fixed rubric. State the model and settings used.
+We report BERTScore-F1~\cite{zhang2020bertscore} with a Vietnamese encoder as
+this semantic complement. Hit@$k$ measures retrieval coverage (the gold source
+appears within the top $k$ results) over the source-labelled queries. Because
+the dense index, the graph store, and the gold annotations historically used
+four incompatible identifier formats, both retrieved and gold references are
+first mapped to a canonical \texttt{law::\allowbreak document::\allowbreak
+article::\allowbreak number} form by a deterministic normaliser before
+matching (strict mode: document code \emph{and} article number must agree);
+references the normaliser cannot resolve are counted as misses and flagged,
+rather than silently matched (Appendix~\ref{app:repro}).
+
+\paragraph{Route classification.}
+For route classification we report accuracy, per-class F1, and Macro-F1 over
+the class set $\mathcal{R}=\{d_v,d_g,d_h\}$; Macro-F1 is emphasised because the
+dataset is dominated by the dense class~\cite{powers2011evaluation}. To avoid
+reporting an over-optimistic single-split figure, the headline routing result
+is obtained by \emph{stratified five-fold cross-validation}, and we report the
+mean and standard deviation across folds.
+
+\paragraph{Clarification.}
+For clarification we report precision, recall, and F1 of the \texttt{clarify}
+decision on the ambiguity benchmarks, computed against the binary
+ambiguous/answerable gold label.
+
+\paragraph{Cost.}
+For cost we report average and 95th-percentile (p95) latency, the Stage~2
+trigger rate, and the graph-to-dense fallback rate. To attribute latency to its
+sources rather than to the pipeline as a whole, we additionally decompose
+end-to-end latency into a routing component (Stage~1, optional Stage~2) and a
+retrieval-plus-generation component (Section~\ref{subsec:rq5}).
+
+\paragraph{Statistical reporting.}
+Because all end-to-end scores are means over a finite test set ($N=600$),
+point estimates alone can overstate the separation between systems. We
+therefore accompany the headline F1 and Hit@$1$ figures with $95\%$
+confidence intervals obtained by bootstrap resampling of the per-query scores
+($B=1000$ resamples, fixed seed~$42$), and we regard two systems as
+distinguishable only when their intervals do not overlap.
