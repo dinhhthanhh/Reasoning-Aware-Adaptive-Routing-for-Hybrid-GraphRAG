@@ -8,8 +8,8 @@
 | Final paper source | `docs/AI(PM)_ver 2.3.tex` |
 | Final paper PDF | `docs/AI(PM)_ver 2.3.pdf` |
 | Current branch | `cleanup/working-tree-content-review-pass-3c` |
-| Current commit before Phase 5 commit | `b762829` |
-| Date generated | `2026-06-08T23:47:01` |
+| Current commit before Phase 5 commit | `e01abe8` |
+| Date generated | `2026-06-09T16:43:12` |
 | Phase 1 audit commit | `999e493 phase1: add routing diagnostics and audit reports` |
 | Phase 2 benchmark/demo commit | `e822597 phase2: add conversation ambiguity benchmark and demo` |
 | Phase 3 improvement commit | `3e2b5f2 phase3: improve conversation ambiguity routing` |
@@ -88,10 +88,10 @@ Routing baselines in paper:
 | Router | Accuracy | Macro-F1 | Weighted-F1 |
 |---|---:|---:|---:|
 | MajorityRoute | 0.500 | 0.222 | 0.333 |
-| KeywordRuleRouter | 0.543 | 0.424 | 0.519 |
-| Logistic Regression | 0.753 | 0.716 | 0.744 |
-| Random Forest | 0.782 | 0.730 | 0.765 |
-| XGBoost (Stage 1) | 0.807 | 0.739 | 0.772 |
+| KeywordRuleRouter | 0.612 | 0.497 | 0.568 |
+| Logistic Regression | 0.825 | 0.781 | 0.806 |
+| Random Forest | 0.833 | 0.790 | 0.815 |
+| XGBoost (Stage 1) | 0.805 | 0.780 | 0.800 |
 | PhoBERT-base-v2 | 0.913 | 0.901 | 0.910 |
 
 Deployed Stage 1 diagnostic from Phase 1: accuracy `0.9383`, Macro-F1 `0.9327`, weighted-F1 `0.9387`; source: `results/stage1_diagnostics_summary.md` if present. Warning: offline training report and deployed Stage 1 diagnostic measure different things; do not mix these numbers.
@@ -182,7 +182,7 @@ Demo script nói miệng 1-2 phút: "Em sẽ demo router thay vì demo full gene
 - Vì sao Two-stage strict routing accuracy thấp hơn Single-stage? Strict set không có intended clarify queries; Stage 2 đôi khi can thiệp không cần thiết.
 - Vì sao Stage 1 clarify F1 = 0? Stage 1 train trên ba retrieval labels, không có clarify label.
 - Clarification có làm hệ thống chậm không? Có; Stage 2 routing khoảng 119x Stage 1-only trong routing logs, nên phải trigger chọn lọc.
-- Vì sao dùng XGBoost thay vì PhoBERT? PhoBERT Macro-F1 cao hơn nhưng inference latency cao hơn; XGBoost đủ nhanh cho gateway routing.
+- Vì sao dùng XGBoost thay vì Logistic Regression hoặc Random Forest khi LR/RF có Macro-F1 ngang hoặc nhỉnh hơn? LR/RF/XGBoost đều là lightweight feature-based routers và chênh lệch nhỏ; XGBoost là checkpoint được tích hợp trong pipeline, hỗ trợ feature interactions phi tuyến và cung cấp confidence score dùng cho Stage 2 trigger. Điểm trade-off lớn nhất trong paper là XGBoost/PhoBERT: PhoBERT chính xác hơn nhưng chậm hơn và phụ thuộc GPU hơn.
 - Graph hiện tại yếu ở đâu? Curated legal-effect relations còn sparse: AMENDS 27, REPEALS 19, GUIDES 25, IMPLEMENTS 3.
 - Dataset labels có phải human-annotated không? Route labels chủ yếu metadata-derived; cần human review thêm.
 - Vì sao EM gần 0 nhưng F1 vẫn dùng được? Legal answers dài/paraphrastic, exact string match quá nghiêm; token F1 phân biệt hệ thống tốt hơn.

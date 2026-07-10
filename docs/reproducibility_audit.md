@@ -1,11 +1,11 @@
 # Reproducibility Audit
 
-Generated: 2026-06-08T23:47:01
+Generated: 2026-06-09T16:43:12
 
 ## Git State
 
 - Current branch: `cleanup/working-tree-content-review-pass-3c`
-- Current commit before Phase 5 commit: `b762829`
+- Current commit before Phase 5 commit: `e01abe8`
 - Remote URL(s), sanitized:
 
 ```text
@@ -16,28 +16,24 @@ origin	https://github.com/dinhhthanhh/Reasoning-Aware-Adaptive-Routing-for-Hybri
 - Uncommitted files before final Phase 5 commit:
 
 ```text
-M .gitignore
- M README.md
- M configs/config.yaml.example
- M results/demo_conversation_routing_output.json
- M results/demo_conversation_routing_output.md
-?? docs/DEMO.md
-?? docs/REPRODUCIBILITY.md
-?? docs/SETUP.md
-?? docs/defense_evidence_pack.json
-?? docs/defense_evidence_pack.md
-?? docs/final_results_snapshot/
-?? docs/reproducibility_audit.md
-?? evaluation/README_legal_clarify_eval.md
-?? evaluation/legal_clarify_eval.json
-?? experiments/
-?? scripts/build_legal_clarify_eval.py
-?? scripts/generate_phase5_artifacts.py
+M "docs/AI(PM)_ver 2.3.pdf"
+ M "docs/AI(PM)_ver 2.3.tex"
+ M docs/biblio.bib
+ M docs/defense_evidence_pack.json
+ M docs/defense_evidence_pack.md
+ M "docs/final_results_snapshot/AI(PM)_ver 2.3.pdf"
+ M "docs/final_results_snapshot/AI(PM)_ver 2.3.tex"
+ M docs/final_results_snapshot/MANIFEST.md
+ M docs/final_results_snapshot/biblio.bib
+ M docs/final_results_snapshot/manifest.json
+ M docs/reproducibility_audit.md
+ M scripts/generate_phase5_artifacts.py
 ```
 
 ## Recent Commits
 
 ```text
+e01abe8 docs: add reproducibility and defense evidence pack
 b762829 phase4.1: polish paper consistency and compile
 5dccfd8 phase4: update paper with conversation ambiguity results
 3e2b5f2 phase3: improve conversation ambiguity routing
@@ -47,7 +43,6 @@ e822597 phase2: add conversation ambiguity benchmark and demo
 c9a8d81 fix: make Harrier vector index build robust
 057d145 docs: define public data and artifact policy
 5364286 docs: add sanitized benchmark config examples
-aea7c8a feat: add NER module factory
 ```
 
 ## Tracked/Untracked Files Worth Noting

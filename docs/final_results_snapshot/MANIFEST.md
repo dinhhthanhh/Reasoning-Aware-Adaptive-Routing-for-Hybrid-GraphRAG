@@ -1,6 +1,6 @@
 # Final Results Snapshot Manifest
 
-Generated: 2026-06-08T23:47:01
+Generated: 2026-06-09T16:43:12
 
 | Snapshot filename | Original path | Status | File size | Purpose | Used in paper | Main/diagnostic |
 |---|---|---:|---:|---|---:|---|
@@ -31,6 +31,6 @@ Generated: 2026-06-08T23:47:01
 | phase1_audit_report.md | `results/phase1_audit_report.md` | copied | 8277 | Phase 1 audit report | no | diagnostic |
 | phase2_conversation_benchmark_report.md | `results/phase2_conversation_benchmark_report.md` | copied | 7936 | Phase 2 conversation benchmark report | no | diagnostic |
 | phase3_improvement_report.md | `results_phase3/phase3_improvement_report.md` | copied | 5548 | Phase 3 improvement report | yes | diagnostic |
-| AI(PM)_ver 2.3.tex | `docs/AI(PM)_ver 2.3.tex` | copied | 87339 | Final paper LaTeX source | yes | paper |
-| AI(PM)_ver 2.3.pdf | `docs/AI(PM)_ver 2.3.pdf` | copied | 652749 | Final paper PDF | yes | paper |
-| biblio.bib | `docs/biblio.bib` | copied | 10549 | Final paper bibliography | yes | paper |
+| AI(PM)_ver 2.3.tex | `docs/AI(PM)_ver 2.3.tex` | copied | 94319 | Final paper LaTeX source | yes | paper |
+| AI(PM)_ver 2.3.pdf | `docs/AI(PM)_ver 2.3.pdf` | copied | 685090 | Final paper PDF | yes | paper |
+| biblio.bib | `docs/biblio.bib` | copied | 10527 | Final paper bibliography | yes | paper |

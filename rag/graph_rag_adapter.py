@@ -18,7 +18,7 @@ from graph.sqlite_kg import SQLiteKG
 from llm.openai_client import OpenAIClient
 from pipeline.i18n import get_template
 from ner.factory import get_ner_model
-from graphrag_wrapper.graphrag_client import GraphRAGClient
+from graph.graphrag_client import GraphRAGClient
 
 
 class GraphRAGAdapter:

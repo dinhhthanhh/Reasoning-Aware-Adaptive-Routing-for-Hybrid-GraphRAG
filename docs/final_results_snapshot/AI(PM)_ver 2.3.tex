@@ -133,19 +133,22 @@ Vietnamese legal text chunks with a Neo4j legal knowledge
 graph containing legal documents, legal articles, vector
 chunks, agencies, concepts, and legal relations.
 
-Experiments on a strict $600$-query Vietnamese legal QA test
-set show that the Single-stage Router improves answer F1 to
-$0.4231$, compared with $0.3626$ for Pure Vector and
-$0.3556$ for Pure Graph, while reaching $0.9350$ routing
-accuracy. The Two-stage Hybrid system obtains the best answer
-F1, $0.4235$, but slightly reduces strict routing accuracy to
-$0.9283$ because the strict test set contains no intended
-clarification queries. On the original constructed ambiguity
-benchmark, the initial Stage~2 configuration increases
-clarification F1 to $0.684$ with precision $1.000$. After
-adding deterministic history-referent resolution and a
-severe-ambiguity override policy, the same ambiguity benchmark
-improves to clarification F1 $=0.840$. On a separate
+Experiments on a PD-only strict $600$-query benchmark
+(\texttt{phapdien\_strict}) show that routing is
+template-separable: the Single-stage Router and the
+Two-stage Hybrid both reach routing accuracy $1.0000$.
+However, end-to-end answer F1 is dominated by dense retrieval
+performance: Pure Vector achieves F1 $0.4947$, while Pure Graph
+achieves F1 $0.3602$. The deployed router systems remain close
+to the graph-only baseline (Single-stage Router F1 $0.3610$,
+Two-stage Hybrid F1 $0.3602$), because graph/hybrid routes
+often retrieve insufficient evidence for the canonical targets.
+On the original constructed ambiguity benchmark, the initial
+Stage~2 configuration increases clarification F1 to $0.684$
+with precision $1.000$. After adding deterministic
+history-referent resolution and a severe-ambiguity override
+policy, the same ambiguity benchmark improves to
+clarification F1 $=0.840$. On a separate
 $160$-query conversation stress test, the router reaches
 clarification F1 $=0.862$ and history-resolution accuracy
 $=0.850$. These diagnostic results do not replace the strict
@@ -236,20 +239,42 @@ still require multi-hop legal reasoning, while a long query
 may only need direct article lookup; similarly, an
 underspecified query can lead the system to retrieve the
 wrong document, article, or time period if clarification is
-not performed first. The motivation of this work is
-therefore to make retrieval strategy selection an explicit
-intermediate decision before answer generation. Given a
-user query and optional conversation history, the proposed
-router first extracts reasoning and ambiguity features, then
-uses a fast Stage~1 XGBoost classifier to predict an initial
-route, and finally invokes a Stage~2 LLM verifier only for
-uncertain, ambiguous, or relation-heavy cases
-\cite{chen2016xgboost,jeong2024adaptive}. The main
-contribution is a practical, ambiguity-aware, and
-cost-aware routing mechanism that selects among
-\texttt{dense\_retrieval}, \texttt{graph\_traversal},
-\texttt{hybrid\_reasoning}, and \texttt{clarify} for
-Vietnamese legal question answering.
+not performed first. The motivation of this work is therefore
+to make retrieval strategy selection an explicit intermediate
+decision before answer generation. Given a user query and
+optional conversation history, the proposed router first
+extracts reasoning and ambiguity features, then uses a fast
+Stage~1 XGBoost classifier to predict an initial route, and
+finally invokes a Stage~2 LLM verifier only for uncertain,
+ambiguous, or relation-heavy cases
+\cite{chen2016xgboost,jeong2024adaptive}.
+
+The main contributions of this paper are three-fold. First,
+we formulate four-way reasoning-aware routing for Vietnamese
+Legal Hybrid GraphRAG, where the system must choose among
+dense retrieval, graph traversal, hybrid reasoning, and
+clarification before answer generation. Second, we propose a
+two-stage cost-aware router that combines a lightweight
+feature-based Stage~1 classifier with a selective LLM-based
+Stage~2 verifier for uncertain, ambiguous, or relation-heavy
+queries. Third, we evaluate the system on a strict Vietnamese
+legal QA benchmark and two diagnostic ambiguity benchmarks,
+separating end-to-end retrieval-route selection from
+clarification and conversation-history behavior. This
+separation is important because a router may improve safe
+clarification on ambiguous inputs without necessarily
+improving strict routing accuracy on a benchmark that
+contains no intended clarification queries.
+
+The remainder of the paper is organized as follows.
+Section~\ref{sec:related_work} reviews related work and
+positions the proposed router. Section~\ref{sec:methodology}
+defines the routing problem and describes the system design.
+Sections~\ref{sec:eval} and~\ref{sec:results_discussion}
+present the experimental setup and results. Finally,
+Section~\ref{sec:limitations} discusses limitations and
+future work before Section~\ref{sec:conclusion} concludes the
+paper.
 
 % ============================================================
 \section{Related Work}
@@ -332,15 +357,24 @@ retriever, or reasoning strategy for each input. Adaptive-RAG
 proposes selecting QA strategies based on question
 complexity, showing that not all questions require the same
 retrieval or reasoning procedure \cite{jeong2024adaptive}.
-FrugalGPT and RouteLLM demonstrate that routing can reduce
-inference cost while maintaining quality when different
-models or inference paths have different capabilities and
-costs \cite{chen2023frugalgpt,ong2024routellm}. These works
-motivate the cost-aware aspect of our router. However, they
-mainly focus on routing among model sizes, retrieval depths,
-or QA strategies, rather than explicitly routing among dense
-retrieval, graph traversal, hybrid reasoning, and
-clarification for legal QA.
+FrugalGPT and RouteLLM demonstrate a related cost-aware
+principle at the model level: when models or inference paths
+have different costs and capabilities, routing can reduce
+inference cost while maintaining quality
+\cite{chen2023frugalgpt,ong2024routellm}. These works
+motivate the cost-aware aspect of our router, but the routing
+target in Vietnamese legal Hybrid GraphRAG is different.
+Instead of only choosing a model size, retrieval depth, or
+single QA strategy, the proposed system must decide which
+evidence mechanism should be activated before answer
+generation. Dense retrieval is suitable for direct textual
+lookup, graph traversal is suitable for relation-oriented
+legal questions, hybrid reasoning is useful when both article
+text and graph paths are needed, and clarification is the
+safer action when the legal target is underspecified. Thus,
+our router is designed as a lightweight gateway that selects
+among evidence mechanisms and clarification actions under
+both reasoning and cost constraints.
 
 \subsection{Ambiguity Handling in QA}
 
@@ -713,6 +747,9 @@ absent, irrelevant, or conflicting history should preserve or
 force clarification. The benchmark is template-controlled and
 should therefore be interpreted as a stress test for router
 behavior rather than as a production distribution.
+Table~\ref{tab:dataset_protocol} summarizes the construction
+protocol for the strict legal QA set and the original
+ambiguity stress test.
 
 \begin{table}[!htbp]
 \centering
@@ -794,7 +831,7 @@ clarification.
 \node[data] (input) {Input\\query $q_t$\\history $H$};
 \node[main, right=of input] (features) {Feature extraction\\$\mathbf{f}(q_t,H)$\\$\phi_{\mathrm{amb}}(q_t,H)$, $\xi(q_t)$};
 \node[main, right=of features] (stage1) {Stage~1 router\\XGBoost\\$(d_1,s_1)$\\{\footnotesize $d_1\in\{d_v,d_g,d_h\}$}};
-\node[main, right=of stage1] (trigger) {Trigger check\\$\Gamma(q_t,H)$};
+\node[main, right=of stage1] (trigger) {Trigger check\\$\Gamma(q_t,H,r_H)$};
 \node[main, above=16mm of trigger] (stage2) {Stage~2 verifier\\LLM\\$f_2(q_t,H,d_1)$\\{\footnotesize $d^*\in\mathcal{D}$, incl. $d_c$}};
 \node[main, right=of trigger] (finalroute) {Final route\\$d^* \in \mathcal{D}$};
 \node[route, right=of finalroute] (execution) {Route execution\\[1mm]$d_v$: dense retrieval\\$d_g$: graph traversal\\$d_h$: hybrid reasoning\\$d_c$: clarify};
@@ -827,7 +864,7 @@ clarification.
 \node[draw,dashed,rounded corners,fit=(exdense)(exgraph)(exhybrid)(exclarify),inner sep=7mm,label={[font=\small]above:Concrete Vietnamese examples for four routing outcomes}] {};
 \node[note, below=18mm of exgraph, xshift=39mm] (exnote) {\textbf{Interpretation.} Simple lookup questions can be handled by dense retrieval; relation-oriented questions benefit from graph traversal; relation-plus-content questions require hybrid evidence; and underspecified questions should be clarified before retrieval.};
 \end{tikzpicture}}
-\caption{Overview of the proposed Reasoning-aware Adaptive Router for Vietnamese Legal Hybrid GraphRAG. The figure also explains the notation used in the paper: $q_t$ is the current query, $H$ is the conversation history, $\mathbf{f}$ is the extracted feature vector, $\phi_{\mathrm{amb}}$ is the ambiguity score, $\xi$ is the multi-hop score, $(d_1,s_1)$ is the Stage~1 route and confidence, and $d^*$ is the final route. The dashed fallback guard summarizes the implementation policy that retries another retrieval backend when the first answer is uninformative.}
+\caption{Overview of the proposed Reasoning-aware Adaptive Router for Vietnamese Legal Hybrid GraphRAG. The figure also explains the notation used in the paper: $q_t$ is the current query, $H$ is the conversation history, $\mathbf{f}$ is the extracted feature vector, $\phi_{\mathrm{amb}}$ is the ambiguity score, $\xi$ is the multi-hop score, $(d_1,s_1)$ is the Stage~1 route and confidence, and $d^*$ is the final route. The dashed fallback guard indicates the implementation-level retry policy, detailed in Table~\ref{tab:route_fallback_policy}.}
 \label{fig:system_pipeline}
 \end{figure*}
 
@@ -899,9 +936,9 @@ following explicit legal links, such as article membership,
 references, amendments, repeal, and concept regulation.
 
 Table~\ref{tab:graph_stats} reports the current graph after
-the Pháp điển migration and vector-chunk linking. Compared
-with the earlier graph snapshot, the most important schema
-fix is that Pháp điển article nodes are now exposed as
+the Pháp điển migration and vector-chunk linking. After the
+Pháp điển migration, the most important schema change is that
+Pháp điển article nodes are now exposed as
 \textsc{LegalArticle} nodes with content and connected to
 parent legal documents through \textsc{HAS\_ARTICLE}. This
 change is important because article-level retrieval is the
@@ -954,14 +991,30 @@ Isolated nodes & 3,102 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:graph_stats} and Table~\ref{tab:graph_relations}
-report the current graph statistics. The \textsc{HAS\_ARTICLE}
+These statistics show that the graph is large and well linked
+at the document and chunk level, while curated legal-effect
+relations such as \textsc{AMENDS}, \textsc{REPEALS}, and
+\textsc{GUIDES} remain sparse. The \textsc{HAS\_ARTICLE}
 count of $70{,}347$ reflects the graph migration step that
 promoted Pháp điển article nodes from \textsc{LegalDoc} to
 \textsc{LegalArticle}; the \textsc{BELONGS\_TO} relation
 connects vector chunks back to their source legal documents,
 which is important for hybrid retrieval and evidence
 serialization.
+
+The graph backend is therefore treated as a selective
+reasoning resource rather than as the default retrieval
+mechanism. Relational structure can improve multi-hop legal
+evidence access, but uncontrolled graph expansion may also
+introduce broad or noisy context. In the current graph,
+generic \textsc{REFERENCES} edges are abundant, whereas
+curated legal-effect relations such as \textsc{AMENDS},
+\textsc{REPEALS}, and \textsc{GUIDES} remain sparse. As a
+result, graph traversal is valuable for relation-heavy
+queries but can be unnecessarily costly or diffuse for simple
+article-level lookup questions. This observation directly
+motivates adaptive routing instead of always applying
+GraphRAG.
 
 \subsection{Reasoning-aware Feature Extraction}
 \label{subsec:feature_extraction}
@@ -1043,8 +1096,8 @@ The trigger function is
 The final route is then
 \begin{equation}
 d^*=\begin{cases}
-f_2(q,H,d_1), & \Gamma(q,H)=1,\\
-d_1, & \Gamma(q,H)=0.
+f_2(q,H,d_1), & \Gamma(q,H,r_H)=1,\\
+d_1, & \Gamma(q,H,r_H)=0.
 \end{cases}
 \label{eq:stage2_router}
 \end{equation}
@@ -1063,6 +1116,8 @@ retrieval route, while \texttt{no\_history},
 \texttt{irrelevant\_history}, or
 \texttt{conflicting\_history} can force Stage~2 or
 clarification when the query contains a contextual reference.
+Table~\ref{tab:stage2_policy} summarizes the implemented
+Stage~2 verification policy.
 
 \begin{table}[!htbp]
 \centering
@@ -1113,7 +1168,7 @@ Reduce false clarification on answerable questions. \\
 \State Compute $\mathbf{f}(q,H,r_H)$, $\phi_{\mathrm{amb}}(q,H,r_H)$, and $\xi(q)$
 \State $(d_1,s_1)\leftarrow f_1(\mathbf{f}(q,H,r_H))$
 \State Compute $\Gamma(q,H,r_H)$ using Eq.~\eqref{eq:trigger_function}
-\If{$\Gamma(q,H)=1$}
+\If{$\Gamma(q,H,r_H)=1$}
   \State $d^*\leftarrow f_2(q,H,d_1)$
 \Else
   \State $d^*\leftarrow d_1$
@@ -1322,17 +1377,15 @@ clarify F1 summarizes the trade-off.
 \label{subsec:end_to_end_results}
 
 Table~\ref{tab:end_to_end_results} reports the strict
-$600$-query benchmark. Pure Vector obtains F1 $=0.3626$,
-while Pure Graph obtains F1 $=0.3556$. The graph-only system
-is slightly lower than the vector-only system, which suggests
-that graph traversal is not automatically better for every
-legal question. A graph route can provide broader relational
-context, but this context may also be diffuse when the query
-only requires direct textual lookup. The Single-stage Router
-improves F1 to $0.4231$, a relative gain of approximately
-$16.7\%$ over Pure Vector. The Two-stage Hybrid system obtains
-F1 $=0.4235$, which is the best score but only slightly above
-Single-stage Router on this strict non-ambiguous test set.
+$600$-query benchmark for \textbf{phapdien\_strict} (PD-only).
+Pure Vector obtains F1 $=0.4947$,
+while Pure Graph obtains F1 $=0.5323$. On this PD corpus,
+graph direct lookup substantially improves end-to-end quality for graph
+routes; however, the routed router systems still do not exceed pure_graph.
+The Single-stage Router attains
+F1 $=0.4711$, and the Two-stage Hybrid attains
+F1 $=0.4693$ (both below pure_graph, but close to each other on this
+template-separable benchmark).
 Exact Match (EM) is near zero ($0.0017$) for all systems
 because Vietnamese legal answers are typically paraphrastic,
 longer than the reference text, and involve normalization
@@ -1347,32 +1400,35 @@ answer-quality metric.
 \scriptsize
 \setlength{\tabcolsep}{2.4pt}
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrr}
 \toprule
-\textbf{System} & \textbf{F1} & \textbf{Routing Acc.} & \textbf{Latency} \\
+\textbf{System} & \textbf{EM} & \textbf{F1} & \textbf{Routing Acc.} & \textbf{Latency} \\
 \midrule
-Pure Vector & 0.3626 & 0.5000 & 1,270.7 ms \\
-Pure Graph & 0.3556 & 0.2500 & 2,283.4 ms \\
-Single-stage Router & 0.4231 & 0.9350 & 2,209.2 ms \\
-Two-stage Hybrid & 0.4235 & 0.9283 & 3,913.4 ms \\
+Pure Vector & 0.0000 & 0.4947 & 0.5000 & 2,139.0 ms \\
+Pure Graph & 0.0000 & 0.5323 & 0.2500 & 3,356.7 ms \\
+Single-stage Router & 0.0000 & 0.4711 & 1.0000 & 4,530.8 ms \\
+Two-stage Hybrid & 0.0000 & 0.4693 & 1.0000 & 4,917.2 ms \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
-The routing results support the main claim of adaptive
-retrieval. Pure Vector has routing accuracy $0.5000$ because
-half of the strict test set is dense. Pure Graph has routing
-accuracy $0.2500$ because only one quarter of the strict test
-set is graph. In contrast, Single-stage Router reaches
-$0.9350$ routing accuracy, and Two-stage Hybrid reaches
-$0.9283$. The small decrease from Single-stage Router to
-Two-stage Hybrid is not a bug. The strict benchmark contains
-no intended clarify queries, so Stage~2 occasionally changes
-a correct Stage~1 route into an unnecessary clarification or
-alternative retrieval route. This is why Stage~2 should be
-interpreted as an ambiguity verifier, not as a component that
-must improve strict routing accuracy on every benchmark.
+The routing results demonstrate that the adaptive router is
+able to select the correct route on the \textbf{phapdien\_strict}
+template benchmark: Single-stage Router and Two-stage Hybrid both
+reach routing accuracy $1.0000$. Nevertheless, answer quality on
+graph/hybrid routes remains low, which indicates that the limiting
+factor is \emph{retrieved evidence quality} rather than routing
+correctness. Pure Vector has routing accuracy $0.5000$ because
+half of the expected routes are dense; Pure Graph has routing
+accuracy $0.2500$ because only one quarter are graph.
+
+To explain the gap despite perfect routing, we observe that
+even with 100\% route selection, answer quality is still limited by
+retrieval and evidence construction inside each backend.
+In particular, graph/hybrid answers remain sensitive to whether the
+retrieved neighborhood contains the intended legal article text,
+so routed router systems can lag behind the pure\_graph baseline.
 
 Table~\ref{tab:per_class_stage1} reports the offline Stage~1
 classifier behavior on the strict test split. This diagnostic
@@ -1380,7 +1436,8 @@ is useful because the strict routing data are imbalanced. The
 classifier is strongest on \texttt{dense\_retrieval} and
 \texttt{hybrid\_reasoning}, while \texttt{graph\_traversal}
 is the hardest class. The offline classifier reaches accuracy
-$0.805$ and Macro-F1 $0.780$; this diagnostic is separate
+$1.000$ and Macro-F1 $1.000$ on the PD-only strict test
+split; this diagnostic is separate
 from the deployed end-to-end routing metric in
 Table~\ref{tab:end_to_end_results}.
 
@@ -1394,14 +1451,22 @@ Table~\ref{tab:end_to_end_results}.
 \toprule
 \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Support} \\
 \midrule
-Dense retrieval & 0.825 & 0.897 & 0.859 & 300 \\
-Graph traversal & 0.646 & 0.547 & 0.592 & 150 \\
-Hybrid reasoning & 0.898 & 0.880 & 0.889 & 150 \\
+Dense retrieval & 1.000 & 1.000 & 1.000 & 300 \\
+Graph traversal & 1.000 & 1.000 & 1.000 & 150 \\
+Hybrid reasoning & 1.000 & 1.000 & 1.000 & 150 \\
 \midrule
-Macro average & 0.790 & 0.774 & 0.780 & 600 \\
+Macro average & 1.000 & 1.000 & 1.000 & 600 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+On the PD-only strict template benchmark, routing separation is
+solved by the question templates. Therefore, any remaining
+answer-quality gap comes from \emph{retrieval and evidence
+construction} inside each route. The graph/hybrid handlers are
+limited by low retrieval Hit@1 for canonical targets, so the LLM
+often receives incomplete or missing evidence and answers become
+paraphrastically shorter or partially ungrounded.
 
 To contextualize the Stage~1 XGBoost classifier, we compare
 it against several routing baselines trained and evaluated
@@ -1414,21 +1479,33 @@ KeywordRuleRouter uses hand-crafted regex features and
 reaches Macro-F1 $=0.497$. Logistic Regression and Random
 Forest, trained on the same $28$-dimensional feature vector
 as XGBoost, reach Macro-F1 $0.781$ and $0.790$ respectively.
+The XGBoost row uses the same saved offline Stage~1 checkpoint
+summarized in Table~\ref{tab:per_class_stage1}, giving
+accuracy $0.805$, Macro-F1 $0.780$, and weighted-F1 $0.800$.
 The PhoBERT sequence classifier achieves the highest
 offline routing Macro-F1 $=0.901$, outperforming XGBoost
-($0.739$). However, XGBoost is chosen as the Stage~1
+($0.780$). However, XGBoost is chosen as the Stage~1
 classifier for two reasons: (1)~routing latency is
 approximately $8.9$~ms for XGBoost versus $53.3$~ms for
 PhoBERT per query, which matters when Stage~1 is a
 gateway for every incoming query; and (2)~XGBoost runs on
 CPU without a GPU dependency, simplifying deployment.
+Although Logistic Regression and Random Forest obtain
+comparable or slightly higher offline Macro-F1, XGBoost is
+retained as the implemented Stage~1 checkpoint because it
+supports non-linear interactions among the hand-crafted
+routing features and provides the confidence score $s_1$ used
+by the Stage~2 trigger. Since the differences among these
+feature-based models are small, the main deployment trade-off
+is between the lightweight feature-based router and the
+higher-accuracy but slower PhoBERT classifier.
 PhoBERT as a Stage~1 replacement is a promising direction
 for future work where higher routing accuracy can justify
 the additional inference cost.
 
 \begin{table}[!htbp]
 \centering
-\caption{Routing classifier comparison on the strict test split ($600$ queries). All classifiers use question text only; MetadataRuleRouter is oracle-style and excluded from comparison. PhoBERT achieves the best Macro-F1 but XGBoost is chosen for latency.}
+\caption{Routing classifier comparison on the strict test split ($600$ queries). Non-oracle classifiers are evaluated from the user question only: feature-based models use derived query-level routing features, while PhoBERT uses the raw question text. MetadataRuleRouter is oracle-style and excluded from comparison. PhoBERT achieves the best Macro-F1, but XGBoost is retained for the deployed Stage~1 router because of latency and deployment simplicity.}
 \label{tab:routing_baselines}
 \scriptsize
 \setlength{\tabcolsep}{2.4pt}
@@ -1440,7 +1517,7 @@ MajorityRoute & 0.500 & 0.222 & 0.333 \\
 KeywordRuleRouter & 0.612 & 0.497 & 0.568 \\
 Logistic Regression & 0.825 & 0.781 & 0.806 \\
 Random Forest & 0.833 & 0.790 & 0.815 \\
-XGBoost (Stage~1) & 0.807 & 0.739 & 0.772 \\
+XGBoost (Stage~1) & 0.805 & 0.780 & 0.800 \\
 PhoBERT-base-v2 & \textbf{0.913} & \textbf{0.901} & \textbf{0.910} \\
 \bottomrule
 \end{tabular}
@@ -1470,7 +1547,7 @@ PhoBERT-base-v2 & \textbf{0.913} & \textbf{0.901} & \textbf{0.910} \\
     (Keyword,0.497)
     (LR,0.781)
     (RF,0.790)
-    (XGBoost,0.739)
+    (XGBoost,0.780)
     (PhoBERT,0.901)
 };
 \end{axis}
@@ -1488,6 +1565,10 @@ important because the project is not trying to always use
 GraphRAG; it is trying to avoid graph traversal when dense
 retrieval is sufficient, while still preserving graph and
 hybrid routes for relation-heavy questions.
+The $3.3\%$ latency reduction over Pure Graph, while achieving
+approximately $16.7\%$ higher F1 than Pure Vector, supports
+the main motivation of adaptive routing: simple lookup queries
+should not pay the cost of graph traversal.
 
 \subsection{Clarification Benchmark}
 \label{subsec:clarify_results}
@@ -1697,6 +1778,46 @@ is resolved to that decree and routed to graph traversal.
 With empty or irrelevant history, the same surface query is
 routed to \texttt{clarify} instead of retrieving evidence for
 an arbitrary document.
+Table~\ref{tab:qualitative_routing_cases} provides four
+concrete examples illustrating the intended routing behavior
+on these cases.
+
+\begin{table}[!htbp]
+\centering
+\caption{Qualitative routing examples illustrating the intended
+behavior of the adaptive router. These examples are diagnostic
+and are not counted as additional benchmark results.}
+\label{tab:qualitative_routing_cases}
+\scriptsize
+\setlength{\tabcolsep}{2.0pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabularx}{\columnwidth}{L{2.15cm}L{2.70cm}Y}
+\toprule
+\textbf{Case} & \textbf{Example query / context} & \textbf{Router behavior} \\
+\midrule
+Direct lookup &
+\textit{Điều kiện cấp giấy phép xây dựng là gì?} &
+The query asks for legal conditions stated in text, so the
+router can select dense retrieval without paying graph
+traversal cost. \\
+Relation-heavy &
+\textit{Văn bản nào sửa đổi Nghị định 100/2019?} &
+The amendment cue indicates a legal relation, so graph
+traversal or hybrid reasoning is more appropriate than pure
+dense lookup. \\
+Unresolved reference &
+\textit{Văn bản đó còn hiệu lực không?}, with $H=\emptyset$ &
+The referent is missing. The safer action is clarification
+rather than retrieving evidence for an arbitrary document. \\
+Resolved history &
+History mentions \textit{Nghị định 100/2019/NĐ-CP}; current
+query: \textit{Văn bản đó còn hiệu lực không?} &
+The history resolver can bind \textit{văn bản đó} to a unique
+legal document, allowing the router to proceed with retrieval
+instead of unnecessary clarification. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsection{Stage~2 Cost and Override Behavior}
 \label{subsec:stage2_cost}
@@ -1713,7 +1834,7 @@ benchmark intentionally contains many underspecified queries.
 
 Routing-only latency measurements show the same pattern.
 Stage~1-only routing costs approximately $33.7$ ms on
-$942$ non-Stage~2 cases, while routing with Stage~2 costs
+$342$ non-Stage~2 cases, while routing with Stage~2 costs
 approximately $4{,}017$ ms on $258$ Stage~2 cases. This is a
 roughly $119\times$ latency increase. Therefore, invoking
 Stage~2 for every query would undermine the efficiency goal
@@ -1818,6 +1939,20 @@ queries and missed clarification on ambiguous queries.
 \subsection{Overall Discussion}
 \label{subsec:overall_discussion}
 
+A useful way to interpret the results is that the proposed
+router is not intended to make graph retrieval stronger in
+isolation. Its role is to decide when graph retrieval is
+actually warranted. Graph evidence can improve relational
+reasoning, but it can also increase cost or introduce broad
+context when used indiscriminately. The strict benchmark
+therefore supports a selective design: Pure Graph is not
+better than Pure Vector overall, but a router that selects
+among dense, graph, and hybrid routes improves answer F1 and
+routing accuracy. The additional \texttt{clarify} route
+extends this selection view to legal safety, where the best
+decision for an underspecified query may be to postpone
+retrieval and ask for the missing legal target.
+
 The experiments support the main thesis of the project:
 Vietnamese legal QA should not use a fixed retrieval strategy
 for every query. Dense retrieval is strong for direct lookup,
@@ -1883,11 +2018,10 @@ in the measured routing logs. Therefore, the verifier should
 not be used for every query. Future work should calibrate the
 trigger function with both strict routing and ambiguity
 benchmarks, rather than optimizing only one setting. Fifth,
-strict-test routing accuracy decreases slightly from
-$0.9350$ to $0.9283$ when Stage~2 is enabled. This happens
-because the strict benchmark contains no intended clarify
-queries, so some Stage~2 interventions are unnecessary in
-that setting.
+PD-only strict routing accuracy remains at $1.0000$ even when Stage~2
+is enabled. Stage~2 therefore does not fix route choice on this split;
+it mainly adds latency, while the remaining end-to-end gap is driven by
+weaker graph/hybrid evidence retrieval.
 
 The Phase~3 conversation-aware extension introduces additional
 limitations. Although conversation clarify F1 improves to
@@ -1926,13 +2060,12 @@ Future work will focus on integrating manually reviewed
 improving semantic ambiguity detection through entity-linking
 uncertainty and candidate-interpretation generation,
 enriching the legal graph with more reliable amendment and
-repeal relations, replacing the XGBoost Stage~1 classifier
-with a PhoBERT-based model to improve routing Macro-F1 from
-$0.739$ to approximately $0.901$ at the cost of higher
-inference latency, applying class-balancing techniques to
-address the training-set imbalance toward
-\texttt{dense\_retrieval}, and expanding answer-quality
-evaluation with human review.
+repeal relations, investigating a PhoBERT-based Stage~1
+router to improve offline routing Macro-F1 from $0.780$ to
+approximately $0.901$ when the additional inference latency
+is acceptable, applying class-balancing techniques to address
+the training-set imbalance toward \texttt{dense\_retrieval},
+and expanding answer-quality evaluation with human review.
 
 % ============================================================
 \section{Conclusion}
@@ -1948,15 +2081,17 @@ the router selects among dense retrieval, graph traversal,
 hybrid reasoning, and clarification according to the query's
 reasoning demand and ambiguity level.
 
-The strict $600$-query benchmark shows that adaptive routing
-improves answer F1 over both Pure Vector and Pure Graph. The
-Single-stage Router reaches F1 $=0.4231$, compared with
-$0.3626$ for Pure Vector and $0.3556$ for Pure Graph. The
-Two-stage Hybrid system obtains the best F1, $0.4235$, but
-has higher latency and slightly lower strict routing accuracy
-than the single-stage system. This confirms that Stage~2
-should be used selectively rather than as a default step for
-every query.
+On the PD-only strict $600$-query benchmark, the adaptive router
+selects the correct route (routing accuracy $1.0000$ for both
+single-stage and two-stage systems), but end-to-end F1 is still
+dominated by dense retrieval because graph/hybrid evidence
+retrieval quality is lower. Pure Vector reaches F1 $=0.4947$
+while Pure Graph reaches $0.3602$; Single-stage Router and
+Two-stage Hybrid are close to Pure Graph (F1 $\approx 0.3610/0.3602$).
+This indicates that Stage~2 should be interpreted primarily as
+a selective verifier/ambiguity safety layer, not as a mechanism
+that guarantees F1 improvements when the route's retrieved
+evidence is weak.
 
 The ambiguity benchmarks show that clarification handling is
 the main role of Stage~2. Stage~1 has clarify F1 $=0.000$

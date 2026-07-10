@@ -1,8 +1,8 @@
 {
   "project": "Reasoning-aware Adaptive Routing for Hybrid GraphRAG",
-  "generated": "2026-06-08T23:47:01",
+  "generated": "2026-06-09T16:43:12",
   "branch": "cleanup/working-tree-content-review-pass-3c",
-  "commit_before_phase5_commit": "b762829",
+  "commit_before_phase5_commit": "e01abe8",
   "paper_tex": "docs/AI(PM)_ver 2.3.tex",
   "paper_pdf": "docs/AI(PM)_ver 2.3.pdf",
   "main_results": {
@@ -333,7 +333,7 @@
       "snapshot_filename": "AI(PM)_ver 2.3.tex",
       "original_path": "docs/AI(PM)_ver 2.3.tex",
       "status": "copied",
-      "file_size_bytes": 87339,
+      "file_size_bytes": 94319,
       "purpose": "Final paper LaTeX source",
       "used_in_paper": true,
       "result_type": "paper"
@@ -342,7 +342,7 @@
       "snapshot_filename": "AI(PM)_ver 2.3.pdf",
       "original_path": "docs/AI(PM)_ver 2.3.pdf",
       "status": "copied",
-      "file_size_bytes": 652749,
+      "file_size_bytes": 685090,
       "purpose": "Final paper PDF",
       "used_in_paper": true,
       "result_type": "paper"
@@ -351,7 +351,7 @@
       "snapshot_filename": "biblio.bib",
       "original_path": "docs/biblio.bib",
       "status": "copied",
-      "file_size_bytes": 10549,
+      "file_size_bytes": 10527,
       "purpose": "Final paper bibliography",
       "used_in_paper": true,
       "result_type": "paper"

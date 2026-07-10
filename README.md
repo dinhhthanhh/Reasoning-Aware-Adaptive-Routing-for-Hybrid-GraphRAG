@@ -22,27 +22,38 @@ clarification before retrieval.
 
 ## Main Results
 
-Strict 600-query Vietnamese legal QA benchmark:
+**Canonical metrics file:** [`results/final/official_metrics.json`](results/final/official_metrics.json)
+(see [`results/final/README.md`](results/final/README.md) for provenance).
 
-| System | F1 | Routing Acc. | Avg Latency |
-|---|---:|---:|---:|
-| Pure Vector | 0.3626 | 0.5000 | 1,270.7 ms |
-| Pure Graph | 0.3556 | 0.2500 | 2,283.4 ms |
-| Single-stage Router | 0.4231 | 0.9350 | 2,209.2 ms |
-| Two-stage Hybrid | 0.4235 | 0.9283 | 3,913.4 ms |
+> **Metric correction (2026-06):** The previously reported "F1" (~0.42) was
+> keyword *recall*, not token F1. Corrected Vietnamese token F1 on the cleaned
+> test set (n=541) is ~**0.34**. Routing accuracy: **0.8517 ± 0.0249** (5-fold CV).
+
+| System | Token F1 (corrected) | Routing Acc. | Source |
+|---|---:|---:|---|
+| Router (honest run) | 0.3408 | 0.8503 | `official_metrics.json` |
+| Pure Graph | 0.3390 | 0.2773 | same |
+| Stage 1 CV (authoritative routing) | — | **0.8517 ± 0.0249** | `router_model/training_report.json` |
+
+Legacy snapshot (keyword-recall "F1", superseded):
+[`docs/final_results_snapshot/legal_strict_full_summary.json`](docs/final_results_snapshot/legal_strict_full_summary.json)
 
 Conversation and clarification results are diagnostic stress tests, not
-replacements for the strict end-to-end table. See the evidence pack for the
-full mapping from paper numbers to artifact files.
+replacements for the strict end-to-end table.
 
 ## Important Links
 
+- **Official metrics:** [results/final/official_metrics.json](results/final/official_metrics.json)
+- Routing design: [docs/routing_design.md](docs/routing_design.md)
+- End-to-end pipeline: [docs/architecture/end_to_end_pipeline.md](docs/architecture/end_to_end_pipeline.md)
+- Defense materials: [docs/defense_materials/](docs/defense_materials/)
+- Paper errata (before journal submit): [docs/paper_errata.md](docs/paper_errata.md)
+- QA quality audit: [data/audit_reports/qa_quality_audit.md](data/audit_reports/qa_quality_audit.md)
 - Final paper PDF: [docs/AI(PM)_ver 2.3.pdf](<docs/AI(PM)_ver 2.3.pdf>)
 - Defense evidence pack: [docs/defense_evidence_pack.md](docs/defense_evidence_pack.md)
-- Final results snapshot: [docs/final_results_snapshot/MANIFEST.md](docs/final_results_snapshot/MANIFEST.md)
 - Setup guide: [docs/SETUP.md](docs/SETUP.md)
 - Demo guide: [docs/DEMO.md](docs/DEMO.md)
-- Reproducibility notes: [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)
+- Reproducibility: [docs/defense_materials/reproducibility_checklist.md](docs/defense_materials/reproducibility_checklist.md)
 
 ## Quick Setup
 
@@ -74,6 +85,18 @@ python scripts/evaluate_strict_routing_only.py --config configs/config.yaml --te
 
 The full 600-query end-to-end benchmark should only be rerun when Neo4j,
 Chroma, router checkpoint, and the LLM endpoint are ready.
+
+## Data Sources
+
+Final corpus (248,740 documents):
+
+| Source | Records | Script |
+|---|---:|---|
+| HuggingFace `th1nhng0/vietnamese-legal-documents` | 178,665 | `main.py --source huggingface` |
+| Pháp Điển offline bundle (`BoPhapDienDienTu/`) | 70,075 | `main.py --source phapdien` |
+
+VBPL portal crawler was attempted but **failed** (empty output) and is archived
+at `archive/legacy_vbpl/`. It is not a data source for any final experiment.
 
 ## Data and Artifact Policy
 
