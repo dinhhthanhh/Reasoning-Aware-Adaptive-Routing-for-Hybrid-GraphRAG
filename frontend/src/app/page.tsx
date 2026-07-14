@@ -229,7 +229,7 @@ export default function Home() {
     scrollToBottom();
   }, [messages, loading]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, isClarifyAnswer: boolean = false) => {
     if (!text.trim() || loading) return;
 
     const userMsg: Message = {
@@ -249,7 +249,7 @@ export default function Home() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
-        body: JSON.stringify({ query: userMsg.content, session_id: currentSessionId, verbose: true }),
+        body: JSON.stringify({ query: userMsg.content, session_id: currentSessionId, verbose: true, is_clarify_answer: isClarifyAnswer }),
       });
 
       if (!response.body) throw new Error("No response body");
@@ -713,7 +713,7 @@ export default function Home() {
                           return (
                             <button
                               key={idx}
-                              onClick={() => sendMessage(optionText)}
+                              onClick={() => sendMessage(optionText, true)}
                               disabled={loading}
                               className="text-left px-4 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >

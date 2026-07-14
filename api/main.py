@@ -42,6 +42,7 @@ class QueryRequest(BaseModel):
     session_id: Optional[str] = "web_session"
     k: Optional[int] = 3
     verbose: bool = True
+    is_clarify_answer: Optional[bool] = False
 
 class QueryResponse(BaseModel):
     answer: str
@@ -99,7 +100,8 @@ async def query_stream(request: QueryRequest, username: str = Depends(get_curren
                 query=request.query,
                 session_id=request.session_id,
                 verbose=request.verbose,
-                username=username
+                username=username,
+                force_route="dense_retrieval" if request.is_clarify_answer else None
             ):
                 yield chunk
                 

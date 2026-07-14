@@ -386,10 +386,10 @@ Câu hỏi: "{resolved_query}"
 Lý do mơ hồ: {router_output.reasoning}
 Câu hỏi làm rõ: {base_question}
 
-Nhiệm vụ: Tạo 2-4 lựa chọn để người dùng có thể click chọn nhằm làm rõ ý định của họ. Mỗi lựa chọn bắt đầu bằng "- [Option] ". Không giải thích thêm.
-Ví dụ:
-- [Option] Tôi muốn hỏi về A
-- [Option] Tôi muốn hỏi về B"""
+Nhiệm vụ: Tạo 2-4 lựa chọn để người dùng click. MỖI lựa chọn PHẢI là MỘT CÂU HỎI PHÁP LUẬT HOÀN CHỈNH, ĐỘC LẬP, có thể tra cứu và trả lời được NGAY — nêu rõ đối tượng / văn bản / nội dung cụ thể mà người dùng có khả năng đang muốn hỏi (kèm số hiệu văn bản hoặc thuật ngữ pháp lý nếu suy ra được từ ngữ cảnh). TUYỆT ĐỐI KHÔNG viết dạng "Tôi muốn hỏi về ...". Mỗi lựa chọn bắt đầu bằng "- [Option] ". Không giải thích thêm.
+Ví dụ (câu hoàn chỉnh, tự đủ nghĩa):
+- [Option] Mức phạt vi phạm nồng độ cồn với xe mô tô theo Nghị định 100/2019/NĐ-CP là bao nhiêu?
+- [Option] Nghị định 100/2019/NĐ-CP hiện còn hiệu lực không và văn bản nào đã sửa đổi nó?"""
             
             try:
                 for chunk in self.vector_rag.llm.generate_stream(prompt, system_prompt="Chỉ in ra các lựa chọn bắt đầu bằng '- [Option] '."):
