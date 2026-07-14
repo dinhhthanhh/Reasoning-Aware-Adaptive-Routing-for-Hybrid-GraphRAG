@@ -613,7 +613,13 @@ Câu hỏi gốc: {resolved_query}"""
         latency_ms = (time.perf_counter() - start) * 1000
 
         self.conversation_manager.add_turn(
-            session_id=session_id, query=query, response=full_answer, route=router_output.route, username=username
+            session_id=session_id, 
+            query=query, 
+            response=full_answer, 
+            route=router_output.route, 
+            username=username,
+            latency_ms=latency_ms,
+            router_latency_ms=router_latency_ms
         )
 
         metadata = {

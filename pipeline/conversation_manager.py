@@ -26,6 +26,8 @@ class ConversationTurn:
     response: str
     route_used: str
     timestamp: float
+    latency_ms: float = 0.0
+    router_latency_ms: float = 0.0
 
 class ConversationManager:
     """Session-based conversation history manager using SQLite."""
@@ -86,9 +88,16 @@ class ConversationManager:
                     query TEXT NOT NULL,
                     response TEXT NOT NULL,
                     route_used TEXT NOT NULL,
-                    timestamp REAL NOT NULL
+                    timestamp REAL NOT NULL,
+                    latency_ms REAL DEFAULT 0.0,
+                    router_latency_ms REAL DEFAULT 0.0
                 )
             ''')
+            try:
+                cursor.execute('ALTER TABLE turns ADD COLUMN latency_ms REAL DEFAULT 0.0')
+                cursor.execute('ALTER TABLE turns ADD COLUMN router_latency_ms REAL DEFAULT 0.0')
+            except sqlite3.OperationalError:
+                pass
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_session ON turns(session_id)')
             conn.commit()
 
@@ -101,7 +110,9 @@ class ConversationManager:
         query: str,
         response: str,
         route: str,
-        username: str = "default"
+        username: str = "default",
+        latency_ms: float = 0.0,
+        router_latency_ms: float = 0.0
     ) -> None:
         
         now = time.time()
@@ -121,9 +132,9 @@ class ConversationManager:
             ''', (now, session_id, username))
             
             cursor.execute('''
-                INSERT INTO turns (session_id, query, response, route_used, timestamp)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (session_id, query, response, route, now))
+                INSERT INTO turns (session_id, query, response, route_used, timestamp, latency_ms, router_latency_ms)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (session_id, query, response, route, now, latency_ms, router_latency_ms))
             conn.commit()
 
     def truncate_session(self, session_id: str, keep_turns: int, username: str = "default") -> None:
@@ -155,7 +166,7 @@ class ConversationManager:
             cursor = conn.cursor()
             # Order by id ASC for deterministic ordering
             cursor.execute('''
-                SELECT query, response, route_used, timestamp 
+                SELECT query, response, route_used, timestamp, latency_ms, router_latency_ms 
                 FROM turns 
                 WHERE session_id = ? 
                 ORDER BY id ASC
@@ -163,7 +174,14 @@ class ConversationManager:
             rows = cursor.fetchall()
             
         turns = [
-            ConversationTurn(query=r[0], response=r[1], route_used=r[2], timestamp=r[3])
+            ConversationTurn(
+                query=r[0], 
+                response=r[1], 
+                route_used=r[2], 
+                timestamp=r[3],
+                latency_ms=r[4],
+                router_latency_ms=r[5]
+            )
             for r in rows
         ]
         return turns[-self.max_history_turns:] if len(turns) > self.max_history_turns else turns

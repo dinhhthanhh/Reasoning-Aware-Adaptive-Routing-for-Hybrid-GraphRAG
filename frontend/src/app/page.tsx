@@ -162,7 +162,8 @@ export default function Home() {
             confidence: 1.0,
             reasoning: "",
             stage2: false,
-            latency: 0,
+            latency: turn.latency_ms || 0,
+            router_latency: turn.router_latency_ms || 0,
             sources: []
           }
         });
@@ -744,7 +745,9 @@ export default function Home() {
                         )}
                         {msg.metadata.router_latency !== undefined && msg.metadata.router_latency > 0 && (
                           <span className="text-[10px] bg-white/5 px-2 py-1 rounded border border-white/5 text-purple-400" title="Thời gian phân luồng (Router)">
-                            Router: {(msg.metadata.router_latency).toFixed(1)}ms
+                            Router: {msg.metadata.router_latency >= 1000 
+                              ? `${(msg.metadata.router_latency / 1000).toFixed(1)}s` 
+                              : `${msg.metadata.router_latency.toFixed(1)}ms`}
                           </span>
                         )}
                         {msg.metadata.sources && msg.metadata.sources.length > 0 && (
