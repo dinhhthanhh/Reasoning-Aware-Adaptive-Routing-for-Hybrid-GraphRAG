@@ -359,6 +359,7 @@ class HybridPipeline:
         history_str = self.conversation_manager.get_history_string(session_id)
 
         # Step 2: Route
+        router_start = time.perf_counter()
         if force_route:
             from router.two_stage_router import RouterOutput, QueryFeatures
             router_output = RouterOutput(
@@ -368,6 +369,7 @@ class HybridPipeline:
             )
         else:
             router_output = self.router.route(query=resolved_query, history=history_str, session_id=session_id)
+        router_latency_ms = (time.perf_counter() - router_start) * 1000
 
         # Step 3: Stream from appropriate pipeline
         sources = []
@@ -621,6 +623,7 @@ Câu hỏi gốc: {resolved_query}"""
             "stage2_invoked": router_output.stage2_invoked,
             "sources": sources,
             "latency_ms": latency_ms,
+            "router_latency_ms": router_latency_ms,
             "is_ambiguous": router_output.is_ambiguous,
             "resolved_query": resolved_query
         }

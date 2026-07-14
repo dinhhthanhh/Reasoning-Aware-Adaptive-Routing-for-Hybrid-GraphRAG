@@ -18,6 +18,7 @@ interface Message {
     reasoning: string;
     stage2: boolean;
     latency: number;
+    router_latency?: number;
     sources: string[];
     resolved_query?: string;
   };
@@ -296,6 +297,7 @@ export default function Home() {
                       reasoning: "",
                       stage2: metadata.stage2_invoked || false,
                       latency: metadata.latency_ms || 0,
+                      router_latency: metadata.router_latency_ms || 0,
                       sources: metadata.sources,
                       resolved_query: metadata.resolved_query,
                     }
@@ -736,8 +738,13 @@ export default function Home() {
                           {msg.metadata.stage2 ? 'Stage 2 (LLM)' : 'Stage 1 (XGB)'}
                         </span>
                         {msg.metadata.latency > 0 && (
-                          <span className="text-[10px] bg-white/5 px-2 py-1 rounded border border-white/5 text-blue-400">
-                            {(msg.metadata.latency / 1000).toFixed(2)}s
+                          <span className="text-[10px] bg-white/5 px-2 py-1 rounded border border-white/5 text-blue-400" title="Tổng thời gian (bao gồm sinh text)">
+                            Total: {(msg.metadata.latency / 1000).toFixed(2)}s
+                          </span>
+                        )}
+                        {msg.metadata.router_latency !== undefined && msg.metadata.router_latency > 0 && (
+                          <span className="text-[10px] bg-white/5 px-2 py-1 rounded border border-white/5 text-purple-400" title="Thời gian phân luồng (Router)">
+                            Router: {(msg.metadata.router_latency).toFixed(1)}ms
                           </span>
                         )}
                         {msg.metadata.sources && msg.metadata.sources.length > 0 && (
