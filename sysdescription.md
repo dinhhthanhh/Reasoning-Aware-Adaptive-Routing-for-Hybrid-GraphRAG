@@ -19,22 +19,25 @@ File này dùng để cung cấp cho Claude, ChatGPT hoặc một trợ lý AI k
   - Ví dụ: Câu hỏi Hybrid so sánh/kết nối kiểu gì cũng phải nhắc tới $\geq 2$ luật $\rightarrow$ Router đếm được `legal_ref_count >= 2`.
   - Khẳng định: Router rất BỀN VỮNG (Robust) trước sự thay đổi văn phong.
 
-### 2.2. End-to-End Evaluation Metrics (N=600, Paraphrased)
-| Config | F1 Score | Hit@1 | Latency (mean) | Stage 2 Trigger Rate |
-|---|---|---|---|---|
-| **Pure Vector** | 0.701 | 0.588 | 5,682 ms | 0.0% |
-| **Two-stage Hybrid (Đề xuất)** | **0.661** | **0.410** | 9,950 ms | 78.3% |
-| Pure Hybrid | 0.656 | 0.003 | 6,815 ms | 0.0% |
-| Pure Graph | 0.632 | 0.542 | 5,588 ms | 0.0% |
-| **Oracle (Single-stage lý tưởng)** | 0.606 | 0.282 | 5,975 ms | 0.0% |
+### 2.2. End-to-End Evaluation Metrics (Quyển B.5.2 - Final 600-query)
+| Config | F1 Score |
+|---|---|
+| **Pure Vector** | **0.663** |
+| Pure Graph | 0.633 |
+| Pure Hybrid | 0.660 |
+| Single-stage Router | 0.474 |
+| **Two-stage Router (Đề xuất)** | **0.636** |
+| Always-on Verifier | 0.564 |
+
+*(Lưu ý: Bảng này là kết quả cuối cùng ghi trong Quyển đồ án nộp ngày 01/07/2026. Các số liệu trung gian cũ (như Vector 0.701, Hybrid 0.661) đã bị thay thế để đồng nhất hoàn toàn với số liệu bảo vệ.)*
 
 ### 2.3. Giải nghĩa số liệu cho Hội đồng (Safe Claims)
-1. **Tại sao Two-stage (0.661) lại thắng Oracle (0.606)?**
-   - Oracle dùng nhãn Route hoàn hảo 100% nhưng chỉ có 1 tầng.
-   - Khi chạy Two-stage, hệ thống kích hoạt **Stage 2 (LLM Verifier)**. Stage 2 đóng vai trò **Chain-of-Thought (CoT)** giúp LLM suy luận ra định hướng trả lời rõ ràng trước khi thực sự sinh văn bản, giúp bù đắp sự suy giảm F1 do câu hỏi bị nhiễu Paraphrase.
-2. **Tại sao Pure Vector (0.701) lại cao nhất?**
+1. **Tại sao Two-stage (0.636) lại thắng Single-stage (0.474)?**
+   - Single-stage chỉ dùng XGBoost (Giai đoạn 1) để đoán Route nhưng dễ bị đánh lừa bởi từ ngữ nhiễu (paraphrased).
+   - Khi chạy Two-stage, hệ thống kích hoạt **Stage 2 (LLM Verifier)** cho các câu hỏi khó/mơ hồ. Stage 2 đóng vai trò **Chain-of-Thought (CoT)** giúp LLM suy luận ra định hướng trả lời rõ ràng trước khi thực sự sinh văn bản, giúp kéo F1 tăng mạnh từ 0.474 lên 0.636.
+2. **Tại sao Pure Vector (0.663) lại cao nhất?**
    - Vector Search thuần túy chống chịu rất tốt với Paraphrasing (vì bản chất Semantic search matching).
-   - Đồ án này **KHÔNG CỐ GẮNG "TIÊU DIỆT" VECTOR**. Mục đích của đồ án là Adaptive (Thích ứng): Tận dụng Vector RAG cho câu dễ, và chuyển sang Graph RAG / Hybrid / Clarify cho các câu hỏi quan hệ phức tạp mà Vector bị "mù" ngữ cảnh.
+   - Đồ án này **KHÔNG CỐ GẮNG "TIÊU DIỆT" VECTOR**. Mục đích của đồ án là Adaptive (Thích ứng): Tận dụng Vector RAG cho câu dễ, và chuyển sang Graph RAG / Hybrid / Clarify cho các câu hỏi quan hệ phức tạp mà Vector bị "mù" ngữ cảnh. Điểm ăn tiền của Two-stage Router là khả năng điều hướng tự động mà không làm giảm đáng kể hiệu suất tổng thể.
 
 ## 3. Bài toán và Phân loại Route (4 Routes)
 | Route | Khi dùng |

@@ -33,10 +33,12 @@ Crawl/corpus/
 # Logs & Temp files
 # ===========================================
 logs/
+build_logs/
 *.log
 *.db
 *.tmp
 crawler.log
+cloudflared.exe
 
 # ===========================================
 # Neo4j local data
@@ -131,15 +133,15 @@ BaoCao_Reasoning_Aware_Adaptive_Routing_Hybrid_GraphRAG.md
 project_context.md
 
 # Private or non-public documentation sources
-docs/*.tex
-docs/*.pdf
-docs/*.bib
-docs/*.bst
-docs/*notes*.md
-docs/*report*.md
-docs/routing_*.md
-docs/stage2_*.md
-docs/research_*.md
+docs/*
+# Presentation and Defense Materials
+*.pptx
+*.docx
+*.jpg
+*.jpeg
+*.png
+~$*
+slide_v3_hinh_ve/
 
 # Exceptions for public docs
 !docs/architecture.md

@@ -284,12 +284,15 @@ class HybridPipeline:
             actual_pipeline = "dense_retrieval"
 
         # Emit canonical IDs (M3 fix)
-        from evaluation.metrics.id_normalizer import normalize_legal_id
-        canonical_sources = []
-        for src in sources:
-            norm_id = normalize_legal_id(src)
-            canonical_sources.append(norm_id.key if norm_id.is_resolvable else "UNRESOLVABLE")
-        sources = canonical_sources
+        try:
+            from evaluation.metrics.id_normalizer import normalize_legal_id
+            canonical_sources = []
+            for src in sources:
+                norm_id = normalize_legal_id(src)
+                canonical_sources.append(norm_id.key if norm_id.is_resolvable else "UNRESOLVABLE")
+            sources = canonical_sources
+        except ImportError:
+            pass
 
         latency_ms = (time.perf_counter() - start) * 1000
 

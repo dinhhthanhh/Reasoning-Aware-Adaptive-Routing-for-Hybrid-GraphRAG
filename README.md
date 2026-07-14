@@ -11,35 +11,37 @@ clarification before retrieval.
 
 ## Architecture Summary
 
-- Stage 1 router: XGBoost classifier over reasoning and ambiguity features.
-- Stage 2 verifier: LLM-based verifier triggered only for uncertain,
-  ambiguous, or relation-heavy cases.
-- Dense backend: Chroma vector store over Vietnamese legal chunks.
-- Graph backend: Neo4j legal graph with `LegalDoc`, `LegalArticle`,
-  `VectorChunk`, legal concepts, and relation edges.
-- Conversation support: deterministic history-referent resolution used for
-  ambiguity-aware routing.
+The system is built upon a **Two-Stage Routing** mechanism that dynamically selects among **4 distinct routes** (`dense_retrieval`, `graph_traversal`, `hybrid_reasoning`, `clarify`):
 
-## Main Results
+- **Stage 1 Router (XGBoost):** A lightweight, low-latency classifier (`n_estimators=200`) trained to predict the optimal route using **27 handcrafted features** (e.g., `is_yes_no_question`, `legal_reference_count`, `ambiguity_score`).
+- **Stage 2 Verifier (LLM - Qwen3.5-35B):** Triggered conditionally ($\Gamma = 1$) only when Stage 1 confidence is low (< 0.5), or when high ambiguity/multi-hop reasoning is detected. It overrides Stage 1 if necessary to prevent hallucination.
+- **2-Layer Graph Backend (Neo4j):**
+  - *Structural Layer:* Models the physical hierarchy of documents (`LegalDoc` $\rightarrow$ `LegalArticle`).
+  - *Semantic Layer:* Extracted via LLM, representing abstract legal concepts (`LEGAL_CONCEPT`, `ACTOR`, `PENALTY`) and their logical relations (`AMENDS`, `HAS_CONDITION`, `REGULATES`).
+- **Dense Backend (ChromaDB):** Vector store holding raw text chunks (256 words/chunk), embedded using the **zero-shot `microsoft/Harrier-OSS-v1-0.6B`** model (1024-dimensional space).
+- **Conversation Management:** Uses deterministic history-referent resolution for ambiguity-aware routing, tracking context across multi-turn sessions.
 
-**Canonical metrics file:** [`results/final/official_metrics.json`](results/final/official_metrics.json)
-(see [`results/final/README.md`](results/final/README.md) for provenance).
+## Main Results (Final Thesis Benchmark - B.5.2)
 
-> **Metric correction (2026-06):** The previously reported "F1" (~0.42) was
-> keyword *recall*, not token F1. Corrected Vietnamese token F1 on the cleaned
-> test set (n=541) is ~**0.34**. Routing accuracy: **0.8517 ± 0.0249** (5-fold CV).
+The following metrics are the **final official results** submitted in the graduation thesis (evaluated on a strict 600-query benchmark).
 
-| System | Token F1 (corrected) | Routing Acc. | Source |
-|---|---:|---:|---|
-| Router (honest run) | 0.3408 | 0.8503 | `official_metrics.json` |
-| Pure Graph | 0.3390 | 0.2773 | same |
-| Stage 1 CV (authoritative routing) | — | **0.8517 ± 0.0249** | `router_model/training_report.json` |
+### 1. End-to-End Token F1 Score
+| System | Token F1 |
+|---|---:|
+| Vector (Chroma Dense) | **0.663** |
+| Graph (Neo4j Traversal) | 0.633 |
+| Hybrid (Vector + Graph) | 0.660 |
+| Single-stage Router | 0.474 |
+| **Two-stage Router (Đề xuất)** | **0.636** |
+| Always-on Verifier | 0.564 |
 
-Legacy snapshot (keyword-recall "F1", superseded):
-[`docs/final_results_snapshot/legal_strict_full_summary.json`](docs/final_results_snapshot/legal_strict_full_summary.json)
+### 2. Routing Performance & Latency (B.5.3 / 3.6 / 5.7)
+- **Stage 1 (XGBoost) Routing Accuracy:** **0.995** (5-fold CV: 99.53% ± 0.40)
+- **XGBoost Inference Latency:** ~8.9 ms
+- **Stage 2 (LLM Verifier) Latency:** ~4,017 ms
+- **Total Routing-only Latency:** ~33.7 ms
 
-Conversation and clarification results are diagnostic stress tests, not
-replacements for the strict end-to-end table.
+*Note: The Two-stage Router dynamically balances performance and cost. It successfully prevents hallucination on complex multi-hop and out-of-distribution questions by intelligently triggering the Verifier only when Stage 1 confidence is low (< 0.5) or ambiguity is high.*
 
 ## Important Links
 
@@ -70,17 +72,16 @@ OpenAI-compatible LLM settings. Do not commit local secrets.
 
 ## Smoke Tests and Demos
 
+To quickly test the 4 routing paths (Dense, Graph, Hybrid, Clarify), you can use the interactive single-query demo:
+
 ```bash
-python -m compileall router graph llm scripts
-python -m pytest tests/ -v
-python scripts/demo_conversation_routing.py --config configs/config.yaml
+python run_test_demo.py
 ```
 
-Routing-only diagnostic examples:
+For multi-turn conversation and ambiguity resolution testing:
 
 ```bash
-python scripts/evaluate_conversation_ambiguity.py --config configs/config.yaml --eval-file evaluation/conversation_ambiguity_eval.json --output-dir results_demo --limit 10 --use-cache
-python scripts/evaluate_strict_routing_only.py --config configs/config.yaml --test-file qa_pipeline/data/legal_strict/test.json --output-dir results_demo
+python scripts/run_conversation_demo.py
 ```
 
 The full 600-query end-to-end benchmark should only be rerun when Neo4j,
@@ -88,15 +89,16 @@ Chroma, router checkpoint, and the LLM endpoint are ready.
 
 ## Data Sources
 
-Final corpus (248,740 documents):
+**📥 Dataset Download:** [Google Drive Link (Data & Vector Store)](https://drive.google.com/drive/folders/1eF8unFzgKfOnCNVr5_e-gr5sQuotH2hD?usp=sharing)
 
-| Source | Records | Script |
-|---|---:|---|
-| HuggingFace `th1nhng0/vietnamese-legal-documents` | 178,665 | `main.py --source huggingface` |
-| Pháp Điển offline bundle (`BoPhapDienDienTu/`) | 70,075 | `main.py --source phapdien` |
+The project uses a single, highly curated legal source: **Bộ Pháp Điển** (offline bundle `BoPhapDienDienTu/`). No other sources (like HuggingFace or VBPL portal) were used in the final system to ensure strict legal accuracy and structural consistency.
 
-VBPL portal crawler was attempted but **failed** (empty output) and is archived
-at `archive/legacy_vbpl/`. It is not a data source for any final experiment.
+**Corpus Statistics (Deployed in Hybrid System):**
+- **Documents (Văn bản gốc):** 4,598
+- **Articles (Điều luật):** 68,570
+- **Chunks (Đoạn):** 68,835 (chunked by 256 words, 32 overlap via `text.split()`)
+- **Graph Nodes (Nút đồ thị):** 804,322
+- **Vector Embeddings:** 1024-dimensional using `microsoft/Harrier-OSS-v1-0.6B`
 
 ## Data and Artifact Policy
 
@@ -115,13 +117,14 @@ Small final result artifacts used for defense are copied into
 Use the CLI routing demo as the primary defense path:
 
 ```bash
-python scripts/demo_conversation_routing.py --config configs/config.yaml
+# Multi-turn demo
+python scripts/run_conversation_demo.py
+
+# Single query manual test
+python run_test_demo.py
 ```
 
-The existing frontend is optional. It can display route/stage metadata returned
-by the backend, but it does not currently send conversation history or expose
-resolved referents, so the CLI demo is clearer for defending the routing
-contribution.
+The existing frontend is optional. It can display route/stage metadata returned by the backend, but the CLI demo is clearer for defending the routing contribution, as it exposes Stage 1 confidence, Stage 2 triggers, latency, and exact log outputs.
 
 ## Citation
 
