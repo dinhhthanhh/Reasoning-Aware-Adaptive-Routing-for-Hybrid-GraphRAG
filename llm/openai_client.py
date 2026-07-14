@@ -68,8 +68,8 @@ class OpenAIClient:
             config = full_config.get("openai", full_config.get("ollama", {}))
 
         load_dotenv()
-        self.base_url: str = config["base_url"].rstrip("/")
-        self.model: str = config["model"]
+        self.base_url: str = (os.getenv("OPENAI_BASE_URL") or config["base_url"]).rstrip("/")
+        self.model: str = os.getenv("OPENAI_MODEL") or config["model"]
         self.timeout: int = config.get("timeout_seconds", 120)
         self.max_retries: int = config.get("max_retries", 2)
         self.temperature: float = config.get("temperature", 0.1)
