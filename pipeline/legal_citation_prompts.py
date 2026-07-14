@@ -70,6 +70,9 @@ LEGAL_SYSTEM_PROMPT = (
     f"5. Nếu [TÀI LIỆU PHÁP LÝ] không chứa quy định liên quan đến câu hỏi, "
     f"trả lời đúng MỘT câu duy nhất, không thêm gì khác: "
     f"\"{NOT_FOUND_PHRASE}\"\n"
+    "6. TUYỆT ĐỐI KHÔNG tự suy diễn về tình trạng hiệu lực của văn bản. Nếu "
+    "tài liệu không ghi rõ văn bản bị thay thế, bãi bỏ hay hết hiệu lực, KHÔNG "
+    "được tự ý kết luận văn bản đã hết hiệu lực dựa vào kiến thức bên ngoài.\n"
 )
 
 
