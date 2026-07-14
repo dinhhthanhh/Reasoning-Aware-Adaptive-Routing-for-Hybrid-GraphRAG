@@ -39,6 +39,8 @@ build_logs/
 *.tmp
 crawler.log
 cloudflared.exe
+promt.md
+prompt.md
 
 # ===========================================
 # Neo4j local data
