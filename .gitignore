@@ -145,10 +145,6 @@ docs/*
 ~$*
 slide_v3_hinh_ve/
 
-# Exceptions for public docs
-!docs/architecture.md
-!docs/DATA_AVAILABILITY.md
-!docs/phase5_reproducibility_report.md
 
 # Evaluation outputs and generated experiment artifacts
 eval_results/
