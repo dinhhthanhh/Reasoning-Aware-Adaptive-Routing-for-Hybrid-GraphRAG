@@ -362,7 +362,7 @@ class RouterModel:
         # Train final model on full data (80/20 split for final eval)
         num_class = len(np.unique(y))
         base_xgb = xgb.XGBClassifier(
-            n_estimators=300,
+            n_estimators=200,
             max_depth=6,
             learning_rate=0.05,
             subsample=0.8,

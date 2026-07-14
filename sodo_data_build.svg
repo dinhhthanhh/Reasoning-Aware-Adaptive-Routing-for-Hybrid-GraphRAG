@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <marker id="arrB" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1F4E79"/>
+    </marker>
+    <marker id="arrG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <text x="640" y="34" text-anchor="middle" font-size="25" font-weight="bold" fill="#1F4E79">Quy trình xây dữ liệu: MỘT điều luật → HAI kho tri thức</text>
+  <text x="640" y="58" text-anchor="middle" font-size="14" fill="#666">Ví dụ: Điều 92 Luật Luật sư — định danh 65/2006/QH11::92 · cùng nguồn Bộ Pháp điển</text>
+
+  <!-- ===== TOP CHAIN ===== -->
+  <!-- Source -->
+  <rect x="30" y="86" width="270" height="118" rx="10" fill="#33415a"/>
+  <text x="165" y="108" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">STAGE 0 · NGUỒN THÔ</text>
+  <text x="45" y="130" font-size="11.5" fill="#dfe6f0">so_dieu: "4.4.92"</text>
+  <text x="45" y="148" font-size="11.5" fill="#dfe6f0">tieu_de: "Điều 92. Xử lý vi phạm...</text>
+  <text x="45" y="163" font-size="11.5" fill="#dfe6f0">   hành nghề luật sư bất hợp pháp"</text>
+  <text x="45" y="181" font-size="11.5" fill="#ffd27f">ghi_chu: "...Luật 65/2006/QH11"</text>
+  <text x="45" y="196" font-size="11.5" fill="#dfe6f0">noi_dung: "1. Cá nhân không đủ ĐK..."</text>
+
+  <!-- Step1 -->
+  <rect x="330" y="86" width="270" height="118" rx="10" fill="#eef2f8" stroke="#c3cede"/>
+  <text x="465" y="108" text-anchor="middle" font-size="14" font-weight="bold" fill="#1F4E79">STAGE 1 · BÓC TÁCH &amp; LÀM PHẲNG</text>
+  <text x="465" y="132" text-anchor="middle" font-size="12" fill="#333">chủ đề → đề mục → văn bản → điều</text>
+  <text x="465" y="152" text-anchor="middle" font-size="12" fill="#333">rút số hiệu + số điều →</text>
+  <rect x="352" y="162" width="226" height="30" rx="6" fill="#fff3df" stroke="#e0a94a"/>
+  <text x="465" y="182" text-anchor="middle" font-size="13" font-weight="bold" fill="#b26a00">canonical_id: 65/2006/QH11::92</text>
+
+  <!-- Step2 -->
+  <rect x="630" y="86" width="270" height="118" rx="10" fill="#eef2f8" stroke="#c3cede"/>
+  <text x="765" y="108" text-anchor="middle" font-size="14" font-weight="bold" fill="#1F4E79">STAGE 2 · LÀM SẠCH</text>
+  <text x="645" y="134" font-size="12" fill="#333">• Chuẩn hoá Unicode NFC</text>
+  <text x="645" y="154" font-size="12" fill="#333">• Bỏ bản ghi &lt; 50 ký tự / thiếu định danh</text>
+  <text x="645" y="174" font-size="12" fill="#333">• Khử trùng lặp theo canonical_id</text>
+  <text x="765" y="196" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#2E7D32">70.075 → 68.835 bản ghi</text>
+
+  <!-- Fork chip -->
+  <rect x="930" y="110" width="320" height="70" rx="10" fill="#1F4E79"/>
+  <text x="1090" y="138" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">STAGE 3 · RẼ HAI NHÁNH</text>
+  <text x="1090" y="162" text-anchor="middle" font-size="12" fill="#cfe0f5">cùng 1 bản ghi → 2 kho, chung định danh</text>
+
+  <!-- chain arrows -->
+  <line x1="300" y1="145" x2="330" y2="145" stroke="#555" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="600" y1="145" x2="630" y2="145" stroke="#555" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="900" y1="145" x2="930" y2="145" stroke="#555" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- fork down arrows -->
+  <path d="M1090,180 L1090,206 L640,206 L640,300" fill="none" stroke="#1F4E79" stroke-width="2.5" marker-end="url(#arrB)"/>
+  <text x="648" y="245" font-size="11" fill="#1F4E79" font-weight="bold">→ nhánh A</text>
+  <path d="M1090,180 L1090,462" fill="none" stroke="#2E7D32" stroke-width="2.5" marker-end="url(#arrG)"/>
+  <text x="1098" y="245" font-size="11" fill="#2E7D32" font-weight="bold">→ nhánh B</text>
+
+  <!-- ===== LANE A: VECTOR ===== -->
+  <rect x="20" y="300" width="1240" height="150" rx="12" fill="#f2f7fd" stroke="#1F4E79" stroke-width="1.5"/>
+  <text x="40" y="326" font-size="16" font-weight="bold" fill="#1F4E79">NHÁNH A — KHO VECTOR (ChromaDB)  ·  build_chroma.py</text>
+  <text x="40" y="345" font-size="12" fill="#4a6fa0">Vai trò: TRA CỨU NGỮ NGHĨA (câu hỏi gần nghĩa điều nào)</text>
+
+  <rect x="45" y="360" width="235" height="72" rx="8" fill="#fff" stroke="#9fb8d8"/>
+  <text x="162" y="384" text-anchor="middle" font-size="12.5" fill="#333">toàn văn điều → cắt 8000 ký tự</text>
+  <text x="162" y="404" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1F4E79">Harrier-OSS 0.6B</text>
+  <text x="162" y="421" text-anchor="middle" font-size="12" fill="#666">đọc 512 token đầu</text>
+
+  <line x1="280" y1="396" x2="320" y2="396" stroke="#1F4E79" stroke-width="2" marker-end="url(#arrB)"/>
+
+  <rect x="320" y="360" width="300" height="72" rx="8" fill="#fff" stroke="#9fb8d8"/>
+  <text x="470" y="382" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1F4E79">1 vector số thực (~1024 chiều)</text>
+  <text x="470" y="404" text-anchor="middle" font-size="12" fill="#555">[ 0.012, −0.045, 0.087, … ]</text>
+  <text x="470" y="422" text-anchor="middle" font-size="11.5" fill="#888">+ metadata: canonical_id, title, số hiệu</text>
+
+  <line x1="620" y1="396" x2="660" y2="396" stroke="#1F4E79" stroke-width="2" marker-end="url(#arrB)"/>
+
+  <rect x="660" y="360" width="300" height="72" rx="8" fill="#e8f0fb" stroke="#1F4E79"/>
+  <text x="810" y="384" text-anchor="middle" font-size="13" font-weight="bold" fill="#1F4E79">ChromaDB</text>
+  <text x="810" y="404" text-anchor="middle" font-size="12" fill="#333">chỉ mục HNSW · độ đo cosine</text>
+  <text x="810" y="422" text-anchor="middle" font-size="12" font-weight="bold" fill="#1F4E79">68.835 vector (1 điều = 1 vector)</text>
+
+  <rect x="985" y="360" width="255" height="72" rx="8" fill="#fff" stroke="#9fb8d8" stroke-dasharray="4 3"/>
+  <text x="1112" y="382" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#1F4E79">Khi hỏi (route = dense):</text>
+  <text x="1112" y="401" text-anchor="middle" font-size="11" fill="#444">nhúng câu hỏi → cosine → top-8 điều</text>
+  <text x="1112" y="419" text-anchor="middle" font-size="11" fill="#444">→ nạp TOÀN VĂN điều cho LLM</text>
+
+  <!-- ===== LANE B: GRAPH ===== -->
+  <rect x="20" y="470" width="1240" height="250" rx="12" fill="#f1f8f2" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="40" y="496" font-size="16" font-weight="bold" fill="#2E7D32">NHÁNH B — KHO ĐỒ THỊ (Neo4j)  ·  build_neo4j.py --build-semantics</text>
+  <text x="40" y="515" font-size="12" fill="#3f7a44">Vai trò: SUY LUẬN QUAN HỆ (sửa đổi / hiệu lực / thẩm quyền — thứ vector không biểu diễn được)</text>
+
+  <!-- structural -->
+  <text x="45" y="542" font-size="13" font-weight="bold" fill="#2E7D32">Tầng cấu trúc (suy tất định từ siêu dữ liệu)</text>
+  <rect x="45" y="552" width="200" height="40" rx="8" fill="#fff" stroke="#8fc79a"/>
+  <text x="145" y="577" text-anchor="middle" font-size="12" fill="#333">LegalDoc (65/2006/QH11)</text>
+  <text x="296" y="567" text-anchor="middle" font-size="9.5" fill="#2E7D32" font-weight="bold">HAS_ARTICLE</text>
+  <line x1="248" y1="572" x2="335" y2="572" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+  <rect x="345" y="552" width="200" height="40" rx="8" fill="#e6f3e8" stroke="#2E7D32"/>
+  <text x="445" y="577" text-anchor="middle" font-size="12" fill="#1c5222">LegalArticle (::92)</text>
+  <text x="565" y="570" font-size="11.5" fill="#555">+ AMENDS / REPLACES / REFERS_TO</text>
+  <text x="565" y="586" font-size="11.5" fill="#555">(giữa các văn bản / điều)</text>
+
+  <!-- semantic -->
+  <text x="45" y="624" font-size="13" font-weight="bold" fill="#2E7D32">Tầng ngữ nghĩa (LLM đọc nội dung → trích "bộ ba")</text>
+  <rect x="45" y="634" width="215" height="66" rx="8" fill="#fff" stroke="#8fc79a"/>
+  <text x="152" y="656" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#2E7D32">8 loại NÚT</text>
+  <text x="152" y="673" text-anchor="middle" font-size="10.5" fill="#444">ACTOR, CONDITION, PENALTY,</text>
+  <text x="152" y="688" text-anchor="middle" font-size="10.5" fill="#444">AUTHORITY, RIGHT, OBLIGATION…</text>
+
+  <line x1="260" y1="667" x2="300" y2="667" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <rect x="300" y="634" width="470" height="66" rx="8" fill="#fff" stroke="#8fc79a"/>
+  <text x="535" y="654" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#2E7D32">Triple trích từ Điều 92 (minh hoạ):</text>
+  <text x="315" y="672" font-size="10.5" fill="#333">(::92)-MENTIONS→PENALTY("Phạt tiền")  ·  ACTOR-HAS_CONDITION→CONDITION</text>
+  <text x="315" y="688" font-size="10.5" fill="#333">ACTOR-PROHIBITS→"hành nghề LS bất hợp pháp"  (25 quan hệ hợp lệ)</text>
+
+  <line x1="770" y1="667" x2="810" y2="667" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <rect x="810" y="628" width="430" height="78" rx="8" fill="#e6f3e8" stroke="#2E7D32"/>
+  <text x="1025" y="652" text-anchor="middle" font-size="13" font-weight="bold" fill="#1c5222">Neo4j — đồ thị tri thức</text>
+  <text x="1025" y="674" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#2E7D32">804.322 nút · 1.968.621 cạnh</text>
+  <text x="1025" y="693" text-anchor="middle" font-size="11.5" fill="#444">2 tầng: cấu trúc + ngữ nghĩa · 24 loại quan hệ trong CSDL</text>
+
+  <!-- footer -->
+  <text x="640" y="752" text-anchor="middle" font-size="13" font-weight="bold" fill="#b26a00">Cùng MỘT định danh 65/2006/QH11::92 nối hai kho → câu trả lời luôn truy về đúng điều gốc.</text>
+  <text x="640" y="772" text-anchor="middle" font-size="13" font-weight="bold" fill="#b26a00">Khác biệt giữa các tuyến chỉ đến từ ĐỊNH TUYẾN, không phải từ dữ liệu.</text>
+</svg>
