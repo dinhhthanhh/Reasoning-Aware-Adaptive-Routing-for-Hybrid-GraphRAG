@@ -133,6 +133,7 @@ qa_pipeline/reports/
 # Private thesis/report drafts and project notes
 BaoCao_Reasoning_Aware_Adaptive_Routing_Hybrid_GraphRAG.md
 project_context.md
+paper/
 
 # Private or non-public documentation sources
 docs/*
