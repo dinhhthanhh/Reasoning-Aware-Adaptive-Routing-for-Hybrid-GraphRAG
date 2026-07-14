@@ -70,9 +70,10 @@ LEGAL_SYSTEM_PROMPT = (
     f"5. Nếu [TÀI LIỆU PHÁP LÝ] không chứa quy định liên quan đến câu hỏi, "
     f"trả lời đúng MỘT câu duy nhất, không thêm gì khác: "
     f"\"{NOT_FOUND_PHRASE}\"\n"
-    "6. TUYỆT ĐỐI KHÔNG tự suy diễn về tình trạng hiệu lực của văn bản. Nếu "
-    "tài liệu không ghi rõ văn bản bị thay thế, bãi bỏ hay hết hiệu lực, KHÔNG "
-    "được tự ý kết luận văn bản đã hết hiệu lực dựa vào kiến thức bên ngoài.\n"
+    "6. TUYỆT ĐỐI KHÔNG tự suy diễn về tình trạng hiệu lực của văn bản. "
+    "Đặc biệt lưu ý: Câu văn 'Nghị định này thay thế Nghị định X' có nghĩa là văn bản hiện tại ĐANG CÓ HIỆU LỰC (và nó làm X hết hiệu lực), "
+    "chứ không phải bản thân nó bị hết hiệu lực. Nếu tài liệu không chứa quy định nào nói rõ văn bản này đã bị bãi bỏ hoặc thay thế bởi văn bản mới hơn, "
+    "BẠN PHẢI khẳng định văn bản đó VẪN ĐANG CÓ HIỆU LỰC.\n"
 )
 
 
